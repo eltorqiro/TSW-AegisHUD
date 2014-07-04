@@ -23,38 +23,39 @@ class com.ElTorqiro.AegisHUD.AegisBar extends UIComponent
 	private var m_ButtonContainer:MovieClip;
 	
 	// movie clip shortcuts
-	private var __aegisMC1:MovieClip;
-	private var __aegisMC2:MovieClip;
-	private var __aegisMC3:MovieClip;
-	private var __weaponMC:MovieClip;
-	private var __backgroundMC:MovieClip;
-	private var __buttonContainerMC:MovieClip;
+	private var _aegisMC1:MovieClip;
+	private var _aegisMC2:MovieClip;
+	private var _aegisMC3:MovieClip;
+	private var _weaponMC:MovieClip;
+	private var _backgroundMC:MovieClip;
+	private var _buttonContainerMC:MovieClip;
 	
 	// slot configuration values
-	private var __aegisGroup:Number;
-	private var __activeAegisStat:Number;
-	private var __itemSlots:Object = { };
+	private var _aegisGroup:Number;
+	private var _activeAegisStat:Number;
+	private var _itemSlots:Object = { };
 
 	// layout parameters
-	private var __enableLayout:Boolean = true;
-	private var __slotSize:Number = 30;
-	private var __barPadding:Number = 5;
-	private var __slotPadding:Number = 4;
-	private var __weaponFirst:Boolean = true;
-	private var __showBackground:Boolean = true;
-	private var __showWeapon:Boolean = true;
-	private var __showXPBar:Boolean = true;
-	private var __showTooltip:Boolean = true;
-	private var __layoutStyle:Number = 1;
+	private var _enableLayout:Boolean = true;
+	private var _slotSize:Number = 30;
+	private var _barPadding:Number = 5;
+	private var _slotPadding:Number = 4;
+	private var _weaponFirst:Boolean = true;
+	private var _showBackground:Boolean = true;
+	private var _showWeapon:Boolean = true;
+	private var _showWeaponGlow:Boolean = true;
+	private var _showXPBar:Boolean = true;
+	private var _showTooltip:Boolean = true;
+	private var _layoutStyle:Number = 1;
 
 	// behaviour parameters
-	private var __handleDrag:Boolean = true;
+	private var _handleDrag:Boolean = true;
 	
 	// utility objects
-	private var __character:Character;
-	private var __inventory:Inventory;
-	private var __iconLoader:MovieClipLoader;
-	private var __activeAegisSlot:Number;
+	private var _character:Character;
+	private var _inventory:Inventory;
+	private var _iconLoader:MovieClipLoader;
+	private var _activeAegisSlot:Number;
 	
 	// signals
 	public var SignalStartDrag:Signal;
@@ -75,16 +76,16 @@ class com.ElTorqiro.AegisHUD.AegisBar extends UIComponent
 		this.onRelease = this.onReleaseOutside  = Delegate.create(this, ReleaseHandler);
 		
 		// movieclip shortcuts
-		__aegisMC1 = m_ButtonContainer.m_Aegis1;
-		__aegisMC2 = m_ButtonContainer.m_Aegis2;
-		__aegisMC3 = m_ButtonContainer.m_Aegis3;
-		__weaponMC = m_ButtonContainer.m_Weapon;
-		__backgroundMC = m_Background;
-		__buttonContainerMC = m_ButtonContainer;
+		_aegisMC1 = m_ButtonContainer.m_Aegis1;
+		_aegisMC2 = m_ButtonContainer.m_Aegis2;
+		_aegisMC3 = m_ButtonContainer.m_Aegis3;
+		_weaponMC = m_ButtonContainer.m_Weapon;
+		_backgroundMC = m_Background;
+		_buttonContainerMC = m_ButtonContainer;
 
 		// other objects that need creating
-		__iconLoader = new MovieClipLoader();
-		__iconLoader.addListener(this);
+		_iconLoader = new MovieClipLoader();
+		_iconLoader.addListener(this);
 
 		SignalStartDrag = new Signal;
 		SignalStopDrag = new Signal;
@@ -96,18 +97,18 @@ class com.ElTorqiro.AegisHUD.AegisBar extends UIComponent
 	public function init(aegisGroup:Number, character:Character, inventory:Inventory)
 	{
 		// assign properties
-		__aegisGroup = aegisGroup;
-		__character = character;
-		__inventory = inventory;
+		_aegisGroup = aegisGroup;
+		_character = character;
+		_inventory = inventory;
 		
 		// wire up signal listeners
-		__character.SignalStatChanged.Connect( SlotStatChanged, this);
-	    __inventory.SignalItemAdded.Connect( SlotItemAdded, this);
-		__inventory.SignalItemAdded.Connect( SlotItemLoaded, this);
-		__inventory.SignalItemMoved.Connect( SlotItemMoved, this);
-		__inventory.SignalItemRemoved.Connect( SlotItemRemoved, this);
-		__inventory.SignalItemChanged.Connect( SlotItemChanged, this);
-		__inventory.SignalItemStatChanged.Connect( SlotItemStatChanged, this);
+		_character.SignalStatChanged.Connect( SlotStatChanged, this);
+	    _inventory.SignalItemAdded.Connect( SlotItemAdded, this);
+		_inventory.SignalItemAdded.Connect( SlotItemLoaded, this);
+		_inventory.SignalItemMoved.Connect( SlotItemMoved, this);
+		_inventory.SignalItemRemoved.Connect( SlotItemRemoved, this);
+		_inventory.SignalItemChanged.Connect( SlotItemChanged, this);
+		_inventory.SignalItemStatChanged.Connect( SlotItemStatChanged, this);
 
 		// load the initial equipment locations
 		MapGroupEquipment();
@@ -133,10 +134,10 @@ class com.ElTorqiro.AegisHUD.AegisBar extends UIComponent
 		}
 		
 		// resize buttons
-		__aegisMC1._width = __aegisMC1._height = slotSize;
-		__aegisMC2._width = __aegisMC2._height = slotSize;
-		__aegisMC3._width = __aegisMC3._height = slotSize;
-		__weaponMC._width = __weaponMC._height = slotSize;
+		_aegisMC1._width = _aegisMC1._height = slotSize;
+		_aegisMC2._width = _aegisMC2._height = slotSize;
+		_aegisMC3._width = _aegisMC3._height = slotSize;
+		_weaponMC._width = _weaponMC._height = slotSize;
 
 		
 		// horizontal and vertical can be done with combined code
@@ -148,16 +149,16 @@ class com.ElTorqiro.AegisHUD.AegisBar extends UIComponent
 			var propSpan:String = layoutStyle == AegisBarLayoutStyles.HORIZONTAL ? "_width" : "_height";
 
 			// move weapon first if necessary
-			if ( weaponFirst && showWeapon )	__aegisMC1[propStart] = __weaponMC[propStart] + __weaponMC[propSpan] + (slotPadding * 3);
+			if ( weaponFirst && showWeapon )	_aegisMC1[propStart] = _weaponMC[propStart] + _weaponMC[propSpan] + (slotPadding * 3);
 			
-			__aegisMC2[propStart] = __aegisMC1[propStart] + __aegisMC1[propSpan] + slotPadding;
-			__aegisMC3[propStart] = __aegisMC2[propStart] + __aegisMC2[propSpan] + slotPadding;
+			_aegisMC2[propStart] = _aegisMC1[propStart] + _aegisMC1[propSpan] + slotPadding;
+			_aegisMC3[propStart] = _aegisMC2[propStart] + _aegisMC2[propSpan] + slotPadding;
 
 			// move weapon last if necessary
-			if ( !weaponFirst && showWeapon )	__weaponMC[propStart] = __aegisMC3[propStart] + __aegisMC3[propSpan] + (slotPadding * 3);
+			if ( !weaponFirst && showWeapon )	_weaponMC[propStart] = _aegisMC3[propStart] + _aegisMC3[propSpan] + (slotPadding * 3);
 
-			// hide weapon if necessary
-			if ( !showWeapon )	__weaponMC._visible = false;
+			// weapon slot visibility
+			_weaponMC._visible = showWeapon;
 			
 		}
 		
@@ -165,16 +166,12 @@ class com.ElTorqiro.AegisHUD.AegisBar extends UIComponent
 		// position and resize background to wrap buttons
 		if ( showBackground )
 		{
-			__backgroundMC._width = __buttonContainerMC._width + (barPadding * 2);
-			__backgroundMC._height = __buttonContainerMC._height + (barPadding * 2);
+			_backgroundMC._width = _buttonContainerMC._width + (barPadding * 2);
+			_backgroundMC._height = _buttonContainerMC._height + (barPadding * 2);
 		}
+		_backgroundMC._visible = showBackground;
 		
-		else
-		{
-			__backgroundMC._visible = false;
-		}
-
-		__buttonContainerMC._x = __buttonContainerMC._y = barPadding;
+		_buttonContainerMC._x = _buttonContainerMC._y = barPadding;
 	}
 
 	// map defaults for primary/secondary groups onto internal equipment list
@@ -186,7 +183,7 @@ class com.ElTorqiro.AegisHUD.AegisBar extends UIComponent
 		var aegis3:Number;
 		var activeStat:Number;
 
-		switch( __aegisGroup )
+		switch( _aegisGroup )
 		{
 			case AEGIS_GROUP_PRIMARY:
 				weapon = _global.Enums.ItemEquipLocation.e_Wear_First_WeaponSlot;
@@ -216,14 +213,14 @@ class com.ElTorqiro.AegisHUD.AegisBar extends UIComponent
 	// could be made public to allow for custom setup of equipment
 	private function SetEquipment(weapon:Number, aegis1:Number, aegis2:Number, aegis3:Number, activeStat:Number):Void
 	{
-		__activeAegisStat = activeStat;
+		_activeAegisStat = activeStat;
 		
 		// handy reverse mapping of item location ids onto slots
-		__itemSlots = { };
-		__itemSlots[aegis1] = { type: "aegis", equip: aegis1, mcName: "__aegisMC1", next: aegis2, prev: aegis3 };
-		__itemSlots[aegis2] = { type: "aegis", equip: aegis2, mcName: "__aegisMC2", next: aegis3, prev: aegis1 };
-		__itemSlots[aegis3] = { type: "aegis", equip: aegis3, mcName: "__aegisMC3", next: aegis1, prev: aegis2 };
-		__itemSlots[weapon] = { type: "weapon", equip: weapon, mcName: "__weaponMC" };
+		_itemSlots = { };
+		_itemSlots[aegis1] = { type: "aegis", equip: aegis1, mcName: "_aegisMC1", next: aegis2, prev: aegis3 };
+		_itemSlots[aegis2] = { type: "aegis", equip: aegis2, mcName: "_aegisMC2", next: aegis3, prev: aegis1 };
+		_itemSlots[aegis3] = { type: "aegis", equip: aegis3, mcName: "_aegisMC3", next: aegis1, prev: aegis2 };
+		_itemSlots[weapon] = { type: "weapon", equip: weapon, mcName: "_weaponMC" };
 		
 		LoadEquipment();
 	}
@@ -232,7 +229,7 @@ class com.ElTorqiro.AegisHUD.AegisBar extends UIComponent
 	// load slot icons and presence
 	private function LoadEquipment():Void
 	{
-		for (var i:String in __itemSlots)
+		for (var i:String in _itemSlots)
 		{
 			LoadItem(i);
 		}
@@ -241,10 +238,10 @@ class com.ElTorqiro.AegisHUD.AegisBar extends UIComponent
 	// load a single slot
 	private function LoadItem(equipLocation:Number):Void
 	{
-		var slotMC:MovieClip = this[ __itemSlots[equipLocation].mcName ];
+		var slotMC:MovieClip = this[ _itemSlots[equipLocation].mcName ];
 		if (slotMC == undefined) return;	// only do something if there is something to do
 		
-		var item:InventoryItem = __inventory.GetItemAt( equipLocation );
+		var item:InventoryItem = _inventory.GetItemAt( equipLocation );
 		
 		// if an item is slotted, show it
 		if ( item != undefined)
@@ -254,10 +251,11 @@ class com.ElTorqiro.AegisHUD.AegisBar extends UIComponent
 			if (iconRef != undefined && iconRef.GetType() != 0 && iconRef.GetInstance() != 0)
 			{
 				var iconString:String = com.Utils.Format.Printf( "rdb:%.0f:%.0f", iconRef.GetType(), iconRef.GetInstance() );			
-				__iconLoader.loadClip( iconString, slotMC.m_Icon );
+				_iconLoader.loadClip( iconString, slotMC.m_Icon );
 			}
 
 			slotMC.m_Watermark._visible = false;
+			slotMC.m_Background._visible = showWeaponGlow ;
 			slotMC.m_Icon._visible = true;
 			slotMC.m_XPBar._visible = showXPBar;
 
@@ -278,12 +276,12 @@ class com.ElTorqiro.AegisHUD.AegisBar extends UIComponent
 		
 		// if an active aegis, or a slotted weapon, highlight it
 		// -- this needs to be outside the if() to allow for highlighting aegis slots with no controller slotted
-		slotMC.m_Background._visible =  equipLocation == __character.GetStat(__activeAegisStat) || ( __itemSlots[equipLocation].type == "weapon" && item != undefined );
+		slotMC.m_Background._visible =  equipLocation == _character.GetStat(_activeAegisStat) || ( _itemSlots[equipLocation].type == "weapon" && item != undefined );
 
 		// set internal tracking of active aegis slot
-		if ( equipLocation == __character.GetStat(__activeAegisStat) )
+		if ( equipLocation == _character.GetStat(_activeAegisStat) )
 		{
-			__activeAegisSlot = equipLocation;
+			_activeAegisSlot = equipLocation;
 		}
 	}
 	
@@ -300,18 +298,18 @@ class com.ElTorqiro.AegisHUD.AegisBar extends UIComponent
 	// highlight active aegis slot
 	private function UpdateActiveAegis():Void 
 	{
-		for (var i:String in __itemSlots)
+		for (var i:String in _itemSlots)
 		{
-			if (__itemSlots[i].type == "aegis" )
+			if (_itemSlots[i].type == "aegis" )
 			{
-				if ( __itemSlots[i].equip == __character.GetStat( __activeAegisStat ) )
+				if ( _itemSlots[i].equip == _character.GetStat( _activeAegisStat ) )
 				{
-					this[ __itemSlots[i].mcName ].m_Background._visible = true;
-					__activeAegisSlot = i;
+					this[ _itemSlots[i].mcName ].m_Background._visible = true;
+					_activeAegisSlot = i;
 				}
 				else
 				{
-					this[ __itemSlots[i].mcName ].m_Background._visible = false;
+					this[ _itemSlots[i].mcName ].m_Background._visible = false;
 				}
 			}
 		}
@@ -324,19 +322,19 @@ class com.ElTorqiro.AegisHUD.AegisBar extends UIComponent
 	public function SwapToAegisSlot(equipLocation:Number)
 	{
 		// switch forward?
-		if ( __itemSlots[__activeAegisSlot].next == equipLocation)
+		if ( _itemSlots[_activeAegisSlot].next == equipLocation)
 		{
 			// first param is first/second aegis, second param is forward/back
-			Character.SwapAegisController( __activeAegisStat == _global.Enums.Stat.e_FirstActiveAegis, true);
+			Character.SwapAegisController( _activeAegisStat == _global.Enums.Stat.e_FirstActiveAegis, true);
 		}
 		
 		// or switch back?
-		else if ( __itemSlots[__activeAegisSlot].prev == equipLocation)
+		else if ( _itemSlots[_activeAegisSlot].prev == equipLocation)
 		{
-			Character.SwapAegisController( __activeAegisStat == _global.Enums.Stat.e_FirstActiveAegis, false);
+			Character.SwapAegisController( _activeAegisStat == _global.Enums.Stat.e_FirstActiveAegis, false);
 		}
 		
-		__activeAegisSlot = equipLocation;
+		_activeAegisSlot = equipLocation;
 	}
 	
 	// Move Drag and Click Handler
@@ -354,9 +352,9 @@ class com.ElTorqiro.AegisHUD.AegisBar extends UIComponent
 		// click button handler
 		else
 		{
-			for ( var i:String in __itemSlots )
+			for ( var i:String in _itemSlots )
 			{
-				if ( __itemSlots[i].type == "aegis" && this[ __itemSlots[i].mcName ].hitTest(_root._xmouse, _root._ymouse, true) )
+				if ( _itemSlots[i].type == "aegis" && this[ _itemSlots[i].mcName ].hitTest(_root._xmouse, _root._ymouse, true) )
 				{
 					SwapToAegisSlot(i);
 					break;
@@ -376,14 +374,14 @@ class com.ElTorqiro.AegisHUD.AegisBar extends UIComponent
 
 	
 	// signal handlers for inventory and character stat changes
-	// I think several of these are not necessary just for Aegis or Weapon swapping, but they are the complete list
+	// I think some of these are not necessary just for Aegis or Weapon swapping, but they are the complete list
 	// used by the default CharacterSheetController, as I'd rather cover everything than have
 	// something not work in an unforeseen situation
 	
 	// handles active aegis being swapped
 	private function SlotStatChanged(statID:Number):Void
 	{
-		if ( statID == __activeAegisStat )
+		if ( statID == _activeAegisStat )
 		{
 			UpdateActiveAegis();
 		}
@@ -432,85 +430,94 @@ class com.ElTorqiro.AegisHUD.AegisBar extends UIComponent
 	
 	// getters & setters
 	public function get slotSize():Number {
-		return __slotSize;
+		return _slotSize;
 	}
 	public function set slotSize(size:Number) {
-		__slotSize = size;
+		_slotSize = size;
 		Layout();
 	}
 
 	public function get barPadding():Number {
-		return __barPadding;
+		return _barPadding;
 	}
 	public function set barPadding(padding:Number) {
-		__barPadding = padding;
+		_barPadding = padding;
 		Layout();
 	}
 
 	public function get slotPadding() {
-		return __slotPadding;
+		return _slotPadding;
 	}
 	public function set slotPadding(padding:Number) {
-		__slotPadding = padding;
+		_slotPadding = padding;
 		Layout();
 	}
 	
 	public function get weaponFirst():Boolean {
-		return __weaponFirst;
+		return _weaponFirst;
 	}
 	public function set weaponFirst(value:Boolean) {
-		__weaponFirst = value;
+		_weaponFirst = value;
 		Layout();
 	}
 	
 	public function get showBackground():Boolean {
-		return __showBackground;
+		return _showBackground;
 	}
 	public function set showBackground(value:Boolean) {
-		__showBackground = value;
+		_showBackground = value;
 		Layout();
 	}
 	
 	public function get showWeapon():Boolean {
-		return __showWeapon;
+		return _showWeapon;
 	}
 	public function set showWeapon(value:Boolean) {
-		__showWeapon = value;
+		_showWeapon = value;
 		Layout();
+	}
+
+	public function get showWeaponGlow():Boolean {
+		return _showWeaponGlow;
+	}
+	public function set showWeaponGlow(value:Boolean) {
+		_showWeaponGlow = value;
+		
+		_weaponMC.m_Background._visible = _showWeaponGlow;
 	}
 	
 	public function get showXPBar():Boolean {
-		return __showXPBar;
+		return _showXPBar;
 	}
 	public function set showXPBar(value:Boolean) {
-		__showXPBar = value;
+		_showXPBar = value;
 		LoadEquipment();
 	}
 	
 	public function get showTooltip():Boolean {
-		return __showTooltip;
+		return _showTooltip;
 	}
 	public function set showTooltip(value:Boolean) {
-		__showTooltip = value;
+		_showTooltip = value;
 		LoadEquipment();
 	}
 	
 	public function get layoutStyle():Number {
-		return __layoutStyle;
+		return _layoutStyle;
 	}
 	public function set layoutStyle(value:Number) {
 		// set it to passed value only if it is a valid style option
 		if ( AegisBarLayoutStyles.list(value) != undefined )
 		{
-			__layoutStyle = value;
+			_layoutStyle = value;
 			Layout();
 		}
 	}
 	
 	public function get handleDrag():Boolean {
-		return __handleDrag;
+		return _handleDrag;
 	}
 	public function set handleDrag(value:Boolean) {
-		__handleDrag = value;
+		_handleDrag = value;
 	}
 }

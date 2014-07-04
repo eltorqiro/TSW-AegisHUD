@@ -30,43 +30,61 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 	private var m_PrimaryBar:AegisBar;
 	private var m_SecondaryBar:AegisBar;
 	private var m_ConfigWindow:WinComp;
-	private var m__LinkedDragProxy:MovieClip;
+	private var m_LinkedDragProxy:MovieClip;
 	
 	// movieclip owner for visual elements
-	private var __parentMC:MovieClip;
+	private var _hostMC:MovieClip;
 	
 	// user configurable option
-	private var __hideDefaultSwapButtons:Boolean = true;
-	private var __linkBars:Boolean = true;
-	private var __layoutStyle:Number = 1;
-	private var __showWeapons:Boolean = true;
-	private var __showWeaponGlow:Boolean = true;
-	private var __showBarBackground:Boolean = true;
-	private var __showXPBars:Boolean = false;
-	private var __showTooltips:Boolean = true;
+	private var _hideDefaultSwapButtons:Boolean = true;
+	private var _linkBars:Boolean = true;
+	private var _layoutStyle:Number = 1;
+	private var _showWeapons:Boolean = true;
+	private var _showWeaponGlow:Boolean = true;
+	private var _showBarBackground:Boolean = true;
+	private var _showXPBars:Boolean = false;
+	private var _showTooltips:Boolean = true;
 
 	// position restoration for windows
-	private var __ConfigPos:Point;
-	private var __PrimaryPos:Point;
-	private var __SecondaryPos:Point;
+	private var _primaryStart:Point;
+	private var _secondaryStart:Point;
 
 	// utility objects
-	private var __character:Character;
-	private var __inventory:Inventory;
+	private var _character:Character;
+	private var _inventory:Inventory;
 	
 
-	// constructor
-	public function AegisHUD(parentMC:MovieClip)
+	/**
+	 * constructor
+	 * @param	parentMC The parent movieclip the HUD should be placed under
+	 * @param	hostMCName Name of the movieclip that will be created under the parent to host all AEGIS content -- if no name given, HUD will be placed directly into parent
+	 * @param	deferCreate Don't create the HUD immedately -- handy if a lot of visual parameters need to be set prior to HUD creation to prevent a heap of Layouts
+	 */
+	public function AegisHUD(parentMC:MovieClip, hostMCName:String, deferCreate:Boolean)
 	{
+		// if no parentMC is provided, do nothing at all
+		if (parentMC == undefined) return;
+		
 		// handle if the toon has not unlocked the AEGIS system, but does so during the session
 		Lore.SignalTagAdded.Connect(SlotTagAdded, this);
 		
-		// host movie clip, that all AegisHUD content will be placed into
-		__parentMC = parentMC.createEmptyMovieClip( "m_AegisHUD", parentMC.getNextHighestDepth() );
+		// reserve host movie clip that all AegisHUD content will be placed into
+		_hostMC = ( hostMCName == undefined || hostMCName == "") ? parentMC : parentMC.createEmptyMovieClip( "m_AegisHUD", parentMC.getNextHighestDepth() );
 		
-		CreateHUD();
+		// immediately create HUD unless instructed otherwise
+		if (deferCreate == undefined || deferCreate == false )  CreateHUD();
 	}
 
+	// pseudo-destructor, should be called immediately before deleting the object
+	public function Destroy():Void
+	{
+		// clean up elements
+		_hostMC.removeMovieClip();
+		
+		// restore default buttons -- this forced behaviour may not be desirable, the host project may want them to remain hidden
+		hideDefaultSwapButtons = false;
+	}
+	
 
 	// module activated (i.e. its distributed value set to 1)
 	// saved config data is passed in
@@ -75,54 +93,46 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 		UtilsBase.PrintChatText("AEGIS.HUD activated");
 		
 		// visual settings
-		//__showWeapons = __archive.FindEntry( "ShowWeapons", __showWeapons );
-		//__showWeapons = __archive.FindEntry( "ShowWeaponGlow", __showWeaponGlow );
-		//__showWeapons = __archive.FindEntry( "ShowBarBackground", __showBarBackground );
-		//__showWeapons = __archive.FindEntry( "ShowXPBars", __showXPBars );
-		//__showWeapons = __archive.FindEntry( "ShowTooltips", __showTooltips );
+		//_showWeapons = _archive.FindEntry( "ShowWeapons", _showWeapons );
+		//_showWeapons = _archive.FindEntry( "ShowWeaponGlow", _showWeaponGlow );
+		//_showWeapons = _archive.FindEntry( "ShowBarBackground", _showBarBackground );
+		//_showWeapons = _archive.FindEntry( "ShowXPBars", _showXPBars );
+		//_showWeapons = _archive.FindEntry( "ShowTooltips", _showTooltips );
 
 		// layout & position settings
-		//__LayoutStyle = archive.FindEntry( "LayoutStyle", __LayoutStyle );
-		//__PrimaryPos = new Point( __archive.FindEntry("PrimaryX", __PrimaryPos.x), __archive.FindEntry("PrimaryY", __PrimaryPos.y) );
-		//__SecondaryPos = new Point( __archive.FindEntry("SecondaryX", __SecondaryPos.x), __archive.FindEntry("SecondaryY", __SecondaryPos.y) );
-		//__ConfigPos = new Point( __archive.FindEntry("ConfigyX", __ConfigPos.x), __archive.FindEntry("ConfigY", __ConfigPos.y) );
+		//_LayoutStyle = archive.FindEntry( "LayoutStyle", _LayoutStyle );
+		//_PrimaryPos = new Point( _archive.FindEntry("PrimaryX", _PrimaryPos.x), _archive.FindEntry("PrimaryY", _PrimaryPos.y) );
+		//_SecondaryPos = new Point( _archive.FindEntry("SecondaryX", _SecondaryPos.x), _archive.FindEntry("SecondaryY", _SecondaryPos.y) );
+		//_ConfigPos = new Point( _archive.FindEntry("ConfigyX", _ConfigPos.x), _archive.FindEntry("ConfigY", _ConfigPos.y) );
 
 		// config options
-		//__hideDefaultSwapButtons = __archive.FindEntry("HideDefaultSwapButtons", __hideDefaultSwapButtons );
-		//__linkBars = __archive.FindEntry( "LinkBars", __linkBars );
+		//_hideDefaultSwapButtons = _archive.FindEntry("HideDefaultSwapButtons", _hideDefaultSwapButtons );
+		//_linkBars = _archive.FindEntry( "LinkBars", _linkBars );
 	}
-
-
-	// pseudo-destructor, should be called immediately before deleting the object
-	function Destroy():Void
-	{
-		// clean up elements
-		__parentMC.removeMovieClip();
-		
-		// restore default buttons -- this forced behaviour may not be desirable, the host project may want them to remain hidden
-		hideDefaultSwapButtons = false;
-	}
-
 
 	// main activation routine for creating and initialising the bars
 	// abstracted away from other startup functions so it can be called if AEGIS
 	// is unlocked during a play session rather than being already unlocked at the start
-	function CreateHUD():Void
+	public function CreateHUD():Void
 	{
 		// do nothing at all if AEGIS system is not unlocked
 		if ( Lore.IsLocked(AEGIS_SLOT_ACHIEVEMENT) ) return;
 		
-		var __character:Character = Character.GetClientCharacter();
-		var __inventory:Inventory = new Inventory( new ID32(_global.Enums.InvType.e_Type_GC_WeaponContainer, Character.GetClientCharID().GetInstance()) );
+		// remove any existing bars
+		if ( m_PrimaryBar != undefined ) m_PrimaryBar.removeMovieClip();
+		if ( m_SecondaryBar != undefined )  m_SecondaryBar.removeMovieClip();
+		
+		var _character:Character = Character.GetClientCharacter();
+		var _inventory:Inventory = new Inventory( new ID32(_global.Enums.InvType.e_Type_GC_WeaponContainer, Character.GetClientCharID().GetInstance()) );
 
 		// create bars
-		m_PrimaryBar = __parentMC.attachMovie("AegisBar", "m_PrimaryBar", __parentMC.getNextHighestDepth()).init( AegisBar.AEGIS_GROUP_PRIMARY, __character, __inventory );
+		m_PrimaryBar = _hostMC.attachMovie("AegisBar", "m_PrimaryBar", _hostMC.getNextHighestDepth()).init( AegisBar.AEGIS_GROUP_PRIMARY, _character, _inventory );
 		m_PrimaryBar.handleDrag = false;
-		m_PrimaryBar.showXPBar = __showXPBars;
+		m_PrimaryBar.showXPBar = _showXPBars;
 
-		m_SecondaryBar = __parentMC.attachMovie("AegisBar", "m_SecondaryBar", __parentMC.getNextHighestDepth()).init( AegisBar.AEGIS_GROUP_SECONDARY, __character, __inventory );
+		m_SecondaryBar = _hostMC.attachMovie("AegisBar", "m_SecondaryBar", _hostMC.getNextHighestDepth()).init( AegisBar.AEGIS_GROUP_SECONDARY, _character, _inventory );
 		m_SecondaryBar.handleDrag = false;
-		m_SecondaryBar.showXPBar = __showXPBars;
+		m_SecondaryBar.showXPBar = _showXPBars;
 
 		// config options
 		HideDefaultSwapButtons();
@@ -139,63 +149,63 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 }
 
 	// layout bar positions on the screen
-	function Layout():Void
+	public function Layout():Void
 	{
+		// can't layout if there is nothing to layout
+		if ( m_PrimaryBar == undefined )  return;
+		
 		// set default positions to simulate the default buttons
-		// ... surprised this worked without some localToGlobal() usage
 		if (m_PrimaryBar._x == 0 && m_PrimaryBar._y == 0)
 		{
+			// ... surprised this worked without some localToGlobal() usage
 			m_PrimaryBar._x = Stage.visibleRect.width / 2 - m_PrimaryBar._width - 5;
 			m_SecondaryBar._x = m_PrimaryBar._x + m_PrimaryBar._width + 10;
-			m_PrimaryBar._y = m_SecondaryBar._y = _root.passivebar._y - m_PrimaryBar._height - 5;
+			m_PrimaryBar._y = m_SecondaryBar._y = (_root.passivebar._y != undefined ? _root.passivebar._y : Stage.visibleRect.bottom - 75) - m_PrimaryBar._height - 5;
 		}
 	}
 
 
-	// handler for unlocking AEGIS system during session
-	function SlotTagAdded(tag:Number)
+	// handler for situation where AEGIS system becomes unlocked during play session
+	private function SlotTagAdded(tag:Number)
 	{
-		if (tag == AEGIS_SLOT_ACHIEVEMENT)
-		{
-			CreateHUD();
-		}
+		if (tag == AEGIS_SLOT_ACHIEVEMENT)  CreateHUD();
 	}
 
 	// Move Drag Handler
-	function MoveDragHandler(bar:MovieClip):Void
+	private function MoveDragHandler(bar:MovieClip):Void
 	{
 		// since flash can only drag one item at a time with startDrag(), create a proxy drag object to drag around
-		if ( this.linkBars )
+		if ( linkBars )
 		{
-			m__LinkedDragProxy = __parentMC.createEmptyMovieClip("m__LinkedDragProxy", __parentMC.getNextHighestDepth());
-			__parentMC.onMouseMove = DragLinkedBarsHandler;
-			m__LinkedDragProxy.startDrag();
+			m_LinkedDragProxy = _hostMC.createEmptyMovieClip("m_LinkedDragProxy", _hostMC.getNextHighestDepth());
+			_hostMC.onMouseMove = DragLinkedBarsHandler;
+			m_LinkedDragProxy.startDrag();
 		}
 		
 		else bar.startDrag();
 	}
 
 	// move handler for dragging both bars as one
-	function DragLinkedBarsHandler():Void
+	private function DragLinkedBarsHandler():Void
 	{
-		m_PrimaryBar._x += m__LinkedDragProxy._x - m__LinkedDragProxy.__prevX;
-		m_PrimaryBar._y += m__LinkedDragProxy._y - m__LinkedDragProxy.__prevY;
-		m_SecondaryBar._x += m__LinkedDragProxy._x - m__LinkedDragProxy.__prevX;
-		m_SecondaryBar._y += m__LinkedDragProxy._y - m__LinkedDragProxy.__prevY;
+		m_PrimaryBar._x += m_LinkedDragProxy._x - m_LinkedDragProxy._prevX;
+		m_PrimaryBar._y += m_LinkedDragProxy._y - m_LinkedDragProxy._prevY;
+		m_SecondaryBar._x += m_LinkedDragProxy._x - m_LinkedDragProxy._prevX;
+		m_SecondaryBar._y += m_LinkedDragProxy._y - m_LinkedDragProxy._prevY;
 		
-		m__LinkedDragProxy.__prevX = m__LinkedDragProxy._x;
-		m__LinkedDragProxy.__prevY = m__LinkedDragProxy._y;
+		m_LinkedDragProxy._prevX = m_LinkedDragProxy._x;
+		m_LinkedDragProxy._prevY = m_LinkedDragProxy._y;
 	}
 
 	//Move Drag Release
-	function MoveDragReleaseHandler(bar:MovieClip):Void
+	private function MoveDragReleaseHandler(bar:MovieClip):Void
 	{
 		// destroy proxy drag object
-		if ( this.linkBars )
+		if ( linkBars )
 		{
-			m__LinkedDragProxy.stopDrag();
-			__parentMC.onMouseMove = undefined;
-			m__LinkedDragProxy.removeMovieClip();
+			m_LinkedDragProxy.stopDrag();
+			_hostMC.onMouseMove = undefined;
+			m_LinkedDragProxy.removeMovieClip();
 		}
 		
 		else bar.stopDrag();
@@ -205,7 +215,7 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 	private function HideDefaultSwapButtons():Void
 	{
 		// hide buttons
-		if ( __hideDefaultSwapButtons )
+		if ( _hideDefaultSwapButtons )
 		{
 			
 			// this is very hacky, it's the only way I can prevent the default swap buttons being loaded
@@ -245,25 +255,74 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 	
 	// prevents the default aegis swap buttons in PassiveBar from being shown
 	public function get hideDefaultSwapButtons():Boolean {
-		return __hideDefaultSwapButtons;
+		return _hideDefaultSwapButtons;
 	}
 	public function set hideDefaultSwapButtons(value:Boolean) {
-		__hideDefaultSwapButtons = value;
+		_hideDefaultSwapButtons = value;
 		HideDefaultSwapButtons();
 	}
 		
 	// link bars together when being dragged
 	public function get linkBars():Boolean {
-		return __linkBars;
+		return _linkBars;
 	}
 	public function set linkBars(value:Boolean) {
-		__linkBars = value;
+		_linkBars = value;
 	}
 
+	public function get showWeapons():Boolean {
+		return _showWeapons;
+	}
+	public function set showWeapons(value:Boolean) {
+		_showWeapons = value;
+		
+		m_PrimaryBar.showWeapon = _showWeapons;
+		m_SecondaryBar.showWeapon = _showWeapons;
+	}
+	
+	public function get showWeaponGlow():Boolean {
+		return _showWeaponGlow;
+	}
+	public function set showWeaponGlow(value:Boolean) {
+		_showWeaponGlow = value;
+		
+		m_PrimaryBar.showWeaponGlow = _showWeaponGlow;
+		m_SecondaryBar.showWeaponGlow = _showWeaponGlow;
+	}
+	
+	public function get showBarBackground():Boolean {
+		return _showBarBackground;
+	}
+	public function set showBarBackground(value:Boolean) {
+		_showBarBackground = value;
+		
+		m_PrimaryBar.showBackground = _showBarBackground;
+		m_SecondaryBar.showBackground = _showBarBackground;
+	}
+	
+	public function get showXPBars():Boolean {
+		return _showBarBackground;
+	}
+	public function set showXPBars(value:Boolean) {
+		_showXPBars = value;
+		
+		m_PrimaryBar.showXPBar = true;
+		m_SecondaryBar.showXPBar = true;
+	}
+	
+	public function get showTooltips():Boolean {
+		return _showTooltips;
+	}
+	public function set showTooltips(value:Boolean) {
+		_showTooltips = value;
+	}
+	
+	// readonly
 	public function get primaryBar():AegisBar {
 		return m_PrimaryBar;
 	}
 	
+	// readonly
 	public function get secondaryBar():AegisBar {
 		return m_SecondaryBar;
 	}

@@ -17,7 +17,9 @@ import com.GameInterface.Lore
 
 import com.ElTorqiro.AegisHUD.*;
 
-var g_AegisHUD:AegisHUD;
+var g_HUD:AegisHUD;
+var g_configWindow:WinComp;
+var g_configWindowInitPos:Point;
 
 //Init
 // modules.xml is not set to include:
@@ -38,7 +40,14 @@ function onUnload()
 // saved config data is passed in
 function OnModuleActivated(archive:Archive)
 {
-	g_AegisHUD = new AegisHUD(this);
+	g_configWindowInitPos = new Point(
+		archive.FindEntry("ConfigX", Number.NEGATIVE_INFINITY),
+		archive.FindEntry("ConfigY", Number.NEGATIVE_INFINITY)
+	);
+	
+	g_HUD = new AegisHUD(this);
+	
+	CreateConfigWindow();
 }
 
 
@@ -47,7 +56,7 @@ function OnModuleActivated(archive:Archive)
 function OnModuleDeactivated()
 {
     var archive:Archive = new Archive();
-	
+
 	archive.AddEntry( "HideDefaultSwapButtons", g_hideDefaultSwapButtons );
 	archive.AddEntry( "PrimaryX", g_AegisHUD.primaryBar._x );
 	archive.AddEntry( "PrimaryY", g_AegisHUD.primaryBar._y );
@@ -64,8 +73,8 @@ function OnModuleDeactivated()
 	archive.AddEntry( "ConfigY", g_ConfigPos.y );
 	
 	// clean up elements
-	g_AegisHUD.Destroy();
-	g_AegisHUD = undefined;
+	g_HUD.Destroy();
+	g_HUD = undefined;
 	
 	// return config data
     return archive;
@@ -75,20 +84,27 @@ function OnModuleDeactivated()
 // create config window
 function CreateConfigWindow():Void
 {
-	m_ConfigWindow = WinComp(__parentMC.attachMovie( "WindowComponent", "m_ConfigWindow", __parentMC.getNextHighestDepth() ));
-	m_ConfigWindow.SetTitle("AEGIS HUD");
-	m_ConfigWindow.ShowStroke(false);
-	m_ConfigWindow.ShowFooter(false);
-	m_ConfigWindow.ShowResizeButton(false);
+	g_configWindow = WinComp(attachMovie( "WindowComponent", "m_ConfigWindow", getNextHighestDepth() ));
+	g_configWindow.SetTitle("AEGIS HUD");
+	g_configWindow.ShowStroke(false);
+	g_configWindow.ShowFooter(false);
+	g_configWindow.ShowResizeButton(false);
 
-	
 	// load the content panel
-	m_ConfigWindow.SetContent( "ConfigWindowContent" );
+	g_configWindow.SetContent( "ConfigWindowContent" );
 
 	// set position
 	// -- whatever has been previously saved, or middle of screen if not saved before
-	m_ConfigWindow._x = __ConfigPos.x;
-	m_ConfigWindow._y = __ConfigPos.y;
+	g_configWindow._x = __ConfigPos.x;
+	g_configWindow._y = __ConfigPos.y;
+	
+	// wire up close button
+	g_configWindow.SignalClose.Connect(DestroyConfigWindow, this);
 	
 	//__archive.FindEntry( "ConfigWindowX", (Stage.visibleRect._width / 2) - (m_ConfigWindow._width / 2) );
+}
+
+function DestroyConfigWindow():Void
+{
+	g_configWindow.removeMovieClip();
 }

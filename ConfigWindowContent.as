@@ -5,7 +5,7 @@ import gfx.controls.DropdownMenu;
 import mx.utils.Delegate;
 import com.GameInterface.UtilsBase;
 
-class com.ElTorqiro.AegisHUD.ConfigWindowContent extends WindowComponentContent
+class ConfigWindowContent extends WindowComponentContent
 {
 	private var m_ContentSize:MovieClip;
 	private var m_Content:MovieClip;
@@ -31,35 +31,64 @@ class com.ElTorqiro.AegisHUD.ConfigWindowContent extends WindowComponentContent
 		
 		// add options section
 		AddHeading("Options");
-		AddCheckbox( "m_HideDefaultButtons", "Hide default AEGIS swap buttons", g_hideDefaultSwapButtons ).addEventListener("click", this, "HideDefaultButtonsClickHandler");
-		AddCheckbox( "m_LinkBars", "Link primary and secondary bars when dragging", g_linkBars ).addEventListener("click", this, "LinkBarsClickHandler");
+		AddCheckbox( "m_HideDefaultButtons", "Hide default AEGIS swap buttons", g_HUD.hideDefaultSwapButtons ).addEventListener("click", this, "HideDefaultButtonsClickHandler");
+		AddCheckbox( "m_LinkBars", "Link primary and secondary bars when dragging", g_HUD.linkBars ).addEventListener("click", this, "LinkBarsClickHandler");
 
 		// add visuals section
 		AddHeading("Visuals");
-		AddCheckbox( "m_ShowWeapons", "Show weapon slots", g_showWeapons ).addEventListener("click", this, "ShowWeaponsClickHandler");
-		AddCheckbox( "m_ShowWeaponGlow", "Show weapon slot glow", g_showWeaponGlow ).addEventListener("click", this, "ShowWeaponGlowClickHandler");
-		AddCheckbox( "m_ShowBarBackground", "Show bar background", g_showBarBackground ).addEventListener("click", this, "ShowBarBackgroundClickHandler");
-		AddCheckbox( "m_ShowXPBars", "Show AEGIS XP bars on slots", g_showXPBars ).addEventListener("click", this, "ShowXPBars");
-		AddCheckbox( "m_ShowTooltips", "Show Tooltips", g_showTooltips ).addEventListener("click", this, "ShowTooltips");
+		AddCheckbox( "m_ShowWeapons", "Show weapon slots", g_HUD.showWeapons ).addEventListener("click", this, "ShowWeaponsClickHandler");
+		AddCheckbox( "m_ShowWeaponGlow", "Show weapon slot glow", g_HUD.showWeaponGlow ).addEventListener("click", this, "ShowWeaponGlowClickHandler");
+		AddCheckbox( "m_ShowBarBackground", "Show bar background", g_HUD.showBarBackground ).addEventListener("click", this, "ShowBarBackgroundClickHandler");
+		AddCheckbox( "m_ShowXPBars", "Show AEGIS XP bars on slots", g_HUD.showXPBars ).addEventListener("click", this, "ShowXPBarsClickHandler");
+		AddCheckbox( "m_ShowTooltips", "Show Tooltips", g_HUD.showTooltips ).addEventListener("click", this, "ShowTooltipsClickHandler");
 		
 		// add layout section
 		AddHeading("Layout Style");
 		AddDropdown( "m_BarStyle", "Layout Style", ["Horizontal", "Vertical"], 0 );// .addEventListener("click", this, "LinkBarsClickHandler");
+		AddCheckbox( "m_PrimaryShowWeaponFirst", "On Primary bar, show weapon first", g_HUD.primaryBar.weaponFirst ).addEventListener("click", this, "PrimaryShowWeaponFirstClickHandler");
+		AddCheckbox( "m_SecondaryShowWeaponFirst", "On Secondary bar, show weapon first", g_HUD.secondaryBar.weaponFirst ).addEventListener("click", this, "SecondaryShowWeaponFirstClickHandler");
 		
 		//  add position shortcut section
-		AddHeading("Position at...");
-		AddDropdown( "m_Position", "Position", ["", "Default Location"], 0 );// .addEventListener("click", this, "LinkBarsClickHandler");
+		//AddButton( "m_ResetPosition", "Reset Position").addEventListener("click", this, "ResetPositionClickHandler");
 		
 		
 		SetSize( Math.max(m_Content._width, 200), Math.max(m_Content._height, 200) );
 	}
 
 	private function HideDefaultButtonsClickHandler(e:Object) {
-		HideDefaultSwapButtons(e.target.selected);
+		g_HUD.hideDefaultSwapButtons = e.target.selected;
 	}
 	
 	private function LinkBarsClickHandler(e:Object) {
-		LinkBars(e.target.selected);
+		g_HUD.linkBars = e.target.selected;
+	}
+
+	private function ShowWeaponsClickHandler(e:Object) {
+		g_HUD.showWeapons = e.target.selected;
+	}
+	
+	private function ShowWeaponGlowClickHandler(e:Object) {
+		g_HUD.showWeaponGlow = e.target.selected;
+	}
+	
+	private function ShowBarBackgroundClickHandler(e:Object) {
+		g_HUD.showBarBackground = e.target.selected;
+	}
+
+	private function ShowXPBarsClickHandler(e:Object) {
+		g_HUD.showXPBars = e.target.selected;
+	}
+	
+	private function ShowTooltipsClickHandler(e:Object) {
+		g_HUD.showTooltips = e.target.selected;
+	}
+	
+	private function PrimaryShowWeaponFirstClickHandler(e:Object) {
+		g_HUD.primaryBar.weaponFirst = e.target.selected;
+	}
+	
+	private function SecondaryShowWeaponFirstClickHandler(e:Object) {
+		g_HUD.secondaryBar.weaponFirst = e.target.selected;
 	}
 	
 	// add and return a new checkbox, layed out vertically
@@ -122,7 +151,9 @@ class com.ElTorqiro.AegisHUD.ConfigWindowContent extends WindowComponentContent
     }
 	
 	
-	/* this is the all-important override that lets window resizing work properly
+	/**
+	 * 
+	 * this is the all-important override that makes window resizing work properly
 	 * the underlying WindowComponentContent.SetSize() is just a stub, since it doesn't know what Instance Name you've given your content wrapper in Flash
 	 */
     public function SetSize(width:Number, height:Number)
