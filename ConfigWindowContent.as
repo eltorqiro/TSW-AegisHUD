@@ -15,13 +15,7 @@ class ConfigWindowContent extends WindowComponentContent
 	public function ConfigWindowContent()
 	{
 		super();
-		
-		for ( var i:String in AegisBarLayoutStyles.list)
-		{
-			
-		}
 	}
-
 	
 	private function configUI():Void
 	{
@@ -37,16 +31,20 @@ class ConfigWindowContent extends WindowComponentContent
 		// add visuals section
 		AddHeading("Visuals");
 		AddCheckbox( "m_ShowWeapons", "Show weapon slots", g_HUD.showWeapons ).addEventListener("click", this, "ShowWeaponsClickHandler");
-		AddCheckbox( "m_ShowWeaponGlow", "Show weapon slot glow", g_HUD.showWeaponGlow ).addEventListener("click", this, "ShowWeaponGlowClickHandler");
+		AddCheckbox( "m_ShowWeaponHighlight", "Show weapon slot highlight", g_HUD.showWeaponHighlight ).addEventListener("click", this, "ShowWeaponHighlightClickHandler");
 		AddCheckbox( "m_ShowBarBackground", "Show bar background", g_HUD.showBarBackground ).addEventListener("click", this, "ShowBarBackgroundClickHandler");
-		AddCheckbox( "m_ShowXPBars", "Show AEGIS XP bars on slots", g_HUD.showXPBars ).addEventListener("click", this, "ShowXPBarsClickHandler");
-		AddCheckbox( "m_ShowTooltips", "Show Tooltips", g_HUD.showTooltips ).addEventListener("click", this, "ShowTooltipsClickHandler");
+		//AddCheckbox( "m_ShowXPBars", "Show AEGIS XP progress on slots", g_HUD.showXPBars ).addEventListener("click", this, "ShowXPBarsClickHandler");
+		//AddCheckbox( "m_ShowTooltips", "Show Tooltips", g_HUD.showTooltips ).addEventListener("click", this, "ShowTooltipsClickHandler");
+
+		// positioning section
+		AddHeading("Position");
+		AddCheckbox( "m_LockToDefaultPosition", "Lock to default position", false ).addEventListener("click", this, "LockToDefaultPositionClickHandler");
 		
 		// add layout section
 		AddHeading("Layout Style");
 		AddDropdown( "m_BarStyle", "Layout Style", ["Horizontal", "Vertical"], 0 );// .addEventListener("click", this, "LinkBarsClickHandler");
-		AddCheckbox( "m_PrimaryShowWeaponFirst", "On Primary bar, show weapon first", g_HUD.primaryBar.weaponFirst ).addEventListener("click", this, "PrimaryShowWeaponFirstClickHandler");
-		AddCheckbox( "m_SecondaryShowWeaponFirst", "On Secondary bar, show weapon first", g_HUD.secondaryBar.weaponFirst ).addEventListener("click", this, "SecondaryShowWeaponFirstClickHandler");
+		AddCheckbox( "m_PrimaryShowWeaponFirst", "On Primary bar, show weapon first", g_HUD.primaryBarWeaponFirst ).addEventListener("click", this, "PrimaryShowWeaponFirstClickHandler");
+		AddCheckbox( "m_SecondaryShowWeaponFirst", "On Secondary bar, show weapon first", g_HUD.secondaryBarWeaponFirst ).addEventListener("click", this, "SecondaryShowWeaponFirstClickHandler");
 		
 		//  add position shortcut section
 		//AddButton( "m_ResetPosition", "Reset Position").addEventListener("click", this, "ResetPositionClickHandler");
@@ -67,8 +65,8 @@ class ConfigWindowContent extends WindowComponentContent
 		g_HUD.showWeapons = e.target.selected;
 	}
 	
-	private function ShowWeaponGlowClickHandler(e:Object) {
-		g_HUD.showWeaponGlow = e.target.selected;
+	private function ShowWeaponHighlightClickHandler(e:Object) {
+		g_HUD.showWeaponHighlight = e.target.selected;
 	}
 	
 	private function ShowBarBackgroundClickHandler(e:Object) {
@@ -84,11 +82,15 @@ class ConfigWindowContent extends WindowComponentContent
 	}
 	
 	private function PrimaryShowWeaponFirstClickHandler(e:Object) {
-		g_HUD.primaryBar.weaponFirst = e.target.selected;
+		g_HUD.primaryBarWeaponFirst = e.target.selected;
 	}
 	
 	private function SecondaryShowWeaponFirstClickHandler(e:Object) {
-		g_HUD.secondaryBar.weaponFirst = e.target.selected;
+		g_HUD.secondaryBarWeaponFirst = e.target.selected;
+	}
+
+	private function LockToDefaultPositionClickHandler(e:Object) {
+		//g_HUD.secondaryBar.weaponFirst = e.target.selected;
 	}
 	
 	// add and return a new checkbox, layed out vertically
@@ -150,6 +152,11 @@ class ConfigWindowContent extends WindowComponentContent
         Selection.setFocus(null);
     }
 	
+	private function Close():Void
+	{
+		super.Close();
+	}
+
 	
 	/**
 	 * 

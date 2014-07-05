@@ -20,6 +20,8 @@ import com.ElTorqiro.AegisHUD.*;
 var g_HUD:AegisHUD;
 var g_configWindow:WinComp;
 var g_configWindowInitPos:Point;
+var g_ConfigVersion = "1.0";
+var g_ModuleVersion = "1.0";
 
 //Init
 // modules.xml is not set to include:
@@ -44,8 +46,34 @@ function OnModuleActivated(archive:Archive)
 		archive.FindEntry("ConfigX", Number.NEGATIVE_INFINITY),
 		archive.FindEntry("ConfigY", Number.NEGATIVE_INFINITY)
 	);
+
+	var initObj:Object = { };
+	if ( archive.FindEntry("ConfigVersion") )
+	{
+		initObj = {
+			hideDefaultSwapButtons: archive.FindEntry("HideDefaultSwapButtons"),
+			/* layoutStyle: 1,*/
+			linkBars: archive.FindEntry("LinkBars"),
+			showWeapons: archive.FindEntry("ShowWeapons"),
+			showWeaponHighlight: archive.FindEntry("ShowWeaponHighlight"),
+			showBarBackground: archive.FindEntry("ShowBarBackground"),
+			showXPBars: archive.FindEntry("ShowXPBars"),
+			showTooltips: archive.FindEntry("ShowTooltips"),
+			primaryBarWeaponFirst: archive.FindEntry("PrimaryBarWeaponFirst"),
+			secondaryBarWeaponFirst: archive.FindEntry("SecondaryBarWeaponFirst")
+		};
+		
+		if ( archive.FindEntry("PrimaryX", false) )
+		{
+			initObj.primaryBarPosition = new Point( archive.FindEntry("PrimaryX", 0), archive.FindEntry("PrimaryY", 0) );
+			initObj.secondaryBarPosition = new Point( archive.FindEntry("SecondaryX", 0), archive.FindEntry("SecondaryY", 0) );
+		}
+		
+		g_ModuleVersion = archive.FindEntry( "ConfigVersion", g_ModuleVersion );
+	}
 	
-	g_HUD = new AegisHUD(this);
+
+	g_HUD = new AegisHUD(this, "m_AegisHUD", initObj );
 	
 	CreateConfigWindow();
 }
@@ -57,18 +85,21 @@ function OnModuleDeactivated()
 {
     var archive:Archive = new Archive();
 
-	archive.AddEntry( "HideDefaultSwapButtons", g_hideDefaultSwapButtons );
-	archive.AddEntry( "PrimaryX", g_AegisHUD.primaryBar._x );
-	archive.AddEntry( "PrimaryY", g_AegisHUD.primaryBar._y );
-	archive.AddEntry( "SecondaryX", g_AegisHUD.secondaryBar._x );
-	archive.AddEntry( "SecondaryY", g_AegisHUD.secondaryBar._y );
-	archive.AddEntry( "LinkBars", g_linkBars );
-	archive.AddEntry( "LayoutStyle", g_LayoutStyle );
-	archive.AddEntry( "ShowWeapons", g_showWeapons );
-	archive.AddEntry( "ShowWeaponGlow", g_showWeaponGlow );
-	archive.AddEntry( "ShowBarBackground", g_showBarBackground );
-	archive.AddEntry( "ShowXPBars", g_showXPBars );
-	archive.AddEntry( "ShowTooltips", g_showTooltips );
+	archive.AddEntry( "ConfigVersion", g_ConfigVersion );
+	archive.AddEntry( "HideDefaultSwapButtons", g_HUD.hideDefaultSwapButtons );
+	archive.AddEntry( "PrimaryX", g_HUD.primaryBar._x );
+	archive.AddEntry( "PrimaryY", g_HUD.primaryBar._y );
+	archive.AddEntry( "SecondaryX", g_HUD.secondaryBar._x );
+	archive.AddEntry( "SecondaryY", g_HUD.secondaryBar._y );
+	archive.AddEntry( "LinkBars", g_HUD.linkBars );
+	//archive.AddEntry( "LayoutStyle", g_HUD.layoutStyle );
+	archive.AddEntry( "ShowWeapons", g_HUD.showWeapons );
+	archive.AddEntry( "ShowWeaponHighlight", g_HUD.showWeaponHighlight );
+	archive.AddEntry( "ShowBarBackground", g_HUD.showBarBackground );
+	archive.AddEntry( "ShowXPBars", g_HUD.showXPBars );
+	archive.AddEntry( "ShowTooltips", g_HUD.showTooltips );
+	archive.AddEntry( "PrimaryBarWeaponFirst", g_HUD.primaryBarWeaponFirst );
+	archive.AddEntry( "SecondaryBarWeaponFirst", g_HUD.secondaryBarWeaponFirst );
 	archive.AddEntry( "ConfigX", g_ConfigPos.x );
 	archive.AddEntry( "ConfigY", g_ConfigPos.y );
 	

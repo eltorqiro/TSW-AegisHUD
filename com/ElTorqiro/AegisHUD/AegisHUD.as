@@ -14,6 +14,7 @@ import com.GameInterface.Game.Character;
 import com.GameInterface.Tooltip.TooltipDataProvider;
 import com.GameInterface.Lore
 import com.GameInterface.Game.Shortcut;
+import flash.filters.GlowFilter
 
 import com.ElTorqiro.AegisHUD.AegisBar;
 import com.ElTorqiro.AegisHUD.ConfigWindowContent;
@@ -40,14 +41,16 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 	private var _linkBars:Boolean = true;
 	private var _layoutStyle:Number = 1;
 	private var _showWeapons:Boolean = true;
-	private var _showWeaponGlow:Boolean = true;
+	private var _showWeaponHighlight:Boolean = true;
 	private var _showBarBackground:Boolean = true;
 	private var _showXPBars:Boolean = false;
-	private var _showTooltips:Boolean = true;
+	private var _showTooltips:Boolean = false;
+	private var _primaryBarWeaponFirst:Boolean = true;
+	private var _secondaryBarWeaponFirst:Boolean = true;
 
 	// position restoration for windows
-	private var _primaryStart:Point;
-	private var _secondaryStart:Point;
+	private var _primaryBarPosition:Point;
+	private var _secondaryBarPosition:Point;
 
 	// utility objects
 	private var _character:Character;
@@ -57,16 +60,23 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 	/**
 	 * constructor
 	 * @param	parentMC The parent movieclip the HUD should be placed under
-	 * @param	hostMCName Name of the movieclip that will be created under the parent to host all AEGIS content -- if no name given, HUD will be placed directly into parent
+	 * @param	hostMCName Name of the movieclip that will be created under the parent to host all AEGIS content -- default "m_AegisHUD"
 	 * @param	deferCreate Don't create the HUD immedately -- handy if a lot of visual parameters need to be set prior to HUD creation to prevent a heap of Layouts
 	 */
-	public function AegisHUD(parentMC:MovieClip, hostMCName:String, deferCreate:Boolean)
+	public function AegisHUD(parentMC:MovieClip, hostMCName:String, initObj:Object, deferCreate:Boolean)
 	{
 		// if no parentMC is provided, do nothing at all
 		if (parentMC == undefined) return;
 		
-		// handle if the toon has not unlocked the AEGIS system, but does so during the session
-		Lore.SignalTagAdded.Connect(SlotTagAdded, this);
+		// establish initialisation values
+		for (var i:String in initObj)
+		{
+			this[i] = initObj[i] ;
+			UtilsBase.PrintChatText(i + " = " + initObj[i] + ", " + this[i]);
+		}
+		
+		// handle if the toon has not unlocked the AEGIS system, but might do so during the session
+		if ( Lore.IsLocked(AEGIS_SLOT_ACHIEVEMENT) )  Lore.SignalTagAdded.Connect(SlotTagAdded, this);
 		
 		// reserve host movie clip that all AegisHUD content will be placed into
 		_hostMC = ( hostMCName == undefined || hostMCName == "") ? parentMC : parentMC.createEmptyMovieClip( "m_AegisHUD", parentMC.getNextHighestDepth() );
@@ -77,7 +87,7 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 
 	// pseudo-destructor, should be called immediately before deleting the object
 	public function Destroy():Void
-	{
+	{	
 		// clean up elements
 		_hostMC.removeMovieClip();
 		
@@ -85,30 +95,6 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 		hideDefaultSwapButtons = false;
 	}
 	
-
-	// module activated (i.e. its distributed value set to 1)
-	// saved config data is passed in
-	function OnModuleActivated(archive:Archive)
-	{
-		UtilsBase.PrintChatText("AEGIS.HUD activated");
-		
-		// visual settings
-		//_showWeapons = _archive.FindEntry( "ShowWeapons", _showWeapons );
-		//_showWeapons = _archive.FindEntry( "ShowWeaponGlow", _showWeaponGlow );
-		//_showWeapons = _archive.FindEntry( "ShowBarBackground", _showBarBackground );
-		//_showWeapons = _archive.FindEntry( "ShowXPBars", _showXPBars );
-		//_showWeapons = _archive.FindEntry( "ShowTooltips", _showTooltips );
-
-		// layout & position settings
-		//_LayoutStyle = archive.FindEntry( "LayoutStyle", _LayoutStyle );
-		//_PrimaryPos = new Point( _archive.FindEntry("PrimaryX", _PrimaryPos.x), _archive.FindEntry("PrimaryY", _PrimaryPos.y) );
-		//_SecondaryPos = new Point( _archive.FindEntry("SecondaryX", _SecondaryPos.x), _archive.FindEntry("SecondaryY", _SecondaryPos.y) );
-		//_ConfigPos = new Point( _archive.FindEntry("ConfigyX", _ConfigPos.x), _archive.FindEntry("ConfigY", _ConfigPos.y) );
-
-		// config options
-		//_hideDefaultSwapButtons = _archive.FindEntry("HideDefaultSwapButtons", _hideDefaultSwapButtons );
-		//_linkBars = _archive.FindEntry( "LinkBars", _linkBars );
-	}
 
 	// main activation routine for creating and initialising the bars
 	// abstracted away from other startup functions so it can be called if AEGIS
@@ -128,11 +114,13 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 		// create bars
 		m_PrimaryBar = _hostMC.attachMovie("AegisBar", "m_PrimaryBar", _hostMC.getNextHighestDepth()).init( AegisBar.AEGIS_GROUP_PRIMARY, _character, _inventory );
 		m_PrimaryBar.handleDrag = false;
-		m_PrimaryBar.showXPBar = _showXPBars;
+		m_PrimaryBar.showXPBar = this.showXPBars;
+		m_PrimaryBar.weaponFirst = this.primaryBarWeaponFirst;
+		m_PrimaryBar.showWeapon = this.showWeapons;
+		m_PrimaryBar.showWeaponHighlight = this.showWeaponHighlight;
 
 		m_SecondaryBar = _hostMC.attachMovie("AegisBar", "m_SecondaryBar", _hostMC.getNextHighestDepth()).init( AegisBar.AEGIS_GROUP_SECONDARY, _character, _inventory );
 		m_SecondaryBar.handleDrag = false;
-		m_SecondaryBar.showXPBar = _showXPBars;
 
 		// config options
 		HideDefaultSwapButtons();
@@ -155,6 +143,11 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 		if ( m_PrimaryBar == undefined )  return;
 		
 		// set default positions to simulate the default buttons
+		m_PrimaryBar._x = primaryBarPosition != undefined ? primaryBarPosition.x : Stage.visibleRect.width / 2 - m_PrimaryBar._width - 5;
+		m_PrimaryBar._y = primaryBarPosition != undefined ? primaryBarPosition.y : ( (_root.passivebar._y != undefined ? _root.passivebar._y : Stage.visibleRect.bottom - 75) - m_PrimaryBar._height - 5 );
+		m_SecondaryBar._x = secondaryBarPosition != undefined ? secondaryBarPosition.x : m_PrimaryBar._x + m_PrimaryBar._width + 10;
+		m_SecondaryBar._y = secondaryBarPosition != undefined ? secondaryBarPosition.y : m_PrimaryBar._y;
+		/*
 		if (m_PrimaryBar._x == 0 && m_PrimaryBar._y == 0)
 		{
 			// ... surprised this worked without some localToGlobal() usage
@@ -162,13 +155,18 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 			m_SecondaryBar._x = m_PrimaryBar._x + m_PrimaryBar._width + 10;
 			m_PrimaryBar._y = m_SecondaryBar._y = (_root.passivebar._y != undefined ? _root.passivebar._y : Stage.visibleRect.bottom - 75) - m_PrimaryBar._height - 5;
 		}
+		*/
 	}
 
 
 	// handler for situation where AEGIS system becomes unlocked during play session
 	private function SlotTagAdded(tag:Number)
 	{
-		if (tag == AEGIS_SLOT_ACHIEVEMENT)  CreateHUD();
+		if (tag == AEGIS_SLOT_ACHIEVEMENT)
+		{
+			Lore.SignalTagAdded.Disconnect(SlotTagAdded);
+			CreateHUD();
+		}
 	}
 
 	// Move Drag Handler
@@ -177,6 +175,20 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 		// since flash can only drag one item at a time with startDrag(), create a proxy drag object to drag around
 		if ( linkBars )
 		{
+			// highlight bars to indicate they will drag together
+			var filter_glow:GlowFilter = new GlowFilter(
+				0x0099ff, 	/* glow_color */
+				0.8, 		/* glow_alpha */
+				10, 		/* glow_blurX */
+				10, 		/* glow_blurY */
+				2,			/* glow_strength */
+				3, 			/* glow_quality */
+				false, 		/* glow_inner */
+				false 		/* glow_knockout */
+			);
+			m_PrimaryBar.filters = [filter_glow];
+			m_SecondaryBar.filters = [filter_glow];
+			
 			m_LinkedDragProxy = _hostMC.createEmptyMovieClip("m_LinkedDragProxy", _hostMC.getNextHighestDepth());
 			_hostMC.onMouseMove = DragLinkedBarsHandler;
 			m_LinkedDragProxy.startDrag();
@@ -203,6 +215,10 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 		// destroy proxy drag object
 		if ( linkBars )
 		{
+			// remove highlight
+			m_PrimaryBar.filters = [];
+			m_SecondaryBar.filters = [];
+			
 			m_LinkedDragProxy.stopDrag();
 			_hostMC.onMouseMove = undefined;
 			m_LinkedDragProxy.removeMovieClip();
@@ -215,20 +231,28 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 	private function HideDefaultSwapButtons():Void
 	{
 		// hide buttons
-		if ( _hideDefaultSwapButtons )
+		if ( hideDefaultSwapButtons )
 		{
+			// note that none of these removal methods work after zoning if the module is set to GMF_DONT_UNLOAD
+			// as the default inbuilt HUD does get reloaded on zoning, not just deactivated, so _root.passivebar wouldn't exist
+			// when this function gets called
+			// 
+			// if for some reason the module must be GMF_DONT_UNLOAD then some kind of polling routine will need to be
+			// used to checek for the existence of _root.passivebar
 			
 			// this is very hacky, it's the only way I can prevent the default swap buttons being loaded
 			// refer to GUI.HUD.PassiveBar.LoadAegisButtons()
-			_root.passivebar.AEGIS_SLOT_ACHIEVEMENT = undefined;
+			_root.passivebar.AEGIS_SLOT_ACHIEVEMENT = null;
+			_root.passivebar.LoadAegisButtons();
 			
 			// seems like this would be a race condition, but it seems to reliably clean up any clips that get through
 			// BUT ONLY ON INITIAL LOAD, not on signal triggered loads
-			_root.passivebar.m_PrimaryAegisSwap.removeMovieClip();
-			_root.passivebar.m_SecondaryAegisSwap.removeMovieClip();
+			// these lines are currently taken care of by _root.passivebar.LoadAegisButtons()
+			//			_root.passivebar.m_PrimaryAegisSwap.removeMovieClip();
+			//			_root.passivebar.m_SecondaryAegisSwap.removeMovieClip();
 			
 			
-			/* none of the below solve the problem reliably, kept here for reference
+			/* none of the below methods solve the problem reliably, kept here for reference
 			 * 
 				delete _root.passivebar.LoadAegisButtons;	// actually does delete the function, but next time it is called it comes back and runs
 				_root.passivebar.LoadAegisButtons = function() { UtilsBase.PrintChatText("test"); };	// can't overwrite function, unlike javascript
@@ -242,8 +266,10 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 				
 		}
 
-		// restore default buttons
-		else
+		// restore default buttons if they have been previously disabled
+		// having the conditional check on the current _root.passivebar.AEGIS_SLOT_ACHIEVEMENT value is necessary
+		// otherwise on initial load the button icons don't load because LoadAegisButtons() is called too quickly back to back and the icon loader hasn't finished loading
+		else if ( _root.passivebar.AEGIS_SLOT_ACHIEVEMENT != AEGIS_SLOT_ACHIEVEMENT )
 		{
 			_root.passivebar.AEGIS_SLOT_ACHIEVEMENT = AEGIS_SLOT_ACHIEVEMENT;
 			_root.passivebar.LoadAegisButtons();
@@ -280,14 +306,14 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 		m_SecondaryBar.showWeapon = _showWeapons;
 	}
 	
-	public function get showWeaponGlow():Boolean {
-		return _showWeaponGlow;
+	public function get showWeaponHighlight():Boolean {
+		return _showWeaponHighlight;
 	}
-	public function set showWeaponGlow(value:Boolean) {
-		_showWeaponGlow = value;
+	public function set showWeaponHighlight(value:Boolean) {
+		_showWeaponHighlight = value;
 		
-		m_PrimaryBar.showWeaponGlow = _showWeaponGlow;
-		m_SecondaryBar.showWeaponGlow = _showWeaponGlow;
+		m_PrimaryBar.showWeaponHighlight = _showWeaponHighlight;
+		m_SecondaryBar.showWeaponHighlight = _showWeaponHighlight;
 	}
 	
 	public function get showBarBackground():Boolean {
@@ -301,7 +327,7 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 	}
 	
 	public function get showXPBars():Boolean {
-		return _showBarBackground;
+		return _showXPBars;
 	}
 	public function set showXPBars(value:Boolean) {
 		_showXPBars = value;
@@ -327,4 +353,34 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 		return m_SecondaryBar;
 	}
 	
+	public function get primaryBarPosition():Point {
+		return _primaryBarPosition;
+	}
+	public function set primaryBarPosition(value:Point) {
+		_primaryBarPosition = value;
+	}
+	
+	public function get secondaryBarPosition():Point {
+		return _secondaryBarPosition;
+	}
+	public function set secondaryBarPosition(value:Point) {
+		_secondaryBarPosition = value;
+	}
+
+	public function get primaryBarWeaponFirst():Boolean {
+		return _primaryBarWeaponFirst;
+	}
+	public function set primaryBarWeaponFirst(value:Boolean) {
+		_primaryBarWeaponFirst = value;
+		primaryBar.weaponFirst = _primaryBarWeaponFirst;
+	}
+
+	public function get secondaryBarWeaponFirst():Boolean {
+		return _secondaryBarWeaponFirst;
+	}
+	public function set secondaryBarWeaponFirst(value:Boolean) {
+		_secondaryBarWeaponFirst = value;
+		secondaryBar.weaponFirst = _secondaryBarWeaponFirst;
+	}
+
 }

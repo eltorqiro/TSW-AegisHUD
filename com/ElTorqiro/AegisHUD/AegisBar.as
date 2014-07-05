@@ -43,7 +43,7 @@ class com.ElTorqiro.AegisHUD.AegisBar extends UIComponent
 	private var _weaponFirst:Boolean = true;
 	private var _showBackground:Boolean = true;
 	private var _showWeapon:Boolean = true;
-	private var _showWeaponGlow:Boolean = true;
+	private var _showWeaponHighlight:Boolean = true;
 	private var _showXPBar:Boolean = true;
 	private var _showTooltip:Boolean = true;
 	private var _layoutStyle:Number = 1;
@@ -255,7 +255,7 @@ class com.ElTorqiro.AegisHUD.AegisBar extends UIComponent
 			}
 
 			slotMC.m_Watermark._visible = false;
-			slotMC.m_Background._visible = showWeaponGlow ;
+			slotMC.m_Background._visible = this.showWeaponHighlight;
 			slotMC.m_Icon._visible = true;
 			slotMC.m_XPBar._visible = showXPBar;
 
@@ -276,7 +276,7 @@ class com.ElTorqiro.AegisHUD.AegisBar extends UIComponent
 		
 		// if an active aegis, or a slotted weapon, highlight it
 		// -- this needs to be outside the if() to allow for highlighting aegis slots with no controller slotted
-		slotMC.m_Background._visible =  equipLocation == _character.GetStat(_activeAegisStat) || ( _itemSlots[equipLocation].type == "weapon" && item != undefined );
+		slotMC.m_Background._visible =  equipLocation == _character.GetStat(_activeAegisStat) || ( _itemSlots[equipLocation].type == "weapon" && item != undefined && showWeaponHighlight);
 
 		// set internal tracking of active aegis slot
 		if ( equipLocation == _character.GetStat(_activeAegisStat) )
@@ -477,13 +477,12 @@ class com.ElTorqiro.AegisHUD.AegisBar extends UIComponent
 		Layout();
 	}
 
-	public function get showWeaponGlow():Boolean {
-		return _showWeaponGlow;
+	public function get showWeaponHighlight():Boolean {
+		return _showWeaponHighlight;
 	}
-	public function set showWeaponGlow(value:Boolean) {
-		_showWeaponGlow = value;
-		
-		_weaponMC.m_Background._visible = _showWeaponGlow;
+	public function set showWeaponHighlight(value:Boolean) {
+		_showWeaponHighlight = value;
+		_weaponMC.m_Background._visible = _showWeaponHighlight;
 	}
 	
 	public function get showXPBar():Boolean {
