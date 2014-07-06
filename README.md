@@ -31,3 +31,11 @@ This will add the appropriate directory and put the files in the right place.
 Uninstallation
 --------------
 Delete the directory: YOUR_TSW_DIRECTORY\Data\Gui\Customized\Flash\ElTorqiro_AegisHUD
+   
+   
+Source Code
+-----------
+This work is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
+http://creativecommons.org/licenses/by-sa/4.0/
+
+You can get the source from Github at https://github.com/eltorqiro/TSW-AegisHUD
