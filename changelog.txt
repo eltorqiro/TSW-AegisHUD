@@ -1,0 +1,17 @@
+1.4 -- 2014-07-06
+
+ + added various visual customisation options
+ + added Configuration window and saving/loading of settings
+ + added Viper's Topbar Information Overload (VTIO) integration
+ + enabled moving of bars, separately or independently
+ + added support for the TSW "Show AEGIS HUD UI" option
+ + enabled vertical layout option
+
+ * better detection for hiding the default UI buttons
+
+ * game must be reloaded to pick up modules.xml changes
+
+
+1.0 -- initial release
+
+ * initial release
