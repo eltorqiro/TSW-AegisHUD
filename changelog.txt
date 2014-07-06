@@ -1,3 +1,10 @@
+1.5 -- 2014-07-07
+
+ * fixed bar background setting not being saved
+ * fixed selected AEGIS highlighting not updating after death
+ * fixed slotted weapon highlight showing up incorrectly on empty slots
+ 
+
 1.4 -- 2014-07-06
 
  + added various visual customisation options

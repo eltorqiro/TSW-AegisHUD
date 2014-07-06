@@ -33,7 +33,7 @@ class ConfigWindowContent extends WindowComponentContent
 		AddCheckbox( "m_ShowWeapons", "Show weapon slots", g_HUD.showWeapons ).addEventListener("click", this, "ShowWeaponsClickHandler");
 		AddCheckbox( "m_PrimaryShowWeaponFirst", "On Primary bar, show weapon first", g_HUD.primaryBarWeaponFirst ).addEventListener("click", this, "PrimaryShowWeaponFirstClickHandler");
 		AddCheckbox( "m_SecondaryShowWeaponFirst", "On Secondary bar, show weapon first", g_HUD.secondaryBarWeaponFirst ).addEventListener("click", this, "SecondaryShowWeaponFirstClickHandler");
-		AddCheckbox( "m_ShowWeaponHighlight", "Show weapon slot highlight", g_HUD.showWeaponHighlight ).addEventListener("click", this, "ShowWeaponHighlightClickHandler");
+		AddCheckbox( "m_ShowWeaponHighlight", "Show slotted weapon highlight", g_HUD.showWeaponHighlight ).addEventListener("click", this, "ShowWeaponHighlightClickHandler");
 		AddCheckbox( "m_ShowBarBackground", "Show bar background", g_HUD.showBarBackground ).addEventListener("click", this, "ShowBarBackgroundClickHandler");
 		//AddCheckbox( "m_ShowXPBars", "Show AEGIS XP progress on slots", g_HUD.showXPBars ).addEventListener("click", this, "ShowXPBarsClickHandler");
 		//AddCheckbox( "m_ShowTooltips", "Show Tooltips", g_HUD.showTooltips ).addEventListener("click", this, "ShowTooltipsClickHandler");

@@ -24,6 +24,7 @@ var g_configWindow:WinComp;
 var g_configPos:Point;
 var g_ConfigVersion = "1.0";
 var g_ModuleVersion = "1.0";
+var g_Debug = false;
 
 // internal distributed value listeners
 var g_showConfigDV:DistributedValue;
@@ -36,7 +37,7 @@ var m_VTIOIsLoadedMonitor:DistributedValue;
 // GUIMODEFLAGS_ENABLEALLGUI  -- only needs to be present in playfield, not needed in other GUIs
 function onLoad()
 {
-	//UtilsBase.PrintChatText("AEGIS.HUD loaded");
+	Debug("onLoad");
 
 	// VTIO integration
 	m_VTIOIsLoadedMonitor = DistributedValue.Create("VTIO_IsLoaded");
@@ -48,13 +49,15 @@ function onLoad()
 
 function onUnload()
 {
-	//UtilsBase.PrintChatText("AEGIS.HUD unloaded");
+	Debug("onUnload");
 }
 
 // module activated (i.e. its distributed value set to 1)
 // saved config data is passed in
 function OnModuleActivated(archive:Archive)
 {
+	Debug("OnModuleActivated");
+	
 	g_configPos = new Point( archive.FindEntry("ConfigX", 200), archive.FindEntry("ConfigY", 200) );
 
 	var initObj:Object = { };
@@ -97,6 +100,8 @@ function OnModuleActivated(archive:Archive)
 // config data to be saved must be returned
 function OnModuleDeactivated()
 {
+	Debug("OnModuleDeactivated");
+	
     var archive:Archive = new Archive();
 
 	archive.AddEntry( "ConfigVersion", g_ConfigVersion );
@@ -185,4 +190,10 @@ function SlotCheckVTIOIsLoaded()
 	if (m_VTIOIsLoadedMonitor.GetValue()) DistributedValue.SetDValue("VTIO_RegisterAddon", 
 		"ElTorqiro_AegisHUD|ElTorqiro|" + g_ModuleVersion + "|ElTorqiro_AegisHUD_ShowConfig|_root.eltorqiro_aegishud\\aegishud.m_VTIOIcon"
 	);
+}
+
+function Debug(s:String)
+{
+	if ( g_Debug )  UtilsBase.PrintChatText("AegisHUD: " + s);
+	
 }

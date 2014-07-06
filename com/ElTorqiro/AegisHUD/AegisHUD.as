@@ -104,6 +104,9 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 		// clean up listeners
 		Lore.SignalTagAdded.Disconnect(SlotTagAdded, this);
 		_showAegisSwapDV.SignalChanged.Disconnect( SlotShowAegisSwapChanged, this );
+
+		m_PrimaryBar.Destroy();
+		m_SecondaryBar.Destroy();
 		
 		// clean up movie clips
 		_hostMC.removeMovieClip();
@@ -140,6 +143,7 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 		// create bars
 		m_PrimaryBar = _hostMC.attachMovie("AegisBar", "m_PrimaryBar", _hostMC.getNextHighestDepth()).init( AegisBar.AEGIS_GROUP_PRIMARY, _character, _inventory );
 		m_PrimaryBar.handleDrag = false;
+		m_PrimaryBar.showBackground = this.showBarBackground;
 		m_PrimaryBar.showXPBar = this.showXPBars;
 		m_PrimaryBar.weaponFirst = this.primaryBarWeaponFirst;
 		m_PrimaryBar.showWeapon = this.showWeapons;
@@ -148,6 +152,7 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 
 		m_SecondaryBar = _hostMC.attachMovie("AegisBar", "m_SecondaryBar", _hostMC.getNextHighestDepth()).init( AegisBar.AEGIS_GROUP_SECONDARY, _character, _inventory );
 		m_SecondaryBar.handleDrag = false;
+		m_SecondaryBar.showBackground = this.showBarBackground;
 		m_SecondaryBar.showXPBar = this.showXPBars;
 		m_SecondaryBar.weaponFirst = this.secondaryBarWeaponFirst;
 		m_SecondaryBar.showWeapon = this.showWeapons;

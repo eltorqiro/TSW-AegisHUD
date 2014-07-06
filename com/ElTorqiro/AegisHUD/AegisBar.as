@@ -121,6 +121,18 @@ class com.ElTorqiro.AegisHUD.AegisBar extends UIComponent
 	}
 	
 
+	public function Destroy():Void
+	{
+		// clean up signal listeners, else after death the "duplicate" signal listeners caused by init are not recreated
+		_character.SignalStatChanged.Disconnect( SlotStatChanged, this);
+	    _inventory.SignalItemAdded.Disconnect( SlotItemAdded, this);
+		_inventory.SignalItemAdded.Disconnect( SlotItemLoaded, this);
+		_inventory.SignalItemMoved.Disconnect( SlotItemMoved, this);
+		_inventory.SignalItemRemoved.Disconnect( SlotItemRemoved, this);
+		_inventory.SignalItemChanged.Disconnect( SlotItemChanged, this);
+		_inventory.SignalItemStatChanged.Disconnect( SlotItemStatChanged, this);
+	}
+	
 	// layout bar internally
 	public function Layout():Void
 	{
@@ -255,7 +267,6 @@ class com.ElTorqiro.AegisHUD.AegisBar extends UIComponent
 			}
 
 			slotMC.m_Watermark._visible = false;
-			slotMC.m_Background._visible = this.showWeaponHighlight;
 			slotMC.m_Icon._visible = true;
 			slotMC.m_XPBar._visible = showXPBar;
 
@@ -269,7 +280,6 @@ class com.ElTorqiro.AegisHUD.AegisBar extends UIComponent
 		else
 		{
 			slotMC.m_Watermark._visible = true;
-			slotMC.m_Background._visible = false;
 			slotMC.m_Icon._visible = false;
 			slotMC.m_XPBar._visible = false;
 		}
@@ -476,7 +486,7 @@ class com.ElTorqiro.AegisHUD.AegisBar extends UIComponent
 	}
 	public function set showWeaponHighlight(value:Boolean) {
 		_showWeaponHighlight = value;
-		_weaponMC.m_Background._visible = _showWeaponHighlight;
+		LoadEquipment();
 	}
 	
 	public function get showXPBar():Boolean {
