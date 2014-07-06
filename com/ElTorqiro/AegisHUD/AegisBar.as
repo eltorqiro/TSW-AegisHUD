@@ -390,40 +390,34 @@ class com.ElTorqiro.AegisHUD.AegisBar extends UIComponent
 	//Slot Item Added
 	private function SlotItemAdded(inventoryID:com.Utils.ID32, itemPos:Number):Void
 	{
-		//UtilsBase.PrintChatText("SlotItemAdded");
 		LoadItem(itemPos);
 	}
 
 	private function SlotItemLoaded(inventoryID:com.Utils.ID32, itemPos:Number):Void
 	{
-		//UtilsBase.PrintChatText("SlotItemLoaded");
 		SlotItemAdded(inventoryID, itemPos);
 	}
 
 	//Slot Item Moved
 	private function SlotItemMoved(inventoryID:com.Utils.ID32, fromPos:Number, toPos:Number):Void
 	{
-		//UtilsBase.PrintChatText("SlotItemMoved");
 		//LoadEquipment();
 	}
 
 	//Slot Item Removed
 	private function SlotItemRemoved(inventoryID:com.Utils.ID32, itemPos:Number, moved:Boolean):Void
 	{
-		//UtilsBase.PrintChatText("SlotItemRemoved");
 		LoadItem(itemPos);
 	}
 	 
 	//Slot Item Changed
 	private function SlotItemChanged(inventoryID:com.Utils.ID32, itemPos:Number):Void
 	{
-		//UtilsBase.PrintChatText("SlotItemChanged");
 		LoadItem(itemPos);
 	}
 
 	private function SlotItemStatChanged(inventoryID:com.Utils.ID32, itemPos:Number, stat:Number, newValue:Number )
 	{
-		//UtilsBase.PrintChatText("SlotItemStatChanged");
 		SlotItemChanged(inventoryID, itemPos);
 	}
 	
@@ -506,7 +500,7 @@ class com.ElTorqiro.AegisHUD.AegisBar extends UIComponent
 	}
 	public function set layoutStyle(value:Number) {
 		// set it to passed value only if it is a valid style option
-		if ( AegisBarLayoutStyles.list(value) != undefined )
+		if ( AegisBarLayoutStyles.list[value] != undefined )
 		{
 			_layoutStyle = value;
 			Layout();

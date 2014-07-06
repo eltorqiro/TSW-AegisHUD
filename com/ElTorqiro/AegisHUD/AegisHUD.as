@@ -20,7 +20,6 @@ import com.ElTorqiro.AegisHUD.AegisBar;
 import com.ElTorqiro.AegisHUD.ConfigWindowContent;
 import com.ElTorqiro.AegisHUD.Enums.AegisBarLayoutStyles;
 
-
 class com.ElTorqiro.AegisHUD.AegisHUD
 {
 	// constants
@@ -39,7 +38,7 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 	// user configurable option
 	private var _hideDefaultSwapButtons:Boolean = true;
 	private var _linkBars:Boolean = true;
-	private var _layoutStyle:Number = 1;
+	private var _layoutStyle:Number = 0;
 	private var _showWeapons:Boolean = true;
 	private var _showWeaponHighlight:Boolean = true;
 	private var _showBarBackground:Boolean = true;
@@ -47,15 +46,26 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 	private var _showTooltips:Boolean = false;
 	private var _primaryBarWeaponFirst:Boolean = true;
 	private var _secondaryBarWeaponFirst:Boolean = true;
+	private var _enableDrag = true;
 
+	private var _slotSize:Number = 30;
+	private var _barPadding:Number = 5;
+	private var _slotSpacing:Number = 4;
+	
 	// position restoration for windows
+	// *** never use the getter for these positions internally, only use them directly ***
 	private var _primaryBarPosition:Point;
 	private var _secondaryBarPosition:Point;
 
 	// utility objects
 	private var _character:Character;
 	private var _inventory:Inventory;
+	private var _iconLoader:MovieClipLoader;
+	private var _findPassiveBarThrashCount:Number = 0;
 	
+	// external distributed value listeners
+	private var _showAegisSwapDV:DistributedValue;
+
 
 	/**
 	 * constructor
@@ -71,13 +81,16 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 		// establish initialisation values
 		for (var i:String in initObj)
 		{
-			this[i] = initObj[i] ;
-			UtilsBase.PrintChatText(i + " = " + initObj[i] + ", " + this[i]);
+			this[i] = initObj[i];
 		}
 		
 		// handle if the toon has not unlocked the AEGIS system, but might do so during the session
 		if ( Lore.IsLocked(AEGIS_SLOT_ACHIEVEMENT) )  Lore.SignalTagAdded.Connect(SlotTagAdded, this);
-		
+
+		// handle the TSW user config option for showing/hiding AEGIS HUD UI
+		_showAegisSwapDV = DistributedValue.Create( "ShowAegisSwapUI" );
+		_showAegisSwapDV.SignalChanged.Connect( SlotShowAegisSwapChanged, this);
+
 		// reserve host movie clip that all AegisHUD content will be placed into
 		_hostMC = ( hostMCName == undefined || hostMCName == "") ? parentMC : parentMC.createEmptyMovieClip( "m_AegisHUD", parentMC.getNextHighestDepth() );
 		
@@ -88,25 +101,38 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 	// pseudo-destructor, should be called immediately before deleting the object
 	public function Destroy():Void
 	{	
-		// clean up elements
+		// clean up listeners
+		Lore.SignalTagAdded.Disconnect(SlotTagAdded, this);
+		_showAegisSwapDV.SignalChanged.Disconnect( SlotShowAegisSwapChanged, this );
+		
+		// clean up movie clips
 		_hostMC.removeMovieClip();
 		
 		// restore default buttons -- this forced behaviour may not be desirable, the host project may want them to remain hidden
 		hideDefaultSwapButtons = false;
 	}
 	
-
-	// main activation routine for creating and initialising the bars
-	// abstracted away from other startup functions so it can be called if AEGIS
-	// is unlocked during a play session rather than being already unlocked at the start
+	/**
+	 * main activation routine for creating and initialising the bars
+	 * abstracted away from other startup functions so it can be called if AEGIS is unlocked during a play session rather than being already unlocked at the start
+	 */
 	public function CreateHUD():Void
 	{
-		// do nothing at all if AEGIS system is not unlocked
+		// do nothing at all if AEGIS system is not unlocked or HUD is not set visible
 		if ( Lore.IsLocked(AEGIS_SLOT_ACHIEVEMENT) ) return;
 		
-		// remove any existing bars
-		if ( m_PrimaryBar != undefined ) m_PrimaryBar.removeMovieClip();
-		if ( m_SecondaryBar != undefined )  m_SecondaryBar.removeMovieClip();
+		// remove any existing bars, saving their positions first
+		if ( m_PrimaryBar ) {
+			primaryBarPosition = new Point(m_PrimaryBar._x, m_PrimaryBar._y);
+			m_PrimaryBar.removeMovieClip();
+		}
+		if ( m_SecondaryBar ) {
+			secondaryBarPosition = new Point(m_SecondaryBar._x, m_SecondaryBar._y);
+			m_SecondaryBar.removeMovieClip();
+		}
+		
+		// only continue loading if the HUD is set visible in TSW options
+		if ( !Boolean(_showAegisSwapDV.GetValue()) ) return;
 		
 		var _character:Character = Character.GetClientCharacter();
 		var _inventory:Inventory = new Inventory( new ID32(_global.Enums.InvType.e_Type_GC_WeaponContainer, Character.GetClientCharID().GetInstance()) );
@@ -118,9 +144,16 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 		m_PrimaryBar.weaponFirst = this.primaryBarWeaponFirst;
 		m_PrimaryBar.showWeapon = this.showWeapons;
 		m_PrimaryBar.showWeaponHighlight = this.showWeaponHighlight;
+		m_PrimaryBar.layoutStyle = this.layoutStyle;
 
 		m_SecondaryBar = _hostMC.attachMovie("AegisBar", "m_SecondaryBar", _hostMC.getNextHighestDepth()).init( AegisBar.AEGIS_GROUP_SECONDARY, _character, _inventory );
 		m_SecondaryBar.handleDrag = false;
+		m_SecondaryBar.showXPBar = this.showXPBars;
+		m_SecondaryBar.weaponFirst = this.secondaryBarWeaponFirst;
+		m_SecondaryBar.showWeapon = this.showWeapons;
+		m_SecondaryBar.showWeaponHighlight = this.showWeaponHighlight;
+		m_SecondaryBar.layoutStyle = this.layoutStyle;
+
 
 		// config options
 		HideDefaultSwapButtons();
@@ -134,58 +167,79 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 		
 		// layout bars on screen per user preferences
 		Layout();
-}
+	}
 
 	// layout bar positions on the screen
 	public function Layout():Void
 	{
 		// can't layout if there is nothing to layout
 		if ( m_PrimaryBar == undefined )  return;
+
+		if ( _primaryBarPosition )
+		{
+			// I can't figure out why the +0 is needed here, they are already Number() objects, and even force-casting doesn't make a diference
+			// only the +0 allows it to actually set _x properly in this case...
+			m_PrimaryBar._x = _primaryBarPosition.x + 0;
+			m_PrimaryBar._y = _primaryBarPosition.y + 0;
+			
+			m_SecondaryBar._x = _secondaryBarPosition.x + 0;
+			m_SecondaryBar._y = _secondaryBarPosition.y + 0;
+		}
 		
 		// set default positions to simulate the default buttons
-		m_PrimaryBar._x = primaryBarPosition != undefined ? primaryBarPosition.x : Stage.visibleRect.width / 2 - m_PrimaryBar._width - 5;
-		m_PrimaryBar._y = primaryBarPosition != undefined ? primaryBarPosition.y : ( (_root.passivebar._y != undefined ? _root.passivebar._y : Stage.visibleRect.bottom - 75) - m_PrimaryBar._height - 5 );
-		m_SecondaryBar._x = secondaryBarPosition != undefined ? secondaryBarPosition.x : m_PrimaryBar._x + m_PrimaryBar._width + 10;
-		m_SecondaryBar._y = secondaryBarPosition != undefined ? secondaryBarPosition.y : m_PrimaryBar._y;
-		/*
-		if (m_PrimaryBar._x == 0 && m_PrimaryBar._y == 0)
+		else
 		{
-			// ... surprised this worked without some localToGlobal() usage
-			m_PrimaryBar._x = Stage.visibleRect.width / 2 - m_PrimaryBar._width - 5;
-			m_SecondaryBar._x = m_PrimaryBar._x + m_PrimaryBar._width + 10;
-			m_PrimaryBar._y = m_SecondaryBar._y = (_root.passivebar._y != undefined ? _root.passivebar._y : Stage.visibleRect.bottom - 75) - m_PrimaryBar._height - 5;
+			SetDefaultPosition();
 		}
-		*/
 	}
 
+	/**
+	 * layout bars in same location as default passivebar swap buttons
+	 */
+	public function SetDefaultPosition():Void
+	{
+		// ... surprised this worked without some localToGlobal() usage
+		m_PrimaryBar._x = Math.round( Stage["visibleRect"].width / 2 - m_PrimaryBar._width - 3 );
+		m_SecondaryBar._x = Math.round( m_PrimaryBar._x + m_PrimaryBar._width + 6 );
+		m_PrimaryBar._y = m_SecondaryBar._y = Math.round( (_root.passivebar._y != undefined ? _root.passivebar._y : Stage["visibleRect"].bottom - 75) - m_PrimaryBar._height - 3 );
+	}
 
 	// handler for situation where AEGIS system becomes unlocked during play session
 	private function SlotTagAdded(tag:Number)
 	{
 		if (tag == AEGIS_SLOT_ACHIEVEMENT)
 		{
-			Lore.SignalTagAdded.Disconnect(SlotTagAdded);
+			Lore.SignalTagAdded.Disconnect(SlotTagAdded, this);
 			CreateHUD();
 		}
 	}
 
+	// handle user changing AEGIS swap visibility in control panel
+	function SlotShowAegisSwapChanged()
+	{
+		CreateHUD();
+	}
+	
 	// Move Drag Handler
 	private function MoveDragHandler(bar:MovieClip):Void
 	{
+		if ( !enableDrag ) return;
+
+		// highlight bars to indicate which one(s) will drag
+		var filter_glow:GlowFilter = new GlowFilter(
+			0x0099ff, 	/* glow_color */
+			0.8, 		/* glow_alpha */
+			10, 		/* glow_blurX */
+			10, 		/* glow_blurY */
+			2,			/* glow_strength */
+			3, 			/* glow_quality */
+			false, 		/* glow_inner */
+			false 		/* glow_knockout */
+		);
+		
 		// since flash can only drag one item at a time with startDrag(), create a proxy drag object to drag around
 		if ( linkBars )
 		{
-			// highlight bars to indicate they will drag together
-			var filter_glow:GlowFilter = new GlowFilter(
-				0x0099ff, 	/* glow_color */
-				0.8, 		/* glow_alpha */
-				10, 		/* glow_blurX */
-				10, 		/* glow_blurY */
-				2,			/* glow_strength */
-				3, 			/* glow_quality */
-				false, 		/* glow_inner */
-				false 		/* glow_knockout */
-			);
 			m_PrimaryBar.filters = [filter_glow];
 			m_SecondaryBar.filters = [filter_glow];
 			
@@ -194,7 +248,11 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 			m_LinkedDragProxy.startDrag();
 		}
 		
-		else bar.startDrag();
+		else
+		{
+			bar.startDrag();
+			bar.filters = [filter_glow];
+		}
 	}
 
 	// move handler for dragging both bars as one
@@ -224,12 +282,25 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 			m_LinkedDragProxy.removeMovieClip();
 		}
 		
-		else bar.stopDrag();
+		else
+		{
+			bar.stopDrag();
+			bar.filters = [];
+		}
 	}
 
 	// hide or show default buttons
 	private function HideDefaultSwapButtons():Void
 	{
+		// hack to wait for the passivebar to be loaded, as it actually gets unloaded during teleports etc, not just deactivated
+		if ( !_root.passivebar.LoadAegisButtons )
+		{
+			if (_findPassiveBarThrashCount++ == 5)  UtilsBase.PrintChatText("ElTorqiro_AegisHUD: Could not find default AEGIS swap buttons in a reasonable time, stopping the search.");
+			else _global.setTimeout( Delegate.create(this, HideDefaultSwapButtons), 300);
+			
+			return;
+		}
+		
 		// hide buttons
 		if ( hideDefaultSwapButtons )
 		{
@@ -354,13 +425,15 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 	}
 	
 	public function get primaryBarPosition():Point {
+		if ( m_PrimaryBar ) return new Point(m_PrimaryBar._x, m_PrimaryBar._y);
 		return _primaryBarPosition;
 	}
 	public function set primaryBarPosition(value:Point) {
 		_primaryBarPosition = value;
 	}
-	
+
 	public function get secondaryBarPosition():Point {
+		if (m_SecondaryBar ) return new Point(m_SecondaryBar._x, m_SecondaryBar._y);
 		return _secondaryBarPosition;
 	}
 	public function set secondaryBarPosition(value:Point) {
@@ -383,4 +456,21 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 		secondaryBar.weaponFirst = _secondaryBarWeaponFirst;
 	}
 
+	public function get enableDrag():Boolean {
+		return _enableDrag;
+	}
+	public function set enableDrag(value:Boolean) {
+		_enableDrag = value;
+	}
+	
+	
+	public function get layoutStyle():Number {
+		return _layoutStyle;
+	}	
+	// TODO: some sanity checking to make sure this is in a valid range of available styles, although AegisBar currently filters that
+	public function set layoutStyle(value:Number) {
+		_layoutStyle = value;
+		m_PrimaryBar.layoutStyle = _layoutStyle;
+		m_SecondaryBar.layoutStyle = _layoutStyle;
+	}
 }
