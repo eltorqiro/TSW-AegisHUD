@@ -1,3 +1,8 @@
+1.5.1 -- 2014-07-08
+
+ * fixed message being displayed sometimes when suppressing default swap buttons
+
+
 1.5 -- 2014-07-07
 
  * fixed bar background setting not being saved

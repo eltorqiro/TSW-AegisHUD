@@ -300,11 +300,21 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 		// hack to wait for the passivebar to be loaded, as it actually gets unloaded during teleports etc, not just deactivated
 		if ( !_root.passivebar.LoadAegisButtons )
 		{
-			if (_findPassiveBarThrashCount++ == 5)  UtilsBase.PrintChatText("ElTorqiro_AegisHUD: Could not find default AEGIS swap buttons in a reasonable time, stopping the search.");
-			else _global.setTimeout( Delegate.create(this, HideDefaultSwapButtons), 300);
+			if (_findPassiveBarThrashCount++ == 10)
+			{
+				UtilsBase.PrintChatText("ElTorqiro_AegisHUD: Could not find default AEGIS swap buttons, they may no longer be hidden.");
+				_findPassiveBarThrashCount = 0;
+			}
+
+			else
+			{
+				_global.setTimeout( Delegate.create(this, HideDefaultSwapButtons), 300);
+			}
 			
 			return;
 		}
+		_findPassiveBarThrashCount = 0;
+
 		
 		// hide buttons
 		if ( hideDefaultSwapButtons )

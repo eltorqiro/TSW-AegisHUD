@@ -23,7 +23,7 @@ var g_HUD:AegisHUD;
 var g_configWindow:WinComp;
 var g_configPos:Point;
 var g_ConfigVersion = "1.0";
-var g_ModuleVersion = "1.0";
+var g_ModuleVersion = "1.5.1";
 var g_Debug = false;
 
 // internal distributed value listeners
