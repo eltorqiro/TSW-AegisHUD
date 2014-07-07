@@ -1,3 +1,8 @@
+NEXT -- <date>
+
+ * placed bars into the HUD layer in the UI, behind character panel etc
+
+ 
 1.5 -- 2014-07-07
 
  * fixed bar background setting not being saved

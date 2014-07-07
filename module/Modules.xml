@@ -3,10 +3,10 @@
   <Module  name = "ElTorqiro_AegisHUD"
     movie       = "ElTorqiro_AegisHUD\AegisHUD.swf"
     flags       = "GMF_DONT_UNLOAD|GMF_CFG_STORE_USER_CONFIG"
-    depth_layer = "Top"
+    depth_layer = "Middle"
     sub_depth   = "2"
     variable    = "ElTorqiro_AegisHUD"
-    criteria    = "ElTorqiro_AegisHUD &amp;&amp; (guimode &amp; (GUIMODEFLAGS_INPLAY))"
+    criteria    = "ElTorqiro_AegisHUD &amp;&amp; (guimode &amp; (GUIMODEFLAGS_INPLAY | GUIMODEFLAGS_ENABLEALLGUI))"
     config_name = "ElTorqiro_AegisHUD_Cfg"
   />
 </Root>

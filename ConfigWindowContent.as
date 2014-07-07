@@ -1,8 +1,10 @@
+import com.Components.FCSlider;
 import com.Components.WindowComponentContent;
 import com.ElTorqiro.AegisHUD.Enums.AegisBarLayoutStyles;
 import gfx.controls.CheckBox;
 import gfx.controls.DropdownMenu;
 import gfx.controls.Button;
+import gfx.controls.Slider;
 import mx.utils.Delegate;
 import com.GameInterface.UtilsBase;
 
@@ -41,6 +43,7 @@ class ConfigWindowContent extends WindowComponentContent
 		// add layout section
 		AddHeading("Layout Style");
 		AddDropdown( "m_BarStyle", "Layout Style", ["Horizontal", "Vertical"], g_HUD.layoutStyle ).addEventListener("change", this, "LayoutStyleChangeHandler");
+		//AddSlider( "m_Scale", "Scale", 50, 150, 100).addEventListener("change", this, "ScaleChangeHandler");
 		
 		// positioning section
 		AddHeading("Position");
@@ -95,6 +98,10 @@ class ConfigWindowContent extends WindowComponentContent
 
 	private function LayoutStyleChangeHandler(e:Object) {
 		g_HUD.layoutStyle = e.index;
+	}
+	
+	private function ScaleChangeHandler(e:Object) {
+		UtilsBase.PrintChatText(e.target.value);
 	}
 
 	
@@ -163,7 +170,25 @@ class ConfigWindowContent extends WindowComponentContent
 		o._y = y;
 	}
 	
+	private function AddSlider(name:String, label:String, minValue:Number, maxValue:Number, initialValue:Number):FCSlider
+	{
+		var y:Number = m_Content._height;
 
+		var o:FCSlider = FCSlider(m_Content.attachMovie( "Slider", name, m_Content.getNextHighestDepth() ));
+		o.width = 200;
+		o._x = 100;
+		
+		o.minimum = minValue;
+		o.maximum = maxValue;
+		o.value = initialValue;
+		o.snapInterval = 1;
+		o.snapping = true;
+		o.liveDragging = true;
+		o._y = y;
+		
+		return o;
+	}
+	
     //Remove Focus
     private function RemoveFocus():Void
     {

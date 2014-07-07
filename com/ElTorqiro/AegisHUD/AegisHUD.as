@@ -51,6 +51,7 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 	private var _slotSize:Number = 30;
 	private var _barPadding:Number = 5;
 	private var _slotSpacing:Number = 4;
+	private var _hudScale:Number = 100;
 	
 	// position restoration for windows
 	// *** never use the getter for these positions internally, only use them directly ***
@@ -159,7 +160,6 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 		m_SecondaryBar.showWeaponHighlight = this.showWeaponHighlight;
 		m_SecondaryBar.layoutStyle = this.layoutStyle;
 
-
 		// config options
 		HideDefaultSwapButtons();
 
@@ -182,8 +182,9 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 
 		if ( _primaryBarPosition )
 		{
-			// I can't figure out why the +0 is needed here, they are already Number() objects, and even force-casting doesn't make a diference
-			// only the +0 allows it to actually set _x properly in this case...
+			// Despite Point.x being a number, the +0 below is a quicker way of doing Math.round() on the Point.x property.
+			// If not doing this, then the number prints out as "xxx", but seems to get sent to the _x property as "xxx.0000000000"
+			// which the _x setter fails to interpret for some reason and does not set.
 			m_PrimaryBar._x = _primaryBarPosition.x + 0;
 			m_PrimaryBar._y = _primaryBarPosition.y + 0;
 			
@@ -300,11 +301,20 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 		// hack to wait for the passivebar to be loaded, as it actually gets unloaded during teleports etc, not just deactivated
 		if ( !_root.passivebar.LoadAegisButtons )
 		{
-			if (_findPassiveBarThrashCount++ == 5)  UtilsBase.PrintChatText("ElTorqiro_AegisHUD: Could not find default AEGIS swap buttons in a reasonable time, stopping the search.");
-			else _global.setTimeout( Delegate.create(this, HideDefaultSwapButtons), 300);
+			if (_findPassiveBarThrashCount++ == 10)
+			{
+				UtilsBase.PrintChatText("ElTorqiro_AegisHUD: Could not find default AEGIS swap buttons in a reasonable time, stopping the search.");
+				_findPassiveBarThrashCount = 0;
+			}
+
+			else
+			{
+				_global.setTimeout( Delegate.create(this, HideDefaultSwapButtons), 300);
+			}
 			
 			return;
 		}
+		_findPassiveBarThrashCount = 0;
 		
 		// hide buttons
 		if ( hideDefaultSwapButtons )
