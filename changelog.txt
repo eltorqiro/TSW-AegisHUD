@@ -1,8 +1,8 @@
-NEXT -- <date>
+1.5.1 -- 2014-07-08
 
- * placed bars into the HUD layer in the UI, behind character panel etc
+ * fixed message being displayed sometimes when suppressing default swap buttons
 
- 
+
 1.5 -- 2014-07-07
 
  * fixed bar background setting not being saved

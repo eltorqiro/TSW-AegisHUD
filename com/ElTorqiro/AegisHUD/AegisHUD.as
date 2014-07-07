@@ -315,6 +315,7 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 			return;
 		}
 		_findPassiveBarThrashCount = 0;
+
 		
 		// hide buttons
 		if ( hideDefaultSwapButtons )
