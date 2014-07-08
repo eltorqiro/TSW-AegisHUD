@@ -1,6 +1,9 @@
 import com.Components.WinComp;
 import com.GameInterface.Tooltip.TooltipData;
-import com.Utils.Point;
+
+//import com.Utils.Point;
+import flash.geom.Point;
+
 import gfx.core.UIComponent;
 import mx.utils.Delegate;
 import com.GameInterface.Chat;
@@ -62,7 +65,7 @@ function OnModuleActivated(archive:Archive)
 {
 	Debug("OnModuleActivated");
 	
-	g_configPos = new Point( archive.FindEntry("ConfigX", 200), archive.FindEntry("ConfigY", 200) );
+	g_configPos = archive.FindEntry("ConfigPosition", new Point(200, 200));//    new Point( archive.FindEntry("ConfigX", 200), archive.FindEntry("ConfigY", 200) );
 
 	var initObj:Object = { };
 	if ( archive.FindEntry("ConfigVersion") )
@@ -81,10 +84,10 @@ function OnModuleActivated(archive:Archive)
 			enableDrag: archive.FindEntry("EnableDrag")
 		};
 		
-		if ( archive.FindEntry("PrimaryX", false) )
+		if ( archive.FindEntry("PrimaryPosition", false) )
 		{
-			initObj.primaryBarPosition = new Point( archive.FindEntry("PrimaryX", 0), archive.FindEntry("PrimaryY", 0) );
-			initObj.secondaryBarPosition = new Point( archive.FindEntry("SecondaryX", 0), archive.FindEntry("SecondaryY", 0) );
+			initObj.primaryBarPosition = archive.FindEntry("PrimaryPosition");// new Point( archive.FindEntry("PrimaryX", 0), archive.FindEntry("PrimaryY", 0) );
+			initObj.secondaryBarPosition = archive.FindEntry("SecondaryPosition");// new Point( archive.FindEntry("SecondaryX", 0), archive.FindEntry("SecondaryY", 0) );
 		}
 		
 		g_ModuleVersion = archive.FindEntry( "ConfigVersion", g_ModuleVersion );
@@ -110,10 +113,15 @@ function OnModuleDeactivated()
 
 	archive.AddEntry( "ConfigVersion", g_ConfigVersion );
 	archive.AddEntry( "HideDefaultSwapButtons", g_HUD.hideDefaultSwapButtons );
+	archive.AddEntry( "PrimaryPosition", g_HUD.primaryBarPosition );
+	archive.AddEntry( "SecondaryPosition", g_HUD.secondaryBarPosition );
+	archive.AddEntry( "ConfigPosition", g_configPos );
+/*
 	archive.AddEntry( "PrimaryX", g_HUD.primaryBarPosition.x );
 	archive.AddEntry( "PrimaryY", g_HUD.primaryBarPosition.y );
 	archive.AddEntry( "SecondaryX", g_HUD.secondaryBarPosition.x );
 	archive.AddEntry( "SecondaryY", g_HUD.secondaryBarPosition.y );
+*/
 	archive.AddEntry( "LinkBars", g_HUD.linkBars );
 	archive.AddEntry( "LayoutStyle", g_HUD.layoutStyle );
 	archive.AddEntry( "ShowWeapons", g_HUD.showWeapons );
@@ -124,9 +132,10 @@ function OnModuleDeactivated()
 	archive.AddEntry( "PrimaryBarWeaponFirst", g_HUD.primaryBarWeaponFirst );
 	archive.AddEntry( "SecondaryBarWeaponFirst", g_HUD.secondaryBarWeaponFirst );
 	archive.AddEntry( "EnableDrag", g_HUD.enableDrag );
+/*
 	archive.AddEntry( "ConfigX", g_configPos.x );
 	archive.AddEntry( "ConfigY", g_configPos.y );
-	
+*/	
 	// clean up elements
 	g_showConfigDV.SignalChanged.Disconnect( ShowConfigDVHandler, this );
 	DestroyConfigWindow();
@@ -191,9 +200,10 @@ function SlotCheckVTIOIsLoaded()
 	}
 	
 	// register with VTIO
-	DistributedValue.SetDValue("VTIO_RegisterAddon", 
+/*	DistributedValue.SetDValue("VTIO_RegisterAddon", 
 		"ElTorqiro_AegisHUD|ElTorqiro|" + g_ModuleVersion + "|ElTorqiro_AegisHUD_ShowConfig|_root.eltorqiro_aegishud\\aegishud.m_VTIOIcon"
 	);
+*/
 }
 
 function Debug(s:String)

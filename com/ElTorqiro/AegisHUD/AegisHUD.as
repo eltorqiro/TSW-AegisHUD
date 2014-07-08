@@ -1,6 +1,8 @@
 import com.Components.WinComp;
 import com.GameInterface.Tooltip.TooltipData;
-import com.Utils.Point;
+//import com.Utils.Point;
+import flash.geom.Point;
+
 import gfx.core.UIComponent;
 import mx.utils.Delegate;
 import com.GameInterface.Chat;

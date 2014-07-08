@@ -1,12 +1,21 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <Root>
   <Module  name = "ElTorqiro_AegisHUD"
-    movie       = "ElTorqiro_AegisHUD\AegisHUD.swf"
-    flags       = "GMF_DONT_UNLOAD|GMF_CFG_STORE_USER_CONFIG"
+    movie       = "ElTorqiro_AegisHUD\HUD.swf"
+    flags       = ""
     depth_layer = "Middle"
     sub_depth   = "2"
     variable    = "ElTorqiro_AegisHUD"
     criteria    = "ElTorqiro_AegisHUD &amp;&amp; (guimode &amp; (GUIMODEFLAGS_INPLAY | GUIMODEFLAGS_ENABLEALLGUI))"
-    config_name = "ElTorqiro_AegisHUD_Cfg"
+    config_name = "ElTorqiro_AegisHUD_Data"
+  />
+  <Module  name = "ElTorqiro_AegisHUD_Config"
+    movie       = "ElTorqiro_AegisHUD\Config.swf"
+    flags       = "GMF_DONT_UNLOAD"
+    depth_layer = "Top"
+    sub_depth   = "2"
+    variable    = "ElTorqiro_AegisHUD_Config"
+    criteria    = "ElTorqiro_AegisHUD_Config &amp;&amp; (guimode &amp; (GUIMODEFLAGS_INPLAY | GUIMODEFLAGS_ENABLEALLGUI))"
+    config_name = "ElTorqiro_AegisHUD_Config_Data"
   />
 </Root>

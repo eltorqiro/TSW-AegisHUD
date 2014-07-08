@@ -1,3 +1,9 @@
+NEXT -- NEXT
+
+ * HUD will now be at the same z-order as the other default HUD elements (i.e. below character sheet etc)
+ * separated icon+config into a separate module, the HUD can now be configured with DValues from other addons
+
+
 1.5.1 -- 2014-07-08
 
  * fixed message being displayed sometimes when suppressing default swap buttons
