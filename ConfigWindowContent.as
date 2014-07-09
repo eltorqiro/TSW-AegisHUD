@@ -7,16 +7,49 @@ import gfx.controls.Button;
 import gfx.controls.Slider;
 import mx.utils.Delegate;
 import com.GameInterface.UtilsBase;
+import com.GameInterface.DistributedValue;
 
 class ConfigWindowContent extends WindowComponentContent
 {
+	var g_hudConfigSettings:Object;
+	var g_hudData:DistributedValue;
+	
 	private var m_ContentSize:MovieClip;
 	private var m_Content:MovieClip;
 	
 	public function ConfigWindowContent()
 	{
 		super();
+		
+		// hud options the config window supports
+		g_hudConfigSettings = {
+			hideDefaultSwapButtons: null,
+			layoutStyle: null,
+			linkBars: null,
+			showWeapons: null,
+			showWeaponHighlight: null,
+			showBarBackground: null,
+			showXPBars: null,
+			showTooltips: null,
+			primaryBarWeaponFirst: null,
+			secondaryBarWeaponFirst: null,
+			enableDrag: null
+		};
+		
+		// hud data listener
+		g_hudData = DistributedValue.Create(AddonInfo.Name + "_Data");
+		g_hudData.SignalChanged.Connect(HUDDataChanged, this);
 	}
+
+	
+	// HUD settings have changed
+	function HUDDataChanged():Void
+	{
+		// do nothing if config window is not present
+		if ( !g_configWindow )  return;
+		
+		
+	}	
 	
 	private function configUI():Void
 	{
@@ -195,7 +228,7 @@ class ConfigWindowContent extends WindowComponentContent
         Selection.setFocus(null);
     }
 	
-	private function Close():Void
+	public function Close():Void
 	{
 		super.Close();
 	}

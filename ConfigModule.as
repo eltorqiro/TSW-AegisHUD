@@ -23,13 +23,11 @@ import com.GameInterface.Tooltip.TooltipManager;
 
 import com.ElTorqiro.AegisHUD.*;
 
-
-
+// config window
 var g_configWindow:WinComp;
 
 // internal distributed value listeners
-var g_showConfigDV:DistributedValue;
-var g_hudData:DistributedValue;
+var g_showConfig:DistributedValue;
 
 // Viper's Top Bar Information Overload (VTIO) integration
 var g_VTIOIsLoadedMonitor:DistributedValue;
@@ -63,7 +61,7 @@ function onLoad()
 
 	// default config module settings
 	g_settings = {
-		windowPosition: new Point( -1, -1 ),
+		configWindowPosition: new Point( 200, 200 ),
 		iconPosition: new Point( (Stage.visibleRect.width - g_icon._width) / 2, (Stage.visibleRect.height - g_icon._width) / 4 ),
 		iconScale: 100
 	};
@@ -87,6 +85,9 @@ function onLoad()
 		CheckVTIOIsLoaded();
 	}
 	
+	// config window toggle listener
+	g_showConfig = DistributedValue.Create(AddonInfo.Name + "_ShowConfig");
+	g_showConfig.SignalChanged.Connect(ToggleConfigWindow, this);
 }
 
 
@@ -96,11 +97,14 @@ function OnModuleActivated():Void
 
 function OnModuleDeactivated():Void
 {
+	// destroy config window
+	g_showConfig.SetValue(false);
 }
 
 function OnUnload():Void
 {
 	g_VTIOIsLoadedMonitor.SignalChanged.Disconnect(CheckVTIOIsLoaded, this);
+	g_hudData.SignalChanged.Disconnect(HUDDataChanged, this);
 	
 	// save module settings
 	var saveData = new Archive();
@@ -129,7 +133,6 @@ function CheckVTIOIsLoaded()
 		CreateTooltipData();
 	}
 }
-
 
 function CreateIcon():Void
 {
@@ -208,18 +211,20 @@ function CreateTooltipData():Void
 	g_iconTooltipData = new com.GameInterface.Tooltip.TooltipData();
 	g_iconTooltipData.AddAttribute("","<font face=\'_StandardFont\' size=\'14\' color=\'#00ccff\'><b>" + AddonInfo.Name + " v" + AddonInfo.Version + "</b></font>");
 	g_iconTooltipData.AddAttributeSplitter();
-	//g_iconTooltipData.AddAttribute("","");
+	g_iconTooltipData.AddAttribute("","");
 	g_iconTooltipData.AddAttribute("", "<font face=\'_StandardFont\' size=\'11\' color=\'#BFBFBF\'><b>Left Click</b> Open/Close configuration window.</font>");
 	
 	// show icon handling control instructions if VTIO has not hijacked the icon
 	if ( !g_isRegisteredWithVTIO )
 	{
 		g_iconTooltipData.AddAttributeSplitter();
-		g_iconTooltipData.AddAttribute("", "<font face=\'_StandardFont\' size=\'11\' color=\'#FFFFFF\'><b>Icon</b>\n</font><font face=\'_StandardFont\' size=\'11\' color=\'#BFBFBF\'><b>CTRL + Left Drag</b> Move icon.\n<b>CTRL + Roll Mousewheel</b> Resize icon.\n<b>CTRL + Right Click</b> Reset icon size to 100%.</font>");
+		g_iconTooltipData.AddAttribute("","");		
+		g_iconTooltipData.AddAttribute("", "<font face=\'_StandardFont\' size=\'12\' color=\'#FFFFFF\'><b>Icon</b>\n</font><font face=\'_StandardFont\' size=\'11\' color=\'#BFBFBF\'><b>CTRL + Left Drag</b> Move icon.\n<b>CTRL + Roll Mousewheel</b> Resize icon.\n<b>CTRL + Right Click</b> Reset icon size to 100%.</font>");
 	}
 
 	g_iconTooltipData.AddAttributeSplitter();
-	g_iconTooltipData.AddAttribute("", "<font face=\'_StandardFont\' size=\'11\' color=\'#FFFFFF\'><b>HUD Bars</b>\n<font face=\'_StandardFont\' size=\'11\' color=\'#BFBFBF\'><b>CTRL + Left Drag</b> Move HUD bar(s).</font>");
+	g_iconTooltipData.AddAttribute("","");	
+	g_iconTooltipData.AddAttribute("", "<font face=\'_StandardFont\' size=\'12\' color=\'#FFFFFF\'><b>HUD Bars</b>\n<font face=\'_StandardFont\' size=\'11\' color=\'#BFBFBF\'><b>CTRL + Left Drag</b> Move HUD bar(s).</font>");
 	g_iconTooltipData.m_Padding = 8;
 	g_iconTooltipData.m_MaxWidth = 256;	
 }
@@ -260,5 +265,49 @@ function PositionIcon(x:Number, y:Number)
 		else if ( g_icon._y + g_icon._height > Stage.visibleRect.height ) g_icon._y = Stage.visibleRect.height - g_icon._height;
 		
 		g_settings.iconPosition = new Point(g_icon._x, g_icon._y);
+	}
+}
+
+
+
+
+function ToggleConfigWindow():Void
+{
+	g_showConfig.GetValue() ? CreateConfigWindow() : DestroyConfigWindow();
+}
+
+function CreateConfigWindow():Void
+{
+	// do nothing if window already open
+	if ( g_configWindow )  return;
+	
+	g_configWindow = WinComp(attachMovie( "WindowComponent", "m_ConfigWindow", getNextHighestDepth() ));
+	g_configWindow.SetTitle(AddonInfo.Name + " v" + AddonInfo.Version);
+	g_configWindow.ShowStroke(false);
+	g_configWindow.ShowFooter(false);
+	g_configWindow.ShowResizeButton(false);
+
+	// load the content panel
+	g_configWindow.SetContent( "ConfigWindowContent" );
+
+	// set position -- rounding of the values is critical here, else it will not reposition reliably
+	g_configWindow._x = Math.round(g_settings.configWindowPosition.x);
+	g_configWindow._y = Math.round(g_settings.configWindowPosition.y);
+	
+	// wire up close button
+	g_configWindow.SignalClose.Connect( function() {
+		g_showConfig.SetValue(false);
+	}, this);
+}
+
+function DestroyConfigWindow():Void
+{
+	//UtilsBase.PrintChatText("destroy config window");
+	if ( g_configWindow )
+	{	
+		g_settings.configWindowPosition.x = g_configWindow._x;
+		g_settings.configWindowPosition.y = g_configWindow._y;
+		
+		g_configWindow.removeMovieClip();
 	}
 }
