@@ -1,6 +1,7 @@
 import com.Components.FCSlider;
 import com.Components.WindowComponentContent;
 import com.ElTorqiro.AegisHUD.Enums.AegisBarLayoutStyles;
+import com.Utils.Archive;
 import gfx.controls.CheckBox;
 import gfx.controls.DropdownMenu;
 import gfx.controls.Button;
@@ -11,8 +12,9 @@ import com.GameInterface.DistributedValue;
 
 class ConfigWindowContent extends WindowComponentContent
 {
-	var g_hudConfigSettings:Object;
-	var g_hudData:DistributedValue;
+	private var _hudData:DistributedValue;
+	private var _uiControls:Object = {};
+	
 	
 	private var m_ContentSize:MovieClip;
 	private var m_Content:MovieClip;
@@ -21,24 +23,9 @@ class ConfigWindowContent extends WindowComponentContent
 	{
 		super();
 		
-		// hud options the config window supports
-		g_hudConfigSettings = {
-			hideDefaultSwapButtons: null,
-			layoutStyle: null,
-			linkBars: null,
-			showWeapons: null,
-			showWeaponHighlight: null,
-			showBarBackground: null,
-			showXPBars: null,
-			showTooltips: null,
-			primaryBarWeaponFirst: null,
-			secondaryBarWeaponFirst: null,
-			enableDrag: null
-		};
-		
 		// hud data listener
-		g_hudData = DistributedValue.Create(AddonInfo.Name + "_Data");
-		g_hudData.SignalChanged.Connect(HUDDataChanged, this);
+		_hudData = DistributedValue.Create(AddonInfo.Name + "_Data");
+		_hudData.SignalChanged.Connect(HUDDataChanged, this);
 	}
 
 	
@@ -59,87 +46,107 @@ class ConfigWindowContent extends WindowComponentContent
 		
 		// add options section
 		AddHeading("Options");
-		AddCheckbox( "m_HideDefaultButtons", "Hide default AEGIS swap buttons", g_HUD.hideDefaultSwapButtons ).addEventListener("click", this, "HideDefaultButtonsClickHandler");
-		AddCheckbox( "m_EnableDrag", "Enable dragging with CTRL+LeftMouse", g_HUD.enableDrag ).addEventListener("click", this, "EnableDragClickHandler");
-		AddCheckbox( "m_LinkBars", "Link primary and secondary bars when dragging", g_HUD.linkBars ).addEventListener("click", this, "LinkBarsClickHandler");
+		_uiControls.hideDefaultSwapButtons = {
+			control:	AddCheckbox( "m_HideDefaultButtons", "Hide default AEGIS swap buttons" ),
+			event:		"change"
+		};
+		_uiControls.enableDrag = {
+			control:	AddCheckbox( "m_EnableDrag", "Enable dragging with CTRL+LeftMouse" ),
+			event:		"click"
+		};
+		_uiControls.linkBars = {
+			control:	AddCheckbox( "m_LinkBars", "Link primary and secondary bars when dragging" ),
+			event:		"click"
+		};
 
 		// add visuals section
 		AddHeading("Visuals");
-		AddCheckbox( "m_ShowWeapons", "Show weapon slots", g_HUD.showWeapons ).addEventListener("click", this, "ShowWeaponsClickHandler");
-		AddCheckbox( "m_PrimaryShowWeaponFirst", "On Primary bar, show weapon first", g_HUD.primaryBarWeaponFirst ).addEventListener("click", this, "PrimaryShowWeaponFirstClickHandler");
-		AddCheckbox( "m_SecondaryShowWeaponFirst", "On Secondary bar, show weapon first", g_HUD.secondaryBarWeaponFirst ).addEventListener("click", this, "SecondaryShowWeaponFirstClickHandler");
-		AddCheckbox( "m_ShowWeaponHighlight", "Show slotted weapon highlight", g_HUD.showWeaponHighlight ).addEventListener("click", this, "ShowWeaponHighlightClickHandler");
-		AddCheckbox( "m_ShowBarBackground", "Show bar background", g_HUD.showBarBackground ).addEventListener("click", this, "ShowBarBackgroundClickHandler");
+		_uiControls.showWeapons = {
+			control:	AddCheckbox( "m_ShowWeapons", "Show weapon slots" ),
+			event:		"click"
+		};
+		_uiControls.primaryWeaponFirst = {
+			control:	AddCheckbox( "m_PrimaryShowWeaponFirst", "On Primary bar, show weapon first" ),
+			event:		"click"
+		};
+		_uiControls.secondaryWeaponFirst = {
+			control:	AddCheckbox( "m_SecondaryShowWeaponFirst", "On Secondary bar, show weapon first" ),
+			event:		"click"
+		};
+		_uiControls.showWeaponHighlight = {
+			control:	AddCheckbox( "m_ShowWeaponHighlight", "Show slotted weapon highlight" ),
+			event:		"click"
+		};
+		_uiControls.showBarBackground = {
+			control:	AddCheckbox( "m_ShowBarBackground", "Show bar background" ),
+			event:		"click"
+		};
 		//AddCheckbox( "m_ShowXPBars", "Show AEGIS XP progress on slots", g_HUD.showXPBars ).addEventListener("click", this, "ShowXPBarsClickHandler");
 		//AddCheckbox( "m_ShowTooltips", "Show Tooltips", g_HUD.showTooltips ).addEventListener("click", this, "ShowTooltipsClickHandler");
 
 		// add layout section
 		AddHeading("Layout Style");
-		AddDropdown( "m_BarStyle", "Layout Style", ["Horizontal", "Vertical"], g_HUD.layoutStyle ).addEventListener("change", this, "LayoutStyleChangeHandler");
-		//AddSlider( "m_Scale", "Scale", 50, 150, 100).addEventListener("change", this, "ScaleChangeHandler");
+		_uiControls.barStyle = {
+			control:	AddDropdown( "m_BarStyle", "Layout Style", ["Horizontal", "Vertical"] ),
+			event:		"change"
+		}
 		
 		// positioning section
 		AddHeading("Position");
-		AddButton("m_ResetPosition", "Reset to default position").addEventListener("click", this, "ResetPositionClickHandler");
+		_uiControls.SetDefaultPosition = {
+			control:	AddButton("m_ResetPosition", "Reset to default position"),
+			event:		"click"
+		}
 		
 		SetSize( Math.round(Math.max(m_Content._width, 200)), Math.round(Math.max(m_Content._height, 200)) );
+		
+		// wire up event handlers for ui controls
+		for (var s:String in _uiControls)
+		{
+			switch( _uiControls[s].event )
+			{
+				// used for checkbox, button
+				case "click":
+					var fName:String = s + _uiControls[s].event + "Handler";
+					this[fName] = function(e:Object) {
+						UtilsBase.PrintChatText( e.target.selected );
+					};
+					_uiControls[s].control.addEventListener( _uiControls[s].event, this, fName );
+					
+				break;
+				
+				
+				// used for dropdown
+				case "change":
+					var fName:String = s + _uiControls[s].event + "Handler";
+					this[fName] = function(e:Object) {
+						UtilsBase.PrintChatText( e.index );
+					};
+					_uiControls[s].control.addEventListener( _uiControls[s].event, this, fName );
+				
+				break;
+			}
+		}
+
+		// load initial values
+		LoadValues();
 	}
 
-	private function HideDefaultButtonsClickHandler(e:Object) {
-		g_HUD.hideDefaultSwapButtons = e.target.selected;
-	}
-	
-	private function LinkBarsClickHandler(e:Object) {
-		g_HUD.linkBars = e.target.selected;
-	}
 
-	private function ShowWeaponsClickHandler(e:Object) {
-		g_HUD.showWeapons = e.target.selected;
-	}
-	
-	private function ShowWeaponHighlightClickHandler(e:Object) {
-		g_HUD.showWeaponHighlight = e.target.selected;
-	}
-	
-	private function ShowBarBackgroundClickHandler(e:Object) {
-		g_HUD.showBarBackground = e.target.selected;
-	}
-
-	private function ShowXPBarsClickHandler(e:Object) {
-		g_HUD.showXPBars = e.target.selected;
-	}
-	
-	private function ShowTooltipsClickHandler(e:Object) {
-		g_HUD.showTooltips = e.target.selected;
-	}
-	
-	private function PrimaryShowWeaponFirstClickHandler(e:Object) {
-		g_HUD.primaryBarWeaponFirst = e.target.selected;
-	}
-	
-	private function SecondaryShowWeaponFirstClickHandler(e:Object) {
-		g_HUD.secondaryBarWeaponFirst = e.target.selected;
-	}
-
-	private function ResetPositionClickHandler(e:Object) {
-		g_HUD.SetDefaultPosition();
-	}
-	
-	private function EnableDragClickHandler(e:Object) {
-		g_HUD.enableDrag = e.target.selected;
-	}
-
-	private function LayoutStyleChangeHandler(e:Object) {
-		g_HUD.layoutStyle = e.index;
-	}
-	
-	private function ScaleChangeHandler(e:Object) {
-		UtilsBase.PrintChatText(e.target.value);
+	// populate the states of the config ui controls based on the hud module's published data
+	private function LoadValues():Void
+	{
+		var hudValues = _hudData.GetValue();
+		
+		for ( var s:String in _uiControls )
+		{
+			_uiControls[s].control.selected = hudValues.FindEntry( s, 0 );
+		}
 	}
 
 	
 	// add and return a new checkbox, layed out vertically
-	private function AddCheckbox(name:String, text:String, initialState:Boolean):CheckBox
+	private function AddCheckbox(name:String, text:String):CheckBox
 	{
 		var y:Number = m_Content._height;
 		
@@ -149,7 +156,6 @@ class ConfigWindowContent extends WindowComponentContent
 			disableFocus = true;
 			textField.autoSize = true;
 			textField.text = text;
-			selected = initialState;
 			_y = y;
 		}
 		
@@ -172,7 +178,7 @@ class ConfigWindowContent extends WindowComponentContent
 	
 	
 	// add and return a dropdown
-	private function AddDropdown(name:String, label:String, values:Array, initialValue):DropdownMenu
+	private function AddDropdown(name:String, label:String, values:Array):DropdownMenu
 	{
 		var y:Number = m_Content._height;
 
@@ -183,10 +189,8 @@ class ConfigWindowContent extends WindowComponentContent
 			dropdown = "ScrollingList";
 			itemRenderer = "ListItemRenderer";
 			dataProvider = values;
-			
 		}
 		o.dropdown.addEventListener("focusIn", this, "RemoveFocus");
-		o.selectedIndex = initialValue;
 		o._y = y;
 		
 		return o;
@@ -203,7 +207,7 @@ class ConfigWindowContent extends WindowComponentContent
 		o._y = y;
 	}
 	
-	private function AddSlider(name:String, label:String, minValue:Number, maxValue:Number, initialValue:Number):FCSlider
+	private function AddSlider(name:String, label:String, minValue:Number, maxValue:Number):FCSlider
 	{
 		var y:Number = m_Content._height;
 
@@ -213,7 +217,6 @@ class ConfigWindowContent extends WindowComponentContent
 		
 		o.minimum = minValue;
 		o.maximum = maxValue;
-		o.value = initialValue;
 		o.snapInterval = 1;
 		o.snapping = true;
 		o.liveDragging = true;

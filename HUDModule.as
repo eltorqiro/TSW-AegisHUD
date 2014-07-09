@@ -19,91 +19,84 @@ import com.GameInterface.Tooltip.TooltipDataProvider;
 import com.GameInterface.Lore
 
 import com.ElTorqiro.AegisHUD.*;
+import com.ElTorqiro.AegisHUD.Enums.AegisBarLayoutStyles;
+import AddonInfo;
 
-var g_VTIOIcon:MovieClip;
-
+// main object of the module
 var g_HUD:AegisHUD;
-var g_configWindow:WinComp;
-var g_configPos:Point;
-var g_ConfigVersion = "1.0";
-var g_ModuleVersion = "1.5.1";
-var g_Debug = false;
 
-// internal distributed value listeners
-
-
+// settings persistence objects
+var g_settings:Object;
 
 //Init
 function onLoad()
 {
-	Debug("onLoad");
-
-
+	// default values for non-user configurable settings
+	g_configSettings = {
+		hideDefaultSwapButtons: true,
+		linkBars:				true,
+		layoutStyle:			AegisBarLayoutStyles.HORIZONTAL,
+		showWeapons:			true,
+		showWeaponHighlight:	true,
+		showBarBackground:		true,
+		showXPBars:				false,
+		showTooltips:			false,
+		primaryWeaponFirst:		true,
+		secondaryWeaponFirst:	true,
+		enableDrag:				true
+	};
+	
+	// default values for inherent settings
+	g_settings = {
+		primaryPosition:		new Point( -1, -1 ),
+		secondaryPosition:		new Point( -1, -1 ),
+		scale:					100
+	};
 }
 
 function onUnload()
 {
-	Debug("onUnload");
-	
 }
 
 // module activated (i.e. its distributed value set to 1)
-// saved config data is passed in
-function OnModuleActivated(archive:Archive)
+function OnModuleActivated()
 {
-	Debug("OnModuleActivated");
-	
-	var initObj:Object = { };
+	// load settings values
+	var hudData = DistributedValue.GetDValue(AddonInfo.Name + "_Data");
+	for (var s:String in g_settings)
+	{
+		g_settings[s] = hudData.FindEntry( s, g_settings[s] );
+	}
 	
 	// instantiate HUD
-	g_HUD = new AegisHUD(this, "m_AegisHUD", initObj );
-	
+	g_HUD = new AegisHUD(this, "m_AegisHUD", g_settings );
 }
 
 
 // module deactivated (i.e. its distributed value set to 0)
-// config data to be saved must be returned
 function OnModuleDeactivated()
 {
-	Debug("OnModuleDeactivated");
-	
-    var archive:Archive = new Archive();
+	// save module settings
+	var saveData:Archive = new Archive();
 
-	archive.AddEntry( "ConfigVersion", g_ConfigVersion );
-	archive.AddEntry( "HideDefaultSwapButtons", g_HUD.hideDefaultSwapButtons );
-	archive.AddEntry( "PrimaryPosition", g_HUD.primaryBarPosition );
-	archive.AddEntry( "SecondaryPosition", g_HUD.secondaryBarPosition );
-	archive.AddEntry( "ConfigPosition", g_configPos );
-/*
-	archive.AddEntry( "PrimaryX", g_HUD.primaryBarPosition.x );
-	archive.AddEntry( "PrimaryY", g_HUD.primaryBarPosition.y );
-	archive.AddEntry( "SecondaryX", g_HUD.secondaryBarPosition.x );
-	archive.AddEntry( "SecondaryY", g_HUD.secondaryBarPosition.y );
-*/
-	archive.AddEntry( "LinkBars", g_HUD.linkBars );
-	archive.AddEntry( "LayoutStyle", g_HUD.layoutStyle );
-	archive.AddEntry( "ShowWeapons", g_HUD.showWeapons );
-	archive.AddEntry( "ShowWeaponHighlight", g_HUD.showWeaponHighlight );
-	archive.AddEntry( "ShowBarBackground", g_HUD.showBarBackground );
-	archive.AddEntry( "ShowXPBars", g_HUD.showXPBars );
-	archive.AddEntry( "ShowTooltips", g_HUD.showTooltips );
-	archive.AddEntry( "PrimaryBarWeaponFirst", g_HUD.primaryBarWeaponFirst );
-	archive.AddEntry( "SecondaryBarWeaponFirst", g_HUD.secondaryBarWeaponFirst );
-	archive.AddEntry( "EnableDrag", g_HUD.enableDrag );
-/*
-	archive.AddEntry( "ConfigX", g_configPos.x );
-	archive.AddEntry( "ConfigY", g_configPos.y );
-*/	
+	saveData.AddEntry( "hideDefaultSwapButtons", g_HUD.hideDefaultSwapButtons );
+	saveData.AddEntry( "primaryPosition", g_HUD.primaryPosition );
+	saveData.AddEntry( "secondaryPosition", g_HUD.secondaryPosition );
+	saveData.AddEntry( "linkBars", g_HUD.linkBars );
+	saveData.AddEntry( "layoutStyle", g_HUD.layoutStyle );
+	saveData.AddEntry( "showWeapons", g_HUD.showWeapons );
+	saveData.AddEntry( "showWeaponHighlight", g_HUD.showWeaponHighlight );
+	saveData.AddEntry( "showBarBackground", g_HUD.showBarBackground );
+	saveData.AddEntry( "showXPBars", g_HUD.showXPBars );
+	saveData.AddEntry( "showTooltips", g_HUD.showTooltips );
+	saveData.AddEntry( "primaryWeaponFirst", g_HUD.primaryWeaponFirst );
+	saveData.AddEntry( "secondaryWeaponFirst", g_HUD.secondaryWeaponFirst );
+	saveData.AddEntry( "enableDrag", g_HUD.enableDrag );
+	
+	// because LoginPrefs.xml has a reference to this DValue, the contents will be saved whenever the game thinks it is necessary (e.g. closing the game, reloadui etc)
+	DistributedValue.SetDValue(AddonInfo.Name + "_Data", saveData);
+	
 	// clean up elements
 	g_HUD.Destroy();
 	g_HUD = null;
-	
-	// return config data
-    return archive;
-}
-
-function Debug(s:String)
-{
-	if ( g_Debug )  UtilsBase.PrintChatText("AegisHUD: " + s);
-	
 }

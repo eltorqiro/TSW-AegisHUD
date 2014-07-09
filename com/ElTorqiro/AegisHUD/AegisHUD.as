@@ -1,6 +1,5 @@
 import com.Components.WinComp;
 import com.GameInterface.Tooltip.TooltipData;
-//import com.Utils.Point;
 import flash.geom.Point;
 
 import gfx.core.UIComponent;
@@ -46,8 +45,8 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 	private var _showBarBackground:Boolean = true;
 	private var _showXPBars:Boolean = false;
 	private var _showTooltips:Boolean = false;
-	private var _primaryBarWeaponFirst:Boolean = true;
-	private var _secondaryBarWeaponFirst:Boolean = true;
+	private var _primaryWeaponFirst:Boolean = true;
+	private var _secondaryWeaponFirst:Boolean = true;
 	private var _enableDrag = true;
 
 	private var _slotSize:Number = 30;
@@ -57,8 +56,8 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 	
 	// position restoration for windows
 	// *** never use the getter for these positions internally, only use them directly ***
-	private var _primaryBarPosition:Point;
-	private var _secondaryBarPosition:Point;
+	private var _primaryPosition:Point;
+	private var _secondaryPosition:Point;
 
 	// utility objects
 	private var _character:Character;
@@ -129,11 +128,11 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 		
 		// remove any existing bars, saving their positions first
 		if ( m_PrimaryBar ) {
-			primaryBarPosition = new Point(m_PrimaryBar._x, m_PrimaryBar._y);
+			primaryPosition = new Point(m_PrimaryBar._x, m_PrimaryBar._y);
 			m_PrimaryBar.removeMovieClip();
 		}
 		if ( m_SecondaryBar ) {
-			secondaryBarPosition = new Point(m_SecondaryBar._x, m_SecondaryBar._y);
+			secondaryPosition = new Point(m_SecondaryBar._x, m_SecondaryBar._y);
 			m_SecondaryBar.removeMovieClip();
 		}
 		
@@ -148,7 +147,7 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 		m_PrimaryBar.handleDrag = false;
 		m_PrimaryBar.showBackground = this.showBarBackground;
 		m_PrimaryBar.showXPBar = this.showXPBars;
-		m_PrimaryBar.weaponFirst = this.primaryBarWeaponFirst;
+		m_PrimaryBar.weaponFirst = this.primaryWeaponFirst;
 		m_PrimaryBar.showWeapon = this.showWeapons;
 		m_PrimaryBar.showWeaponHighlight = this.showWeaponHighlight;
 		m_PrimaryBar.layoutStyle = this.layoutStyle;
@@ -157,7 +156,7 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 		m_SecondaryBar.handleDrag = false;
 		m_SecondaryBar.showBackground = this.showBarBackground;
 		m_SecondaryBar.showXPBar = this.showXPBars;
-		m_SecondaryBar.weaponFirst = this.secondaryBarWeaponFirst;
+		m_SecondaryBar.weaponFirst = this.secondaryWeaponFirst;
 		m_SecondaryBar.showWeapon = this.showWeapons;
 		m_SecondaryBar.showWeaponHighlight = this.showWeaponHighlight;
 		m_SecondaryBar.layoutStyle = this.layoutStyle;
@@ -182,16 +181,16 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 		// can't layout if there is nothing to layout
 		if ( m_PrimaryBar == undefined )  return;
 
-		if ( _primaryBarPosition )
+		if ( _primaryPosition )
 		{
 			// Despite Point.x being a number, the +0 below is a quicker way of doing Math.round() on the Point.x property.
 			// If not doing this, then the number prints out as "xxx", but seems to get sent to the _x property as "xxx.0000000000"
 			// which the _x setter fails to interpret for some reason and does not set.
-			m_PrimaryBar._x = _primaryBarPosition.x + 0;
-			m_PrimaryBar._y = _primaryBarPosition.y + 0;
+			m_PrimaryBar._x = _primaryPosition.x + 0;
+			m_PrimaryBar._y = _primaryPosition.y + 0;
 			
-			m_SecondaryBar._x = _secondaryBarPosition.x + 0;
-			m_SecondaryBar._y = _secondaryBarPosition.y + 0;
+			m_SecondaryBar._x = _secondaryPosition.x + 0;
+			m_SecondaryBar._y = _secondaryPosition.y + 0;
 		}
 		
 		// set default positions to simulate the default buttons
@@ -439,36 +438,36 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 		return m_SecondaryBar;
 	}
 	
-	public function get primaryBarPosition():Point {
+	public function get primaryPosition():Point {
 		if ( m_PrimaryBar ) return new Point(m_PrimaryBar._x, m_PrimaryBar._y);
-		return _primaryBarPosition;
+		return _primaryPosition;
 	}
-	public function set primaryBarPosition(value:Point) {
-		_primaryBarPosition = value;
+	public function set primaryPosition(value:Point) {
+		_primaryPosition = value;
 	}
 
-	public function get secondaryBarPosition():Point {
+	public function get secondaryPosition():Point {
 		if (m_SecondaryBar ) return new Point(m_SecondaryBar._x, m_SecondaryBar._y);
-		return _secondaryBarPosition;
+		return _secondaryPosition;
 	}
-	public function set secondaryBarPosition(value:Point) {
-		_secondaryBarPosition = value;
-	}
-
-	public function get primaryBarWeaponFirst():Boolean {
-		return _primaryBarWeaponFirst;
-	}
-	public function set primaryBarWeaponFirst(value:Boolean) {
-		_primaryBarWeaponFirst = value;
-		primaryBar.weaponFirst = _primaryBarWeaponFirst;
+	public function set secondaryPosition(value:Point) {
+		_secondaryPosition = value;
 	}
 
-	public function get secondaryBarWeaponFirst():Boolean {
-		return _secondaryBarWeaponFirst;
+	public function get primaryWeaponFirst():Boolean {
+		return _primaryWeaponFirst;
 	}
-	public function set secondaryBarWeaponFirst(value:Boolean) {
-		_secondaryBarWeaponFirst = value;
-		secondaryBar.weaponFirst = _secondaryBarWeaponFirst;
+	public function set primaryWeaponFirst(value:Boolean) {
+		_primaryWeaponFirst = value;
+		primaryBar.weaponFirst = _primaryWeaponFirst;
+	}
+
+	public function get secondaryWeaponFirst():Boolean {
+		return _secondaryWeaponFirst;
+	}
+	public function set secondaryWeaponFirst(value:Boolean) {
+		_secondaryWeaponFirst = value;
+		secondaryBar.weaponFirst = _secondaryWeaponFirst;
 	}
 
 	public function get enableDrag():Boolean {

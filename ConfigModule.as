@@ -21,7 +21,10 @@ import com.GameInterface.Tooltip.TooltipDataProvider;
 import com.GameInterface.Lore
 import com.GameInterface.Tooltip.TooltipManager;
 
+import AddonInfo;
+import com.ElTorqiro.Utils;
 import com.ElTorqiro.AegisHUD.*;
+
 
 // config window
 var g_configWindow:WinComp;
@@ -41,24 +44,15 @@ var g_tooltip:TooltipInterface;
 // config settings
 var g_settings:Object;
 
-var AddonInfo:Object;
 
 /**
  * OnLoad
  * 
  * This has GMF_DONT_UNLOAD in Modules.xml so TSW module manager will not unload it during teleports etc.
- * Thus, all the global variables will persist, like settings and icon etc, and only need to be refreshed during onLoad() and saved during unLoad().
+ * Thus, all the global variables will persist, like settings and icon etc, only needing to be refreshed during onLoad() and saved during unLoad().
  */
 function onLoad()
 {
-	// TODO: replace this with a real static AddonInfo class, shared between all modules of the addon
-	AddonInfo = {
-		Name: "ElTorqiro_AegisHUD",
-		Version: "1.6.0",
-		Author: "ElTorqiro",
-		MoviePath: "_root.eltorqiro_aegishud\\config"
-	};
-
 	// default config module settings
 	g_settings = {
 		configWindowPosition: new Point( 200, 200 ),
@@ -84,7 +78,7 @@ function onLoad()
 		// handle race condition for DV already having been set before our listener was connected
 		CheckVTIOIsLoaded();
 	}
-	
+
 	// config window toggle listener
 	g_showConfig = DistributedValue.Create(AddonInfo.Name + "_ShowConfig");
 	g_showConfig.SignalChanged.Connect(ToggleConfigWindow, this);
@@ -124,7 +118,7 @@ function CheckVTIOIsLoaded()
 	{
 		// register with VTIO
 		DistributedValue.SetDValue("VTIO_RegisterAddon", 
-			AddonInfo.Name + "|" + AddonInfo.Author + "|" + AddonInfo.Version + "|" + AddonInfo.Name + "_ShowConfig|" + AddonInfo.MoviePath + ".m_Icon"
+			AddonInfo.Name + "|" + AddonInfo.Author + "|" + AddonInfo.Version + "|" + AddonInfo.Name + "_ShowConfig|" + g_icon
 		);
 		
 		g_isRegisteredWithVTIO = true;
@@ -257,12 +251,19 @@ function PositionIcon(x:Number, y:Number)
 		if ( x != undefined )  g_icon._x = x;
 		if ( y != undefined )  g_icon._y = y;
 		
+		var onScreenPos:Point = Utils.OnScreen( g_icon );
+		
 		// check if bounds are outside visible area
+		/*
 		if ( g_icon._x < 0 ) g_icon._x = 0;
 		else if ( g_icon._x + g_icon._width > Stage.visibleRect.width ) g_icon._x = Stage.visibleRect.width - g_icon._width;
 
 		if ( g_icon._y < 0 ) g_icon._y = 0;
 		else if ( g_icon._y + g_icon._height > Stage.visibleRect.height ) g_icon._y = Stage.visibleRect.height - g_icon._height;
+		*/
+		
+		g_icon._x = onScreenPos.x;
+		g_icon._y = onScreenPos.y;
 		
 		g_settings.iconPosition = new Point(g_icon._x, g_icon._y);
 	}
