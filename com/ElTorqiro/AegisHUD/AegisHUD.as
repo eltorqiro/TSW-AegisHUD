@@ -39,7 +39,7 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 	// user configurable option
 	private var _hideDefaultSwapButtons:Boolean = true;
 	private var _linkBars:Boolean = true;
-	private var _layoutStyle:Number = 0;
+	private var _barStyle:Number = 0;
 	private var _showWeapons:Boolean = true;
 	private var _showWeaponHighlight:Boolean = true;
 	private var _showBarBackground:Boolean = true;
@@ -47,7 +47,7 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 	private var _showTooltips:Boolean = false;
 	private var _primaryWeaponFirst:Boolean = true;
 	private var _secondaryWeaponFirst:Boolean = true;
-	private var _enableDrag = true;
+	private var _lockBars = true;
 
 	private var _slotSize:Number = 30;
 	private var _barPadding:Number = 5;
@@ -76,7 +76,7 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 	 * @param	deferCreate Don't create the HUD immedately -- handy if a lot of visual parameters need to be set prior to HUD creation to prevent a heap of Layouts
 	 */
 	public function AegisHUD(parentMC:MovieClip, hostMCName:String, initObj:Object, deferCreate:Boolean)
-	{
+	{ 
 		// if no parentMC is provided, do nothing at all
 		if (parentMC == undefined) return;
 		
@@ -150,7 +150,7 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 		m_PrimaryBar.weaponFirst = this.primaryWeaponFirst;
 		m_PrimaryBar.showWeapon = this.showWeapons;
 		m_PrimaryBar.showWeaponHighlight = this.showWeaponHighlight;
-		m_PrimaryBar.layoutStyle = this.layoutStyle;
+		m_PrimaryBar.barStyle = this.barStyle;
 
 		m_SecondaryBar = _hostMC.attachMovie("AegisBar", "m_SecondaryBar", _hostMC.getNextHighestDepth()).init( AegisBar.AEGIS_GROUP_SECONDARY, _character, _inventory );
 		m_SecondaryBar.handleDrag = false;
@@ -159,7 +159,7 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 		m_SecondaryBar.weaponFirst = this.secondaryWeaponFirst;
 		m_SecondaryBar.showWeapon = this.showWeapons;
 		m_SecondaryBar.showWeaponHighlight = this.showWeaponHighlight;
-		m_SecondaryBar.layoutStyle = this.layoutStyle;
+		m_SecondaryBar.barStyle = this.barStyle;
 
 		// config options
 		HideDefaultSwapButtons();
@@ -230,7 +230,7 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 	// Move Drag Handler
 	private function MoveDragHandler(bar:MovieClip):Void
 	{
-		if ( !enableDrag ) return;
+		if ( !lockBars ) return;
 
 		// highlight bars to indicate which one(s) will drag
 		var filter_glow:GlowFilter = new GlowFilter(
@@ -470,21 +470,21 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 		secondaryBar.weaponFirst = _secondaryWeaponFirst;
 	}
 
-	public function get enableDrag():Boolean {
-		return _enableDrag;
+	public function get lockBars():Boolean {
+		return _lockBars;
 	}
-	public function set enableDrag(value:Boolean) {
-		_enableDrag = value;
+	public function set lockBars(value:Boolean) {
+		_lockBars = value;
 	}
 	
 	
-	public function get layoutStyle():Number {
-		return _layoutStyle;
+	public function get barStyle():Number {
+		return _barStyle;
 	}	
 	// TODO: some sanity checking to make sure this is in a valid range of available styles, although AegisBar currently filters that
-	public function set layoutStyle(value:Number) {
-		_layoutStyle = value;
-		m_PrimaryBar.layoutStyle = _layoutStyle;
-		m_SecondaryBar.layoutStyle = _layoutStyle;
+	public function set barStyle(value:Number) {
+		_barStyle = value;
+		m_PrimaryBar.barStyle = _barStyle;
+		m_SecondaryBar.barStyle = _barStyle;
 	}
 }

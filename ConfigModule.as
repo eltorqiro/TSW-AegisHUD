@@ -253,23 +253,12 @@ function PositionIcon(x:Number, y:Number)
 		
 		var onScreenPos:Point = Utils.OnScreen( g_icon );
 		
-		// check if bounds are outside visible area
-		/*
-		if ( g_icon._x < 0 ) g_icon._x = 0;
-		else if ( g_icon._x + g_icon._width > Stage.visibleRect.width ) g_icon._x = Stage.visibleRect.width - g_icon._width;
-
-		if ( g_icon._y < 0 ) g_icon._y = 0;
-		else if ( g_icon._y + g_icon._height > Stage.visibleRect.height ) g_icon._y = Stage.visibleRect.height - g_icon._height;
-		*/
-		
 		g_icon._x = onScreenPos.x;
 		g_icon._y = onScreenPos.y;
 		
 		g_settings.iconPosition = new Point(g_icon._x, g_icon._y);
 	}
 }
-
-
 
 
 function ToggleConfigWindow():Void
@@ -306,6 +295,8 @@ function DestroyConfigWindow():Void
 	//UtilsBase.PrintChatText("destroy config window");
 	if ( g_configWindow )
 	{	
+		g_configWindow.GetContent().Destroy();
+		
 		g_settings.configWindowPosition.x = g_configWindow._x;
 		g_settings.configWindowPosition.y = g_configWindow._y;
 		

@@ -18,24 +18,34 @@ import com.GameInterface.Game.Character;
 import com.GameInterface.Tooltip.TooltipDataProvider;
 import com.GameInterface.Lore
 
+import com.ElTorqiro.Utils;
 import com.ElTorqiro.AegisHUD.*;
 import com.ElTorqiro.AegisHUD.Enums.AegisBarLayoutStyles;
 import AddonInfo;
 
-// main object of the module
+// the AegisHUD instance
 var g_HUD:AegisHUD;
 
 // settings persistence objects
 var g_settings:Object;
 
+// RPC DValue for receiving settings changes from other modules  (e.g. the Config module)
+var g_RPC:DistributedValue;
+var g_RPCFilter:Object;
+
+
 //Init
 function onLoad()
 {
-	// default values for non-user configurable settings
-	g_configSettings = {
+	// default values for settings
+	g_settings = {
+		primaryPosition:		new Point( -1, -1 ),
+		secondaryPosition:		new Point( -1, -1 ),
+		scale:					100,
+		
 		hideDefaultSwapButtons: true,
 		linkBars:				true,
-		layoutStyle:			AegisBarLayoutStyles.HORIZONTAL,
+		barStyle:				AegisBarLayoutStyles.HORIZONTAL,
 		showWeapons:			true,
 		showWeaponHighlight:	true,
 		showBarBackground:		true,
@@ -43,14 +53,26 @@ function onLoad()
 		showTooltips:			false,
 		primaryWeaponFirst:		true,
 		secondaryWeaponFirst:	true,
-		enableDrag:				true
+		lockBars:				true
 	};
 	
-	// default values for inherent settings
-	g_settings = {
-		primaryPosition:		new Point( -1, -1 ),
-		secondaryPosition:		new Point( -1, -1 ),
-		scale:					100
+	// RPC permissable settings/commands
+	g_RPCFilter = {
+		/* settings */
+		hideDefaultSwapButtons: "setting",
+		linkBars:				"setting",
+		barStyle:				"setting",
+		showWeapons:			"setting",
+		showWeaponHighlight:	"setting",
+		showBarBackground:		"setting",
+		showXPBars:				"setting",
+		showTooltips:			"setting",
+		primaryWeaponFirst:		"setting",
+		secondaryWeaponFirst:	"setting",
+		lockBars:				"setting",
+		
+		/* commands */
+		SetDefaultPosition:		"command"
 	};
 }
 
@@ -70,12 +92,19 @@ function OnModuleActivated()
 	
 	// instantiate HUD
 	g_HUD = new AegisHUD(this, "m_AegisHUD", g_settings );
+
+	// wire up RPC listener
+	g_RPC = DistributedValue.Create(AddonInfo.Name + "_RPC");
+	g_RPC.SignalChanged.Connect(RPCListener, this);
 }
 
 
 // module deactivated (i.e. its distributed value set to 0)
 function OnModuleDeactivated()
 {
+	// disconnect from DValues
+	g_RPC.SignalChanged.Disconnect(RPCListener, this);
+	
 	// save module settings
 	var saveData:Archive = new Archive();
 
@@ -83,7 +112,7 @@ function OnModuleDeactivated()
 	saveData.AddEntry( "primaryPosition", g_HUD.primaryPosition );
 	saveData.AddEntry( "secondaryPosition", g_HUD.secondaryPosition );
 	saveData.AddEntry( "linkBars", g_HUD.linkBars );
-	saveData.AddEntry( "layoutStyle", g_HUD.layoutStyle );
+	saveData.AddEntry( "barStyle", g_HUD.barStyle );
 	saveData.AddEntry( "showWeapons", g_HUD.showWeapons );
 	saveData.AddEntry( "showWeaponHighlight", g_HUD.showWeaponHighlight );
 	saveData.AddEntry( "showBarBackground", g_HUD.showBarBackground );
@@ -91,7 +120,7 @@ function OnModuleDeactivated()
 	saveData.AddEntry( "showTooltips", g_HUD.showTooltips );
 	saveData.AddEntry( "primaryWeaponFirst", g_HUD.primaryWeaponFirst );
 	saveData.AddEntry( "secondaryWeaponFirst", g_HUD.secondaryWeaponFirst );
-	saveData.AddEntry( "enableDrag", g_HUD.enableDrag );
+	saveData.AddEntry( "lockBars", g_HUD.lockBars );
 	
 	// because LoginPrefs.xml has a reference to this DValue, the contents will be saved whenever the game thinks it is necessary (e.g. closing the game, reloadui etc)
 	DistributedValue.SetDValue(AddonInfo.Name + "_Data", saveData);
@@ -99,4 +128,29 @@ function OnModuleDeactivated()
 	// clean up elements
 	g_HUD.Destroy();
 	g_HUD = null;
+}
+
+
+// RPC listener
+function RPCListener():Void
+{	
+	var rpcData = g_RPC.GetValue();
+
+	for ( var s:String in g_RPCFilter )
+	{
+		var value = rpcData.FindEntry( s, undefined );
+		if ( value != undefined )
+		{
+			switch( g_RPCFilter[s] )
+			{
+				case "setting":
+					g_HUD[s] = value;
+				break;
+				
+				case "command":
+					g_HUD[s](value);
+				break;
+			}
+		}
+	}
 }

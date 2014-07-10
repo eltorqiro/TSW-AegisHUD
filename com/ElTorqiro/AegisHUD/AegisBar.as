@@ -1,3 +1,4 @@
+import gfx.controls.Button;
 import mx.utils.Delegate;
 import gfx.core.UIComponent;
 
@@ -12,7 +13,7 @@ import com.GameInterface.UtilsBase;
 import com.Utils.LDBFormat;
 import com.ElTorqiro.AegisHUD.Enums.AegisBarLayoutStyles;
 
-class com.ElTorqiro.AegisHUD.AegisBar extends UIComponent
+class com.ElTorqiro.AegisHUD.AegisBar extends Button
 {
 	// constants
 	public static var AEGIS_GROUP_PRIMARY:Number = 0;
@@ -46,7 +47,7 @@ class com.ElTorqiro.AegisHUD.AegisBar extends UIComponent
 	private var _showWeaponHighlight:Boolean = true;
 	private var _showXPBar:Boolean = true;
 	private var _showTooltip:Boolean = true;
-	private var _layoutStyle:Number = 1;
+	private var _barStyle:Number = 1;
 
 	// behaviour parameters
 	private var _handleDrag:Boolean = true;
@@ -70,10 +71,20 @@ class com.ElTorqiro.AegisHUD.AegisBar extends UIComponent
 		// visually the raw bar is quite ugly until init()
 		// and besides won't do anything interesting until then, so hide it for now
 		this._visible = false;
+
+		// never receive focus
+		this.disableFocus = true;
 		
 		// drag & click handlers
-		this.onPress =  Delegate.create(this, PressHandler);
-		this.onRelease = this.onReleaseOutside  = Delegate.create(this, ReleaseHandler);
+		this.addEventListener("press", this, "PressHandler");
+		this.addEventListener("click", this, "ReleaseHandler");
+
+		/**
+		 * if not using Scaleform CLIK, and thus not extending gfx.controls.Button
+		 * these regular handlers will work instead of the event listeners, but right-mouse button handling is lost
+		 */
+		//this.onPress =  Delegate.create(this, PressHandler);
+		//this.onRelease = this.onReleaseOutside  = Delegate.create(this, ReleaseHandler);
 		
 		// movieclip shortcuts
 		_aegisMC1 = m_ButtonContainer.m_Aegis1;
@@ -120,7 +131,6 @@ class com.ElTorqiro.AegisHUD.AegisBar extends UIComponent
 		return this;
 	}
 	
-
 	public function Destroy():Void
 	{
 		// clean up signal listeners, else after death the "duplicate" signal listeners caused by init are not recreated
@@ -131,6 +141,15 @@ class com.ElTorqiro.AegisHUD.AegisBar extends UIComponent
 		_inventory.SignalItemRemoved.Disconnect( SlotItemRemoved, this);
 		_inventory.SignalItemChanged.Disconnect( SlotItemChanged, this);
 		_inventory.SignalItemStatChanged.Disconnect( SlotItemStatChanged, this);
+	}
+
+	
+	public function configUI():Void
+	{
+		super.configUI();
+		
+		this["onPressAux"] = handleMousePress;
+		this["onReleaseAux"] = handleMouseRelease;		
 	}
 	
 	// layout bar internally
@@ -154,11 +173,11 @@ class com.ElTorqiro.AegisHUD.AegisBar extends UIComponent
 		
 		// horizontal and vertical can be done with combined code
 		// other more custom styles would need to be handled with a switch later in the function
-		if ( layoutStyle == AegisBarLayoutStyles.VERTICAL || layoutStyle == AegisBarLayoutStyles.HORIZONTAL )
+		if ( barStyle == AegisBarLayoutStyles.VERTICAL || barStyle == AegisBarLayoutStyles.HORIZONTAL )
 		{
 			// layout direction property
-			var propStart:String = layoutStyle == AegisBarLayoutStyles.HORIZONTAL ? "_x" : "_y";
-			var propSpan:String = layoutStyle == AegisBarLayoutStyles.HORIZONTAL ? "_width" : "_height";
+			var propStart:String = barStyle == AegisBarLayoutStyles.HORIZONTAL ? "_x" : "_y";
+			var propSpan:String = barStyle == AegisBarLayoutStyles.HORIZONTAL ? "_width" : "_height";
 
 			// move weapon first if necessary
 			if ( weaponFirst && showWeapon )	_aegisMC1[propStart] = _weaponMC[propStart] + _weaponMC[propSpan] + (slotPadding * 3);
@@ -505,14 +524,14 @@ class com.ElTorqiro.AegisHUD.AegisBar extends UIComponent
 		LoadEquipment();
 	}
 	
-	public function get layoutStyle():Number {
-		return _layoutStyle;
+	public function get barStyle():Number {
+		return _barStyle;
 	}
-	public function set layoutStyle(value:Number) {
+	public function set barStyle(value:Number) {
 		// set it to passed value only if it is a valid style option
 		if ( AegisBarLayoutStyles.list[value] != undefined )
 		{
-			_layoutStyle = value;
+			_barStyle = value;
 			Layout();
 		}
 	}

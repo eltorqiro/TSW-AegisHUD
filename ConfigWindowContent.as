@@ -14,7 +14,7 @@ class ConfigWindowContent extends WindowComponentContent
 {
 	private var _hudData:DistributedValue;
 	private var _uiControls:Object = {};
-	
+	private var _uiInitialised:Boolean = false;
 	
 	private var m_ContentSize:MovieClip;
 	private var m_Content:MovieClip;
@@ -28,14 +28,17 @@ class ConfigWindowContent extends WindowComponentContent
 		_hudData.SignalChanged.Connect(HUDDataChanged, this);
 	}
 
+	// cleanup operations
+	public function Destroy():Void
+	{
+		// disconnnect from signals
+		_hudData.SignalChanged.Disconnect(HUDDataChanged, this);
+	}
 	
 	// HUD settings have changed
 	function HUDDataChanged():Void
 	{
-		// do nothing if config window is not present
-		if ( !g_configWindow )  return;
-		
-		
+		LoadValues();
 	}	
 	
 	private function configUI():Void
@@ -47,55 +50,65 @@ class ConfigWindowContent extends WindowComponentContent
 		// add options section
 		AddHeading("Options");
 		_uiControls.hideDefaultSwapButtons = {
-			control:	AddCheckbox( "m_HideDefaultButtons", "Hide default AEGIS swap buttons" ),
-			event:		"change"
+			control:	AddCheckbox( "hideDefaultSwapButtons", "Hide default AEGIS swap buttons" ),
+			event:		"click",
+			type:		"setting"
 		};
-		_uiControls.enableDrag = {
-			control:	AddCheckbox( "m_EnableDrag", "Enable dragging with CTRL+LeftMouse" ),
-			event:		"click"
+		_uiControls.lockBars = {
+			control:	AddCheckbox( "lockBars", "Lock bar position and scale" ),
+			event:		"click",
+			type:		"setting"
 		};
 		_uiControls.linkBars = {
-			control:	AddCheckbox( "m_LinkBars", "Link primary and secondary bars when dragging" ),
-			event:		"click"
+			control:	AddCheckbox( "linkBars", "Link primary and secondary bars when dragging" ),
+			event:		"click",
+			type:		"setting"
 		};
 
 		// add visuals section
 		AddHeading("Visuals");
 		_uiControls.showWeapons = {
-			control:	AddCheckbox( "m_ShowWeapons", "Show weapon slots" ),
-			event:		"click"
+			control:	AddCheckbox( "showWeapons", "Show weapon slots" ),
+			event:		"click",
+			type:		"setting"
 		};
 		_uiControls.primaryWeaponFirst = {
-			control:	AddCheckbox( "m_PrimaryShowWeaponFirst", "On Primary bar, show weapon first" ),
-			event:		"click"
+			control:	AddCheckbox( "primaryWeaponFirst", "On Primary bar, show weapon first" ),
+			event:		"click",
+			type:		"setting"
 		};
 		_uiControls.secondaryWeaponFirst = {
-			control:	AddCheckbox( "m_SecondaryShowWeaponFirst", "On Secondary bar, show weapon first" ),
-			event:		"click"
+			control:	AddCheckbox( "secondaryWeaponFirst", "On Secondary bar, show weapon first" ),
+			event:		"click",
+			type:		"setting"
 		};
 		_uiControls.showWeaponHighlight = {
-			control:	AddCheckbox( "m_ShowWeaponHighlight", "Show slotted weapon highlight" ),
-			event:		"click"
+			control:	AddCheckbox( "showWeaponHighlight", "Show slotted weapon highlight" ),
+			event:		"click",
+			type:		"setting"
 		};
 		_uiControls.showBarBackground = {
-			control:	AddCheckbox( "m_ShowBarBackground", "Show bar background" ),
-			event:		"click"
+			control:	AddCheckbox( "showBarBackground", "Show bar background" ),
+			event:		"click",
+			type:		"setting"
 		};
 		//AddCheckbox( "m_ShowXPBars", "Show AEGIS XP progress on slots", g_HUD.showXPBars ).addEventListener("click", this, "ShowXPBarsClickHandler");
 		//AddCheckbox( "m_ShowTooltips", "Show Tooltips", g_HUD.showTooltips ).addEventListener("click", this, "ShowTooltipsClickHandler");
 
 		// add layout section
-		AddHeading("Layout Style");
+		AddHeading("Bar Style");
 		_uiControls.barStyle = {
-			control:	AddDropdown( "m_BarStyle", "Layout Style", ["Horizontal", "Vertical"] ),
-			event:		"change"
+			control:	AddDropdown( "barStyle", "Bar Style", ["Horizontal", "Vertical"] ),
+			event:		"change",
+			type:		"setting"
 		}
 		
 		// positioning section
 		AddHeading("Position");
 		_uiControls.SetDefaultPosition = {
-			control:	AddButton("m_ResetPosition", "Reset to default position"),
-			event:		"click"
+			control:	AddButton("SetDefaultPosition", "Reset to default position"),
+			event:		"click",
+			type:		"command"
 		}
 		
 		SetSize( Math.round(Math.max(m_Content._width, 200)), Math.round(Math.max(m_Content._height, 200)) );
@@ -103,45 +116,58 @@ class ConfigWindowContent extends WindowComponentContent
 		// wire up event handlers for ui controls
 		for (var s:String in _uiControls)
 		{
-			switch( _uiControls[s].event )
-			{
-				// used for checkbox, button
-				case "click":
-					var fName:String = s + _uiControls[s].event + "Handler";
-					this[fName] = function(e:Object) {
-						UtilsBase.PrintChatText( e.target.selected );
-					};
-					_uiControls[s].control.addEventListener( _uiControls[s].event, this, fName );
-					
-				break;
-				
-				
-				// used for dropdown
-				case "change":
-					var fName:String = s + _uiControls[s].event + "Handler";
-					this[fName] = function(e:Object) {
-						UtilsBase.PrintChatText( e.index );
-					};
-					_uiControls[s].control.addEventListener( _uiControls[s].event, this, fName );
-				
-				break;
-			}
+			_uiControls[s].control.addEventListener( _uiControls[s].event, this, "ControlHandler" );
+
+			/* this will be useful when/if different types of interactions are needed */
+			/*
+			var fName:String = s + _uiControls[s].event + "Handler";
+
+			this[fName] = function(e:Object) {
+				var rpcArchive:Archive = new Archive();
+				var eventValue = eval(e.target.eventValue + "");
+
+				// always invalidate previous value
+				rpcArchive.AddEntry( "_setTime", new Date().valueOf() );
+				rpcArchive.AddEntry( e.target.controlName, ( eventValue == undefined ? true : eventValue ) );
+
+				DistributedValue.SetDValue(AddonInfo.Name + "_RPC", rpcArchive);
+			};
+			_uiControls[s].control.addEventListener( _uiControls[s].event, this, fName );
+			*/
 		}
 
 		// load initial values
 		LoadValues();
 	}
 
+	
+	// universal control interaction handler
+	private function ControlHandler(e:Object)
+	{
+		var rpcArchive:Archive = new Archive();
+		var eventValue = eval(e.target.eventValue + "");
+
+		// always invalidate previous value
+		rpcArchive.AddEntry( "_setTime", new Date().valueOf() );
+		rpcArchive.AddEntry( e.target.controlName, ( eventValue == undefined ? true : eventValue ) );
+
+		DistributedValue.SetDValue(AddonInfo.Name + "_RPC", rpcArchive);
+	}
+	
 
 	// populate the states of the config ui controls based on the hud module's published data
 	private function LoadValues():Void
 	{
+		_uiInitialised = false;
+		
 		var hudValues = _hudData.GetValue();
 		
 		for ( var s:String in _uiControls )
 		{
 			_uiControls[s].control.selected = hudValues.FindEntry( s, 0 );
 		}
+		
+		_uiInitialised = true;
 	}
 
 	
@@ -150,7 +176,9 @@ class ConfigWindowContent extends WindowComponentContent
 	{
 		var y:Number = m_Content._height;
 		
-		var o:CheckBox = CheckBox(m_Content.attachMovie( "Checkbox", name, m_Content.getNextHighestDepth() ));
+		var o:CheckBox = CheckBox(m_Content.attachMovie( "Checkbox", "m_" + name, m_Content.getNextHighestDepth() ));
+		o["controlName"] = name;
+		o["eventValue"] = "e.target.selected";
 		with ( o )
 		{
 			disableFocus = true;
@@ -167,7 +195,9 @@ class ConfigWindowContent extends WindowComponentContent
 	{
 		var y:Number = m_Content._height;
 		
-		var o:Button = Button(m_Content.attachMovie( "Button", name, m_Content.getNextHighestDepth() ));
+		var o:Button = Button(m_Content.attachMovie( "Button", "m_" + name, m_Content.getNextHighestDepth() ));
+		o["controlName"] = name;
+		o["eventValue"] = "e.target.selected";
 		o.label = text;
 		o.autoSize = "center";
 		o.disableFocus = true;
@@ -182,7 +212,9 @@ class ConfigWindowContent extends WindowComponentContent
 	{
 		var y:Number = m_Content._height;
 
-		var o:DropdownMenu = DropdownMenu(m_Content.attachMovie( "Dropdown", name, m_Content.getNextHighestDepth() ));
+		var o:DropdownMenu = DropdownMenu(m_Content.attachMovie( "Dropdown", "m_" + name, m_Content.getNextHighestDepth() ));
+		o["controlName"] = name;
+		o["eventValue"] = "e.index";
 		with ( o )
 		{
 			disableFocus = true;
@@ -202,7 +234,7 @@ class ConfigWindowContent extends WindowComponentContent
 		var y:Number = m_Content._height;
 		if ( y != 0) y += 10;
 		
-		var o:MovieClip = m_Content.attachMovie( "ConfigGroupHeading", "testing", m_Content.getNextHighestDepth() );
+		var o:MovieClip = m_Content.attachMovie( "ConfigGroupHeading", "m_Heading", m_Content.getNextHighestDepth() );
 		o.textField.text = text;
 		o._y = y;
 	}
@@ -211,7 +243,9 @@ class ConfigWindowContent extends WindowComponentContent
 	{
 		var y:Number = m_Content._height;
 
-		var o:FCSlider = FCSlider(m_Content.attachMovie( "Slider", name, m_Content.getNextHighestDepth() ));
+		var o:FCSlider = FCSlider(m_Content.attachMovie( "Slider", "m_" + name, m_Content.getNextHighestDepth() ));
+		o["controlName"] = name;
+		o["eventValue"] = "e.value";
 		o.width = 200;
 		o._x = 100;
 		
