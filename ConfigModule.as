@@ -218,7 +218,7 @@ function CreateTooltipData():Void
 
 	g_iconTooltipData.AddAttributeSplitter();
 	g_iconTooltipData.AddAttribute("","");	
-	g_iconTooltipData.AddAttribute("", "<font face=\'_StandardFont\' size=\'12\' color=\'#FFFFFF\'><b>HUD Bars</b>\n<font face=\'_StandardFont\' size=\'11\' color=\'#BFBFBF\'><b>CTRL + Left Drag</b> Move HUD bar(s).</font>");
+	g_iconTooltipData.AddAttribute("", "<font face=\'_StandardFont\' size=\'12\' color=\'#FFFFFF\'><b>HUD Bars</b>\n<font face=\'_StandardFont\' size=\'11\' color=\'#BFBFBF\'><b>CTRL + Left Drag</b> Move both HUD bars at once.\n<b>CTRL + Right Drag</b> Move an individual bar.\n<b>CTRL + Mouse Wheel roll</b> Scale HUD bars.</font>");
 	g_iconTooltipData.m_Padding = 8;
 	g_iconTooltipData.m_MaxWidth = 256;	
 }
