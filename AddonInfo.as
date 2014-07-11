@@ -8,7 +8,7 @@ class AddonInfo
 	private function AddonInfo() { }
 	
 	public static var Name:String = "ElTorqiro_AegisHUD";
-	public static var Version:String = "1.6.0";
+	public static var Version:String = "1.6.0 beta";
 	public static var Author:String = "ElTorqiro";
 	
 }
