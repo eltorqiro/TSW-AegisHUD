@@ -42,4 +42,5 @@ Delete the directory: YOUR_TSW_DIRECTORY\Data\Gui\Customized\Flash\ElTorqiro_Aeg
 Source Code
 -----------
 You can get the source from GitHub at https://github.com/eltorqiro/TSW-AegisHUD
+
 To compile, you will also need my TSW addon utils package, which is also on GitHub at https://github.com/eltorqiro/TSW-Utils
