@@ -5,13 +5,19 @@ AegisHUD UI mod for the MMORPG The Secret World
   
 User Configuration
 ------------------
-The mod is integrated with Viper's Topbar Information Overload (VTIO), so if you have that installed you can click on the little "shield" icon to open the configuration window.  Otherwise, you will need to use the chat command, as follows:
+The mod is integrated with Viper's Topbar Information Overload (VTIO), so if you have that installed you can click on the little "shield" icon to open the configuration window.
+Otherwise, there will be an icon placed on your screen, which you can move (CTRL + LeftButton) or scale (CTRL + MouseWheel) to put in an unobtrusive place on your screen.
+You can also toggle the configuration window with the option ElTorqiro_AegisHUD_ShowConfig, which can be set via a chat command as follows:
 /setoption ElTorqiro_AegisHUD_ShowConfig 1
+(1 = open, 2 = closed)
+
    
    
-Dragging Bars
--------------
-Dragging is enabled with CTRL+LeftButton.  Since you can drag either one or both bars together (via user configuration option), a glowing outline will indicate which bar(s) you are dragging.  To reset the bar positions to their defaults, use the button inside the configuration window.
+Dragging / Scaling Bars
+-----------------------
+Drag both bars with CTRL + LeftButton.  Drag an individual bar with CTRL + RightButton.  A glowing outline will indicate which bar(s) you are dragging.  To reset the bar positions to their defaults, use the button inside the configuration window.
+Scale the HUD with CTRL + MouseWheel roll.
+
    
    
 Order of AEGIS controllers on the bars
@@ -35,7 +41,5 @@ Delete the directory: YOUR_TSW_DIRECTORY\Data\Gui\Customized\Flash\ElTorqiro_Aeg
    
 Source Code
 -----------
-This work is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
-http://creativecommons.org/licenses/by-sa/4.0/
-
-You can get the source from Github at https://github.com/eltorqiro/TSW-AegisHUD
+You can get the source from GitHub at https://github.com/eltorqiro/TSW-AegisHUD
+To compile, you will also need my TSW addon utils package, which is also on GitHub at https://github.com/eltorqiro/TSW-Utils

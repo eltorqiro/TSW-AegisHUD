@@ -59,11 +59,6 @@ class ConfigWindowContent extends WindowComponentContent
 			event:		"click",
 			type:		"setting"
 		};
-		_uiControls.linkBars = {
-			control:	AddCheckbox( "linkBars", "Link primary and secondary bars when dragging" ),
-			event:		"click",
-			type:		"setting"
-		};
 
 		// add visuals section
 		AddHeading("Visuals");
@@ -144,10 +139,12 @@ class ConfigWindowContent extends WindowComponentContent
 	// universal control interaction handler
 	private function ControlHandler(e:Object)
 	{
+		if ( !_uiInitialised ) return;
+		
 		var rpcArchive:Archive = new Archive();
 		var eventValue = eval(e.target.eventValue + "");
 
-		// always invalidate previous value
+		// invalidate previous value to make sure the change signal is triggered
 		rpcArchive.AddEntry( "_setTime", new Date().valueOf() );
 		rpcArchive.AddEntry( e.target.controlName, ( eventValue == undefined ? true : eventValue ) );
 
@@ -159,12 +156,22 @@ class ConfigWindowContent extends WindowComponentContent
 	private function LoadValues():Void
 	{
 		_uiInitialised = false;
-		
 		var hudValues = _hudData.GetValue();
 		
 		for ( var s:String in _uiControls )
 		{
-			_uiControls[s].control.selected = hudValues.FindEntry( s, 0 );
+			var control = _uiControls[s].control;
+			var value = hudValues.FindEntry( s, 0 );
+			
+			if ( control instanceof DropdownMenu )
+			{
+				if( control.selectedIndex != value )  control.selectedIndex = value;
+			}
+			
+			else if ( control instanceof CheckBox )
+			{
+				if( control.selected != value )  control.selected = value;				
+			}
 		}
 		
 		_uiInitialised = true;

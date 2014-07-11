@@ -1,4 +1,5 @@
 import gfx.controls.Button;
+
 import mx.utils.Delegate;
 import gfx.core.UIComponent;
 
@@ -13,7 +14,7 @@ import com.GameInterface.UtilsBase;
 import com.Utils.LDBFormat;
 import com.ElTorqiro.AegisHUD.Enums.AegisBarLayoutStyles;
 
-class com.ElTorqiro.AegisHUD.AegisBar extends Button
+class com.ElTorqiro.AegisHUD.AegisBar extends gfx.controls.Button
 {
 	// constants
 	public static var AEGIS_GROUP_PRIMARY:Number = 0;
@@ -61,8 +62,9 @@ class com.ElTorqiro.AegisHUD.AegisBar extends Button
 	// signals
 	public var SignalStartDrag:Signal;
 	public var SignalStopDrag:Signal;
+	public var SignalScaleChange:Signal;
 	
-	
+
 	// constructor
 	public function AegisBar()
 	{
@@ -78,13 +80,16 @@ class com.ElTorqiro.AegisHUD.AegisBar extends Button
 		// drag & click handlers
 		this.addEventListener("press", this, "PressHandler");
 		this.addEventListener("click", this, "ReleaseHandler");
+		this.addEventListener("releaseOutside", this, "ReleaseHandler");
 
 		/**
 		 * if not using Scaleform CLIK, and thus not extending gfx.controls.Button
 		 * these regular handlers will work instead of the event listeners, but right-mouse button handling is lost
 		 */
-		//this.onPress =  Delegate.create(this, PressHandler);
-		//this.onRelease = this.onReleaseOutside  = Delegate.create(this, ReleaseHandler);
+		/*
+		this.onPress =  Delegate.create(this, PressHandler);
+		this.onRelease = this.onReleaseOutside  = Delegate.create(this, ReleaseHandler);
+		*/
 		
 		// movieclip shortcuts
 		_aegisMC1 = m_ButtonContainer.m_Aegis1;
@@ -100,6 +105,7 @@ class com.ElTorqiro.AegisHUD.AegisBar extends Button
 
 		SignalStartDrag = new Signal;
 		SignalStopDrag = new Signal;
+		SignalScaleChange = new Signal;
 	}
 
 	// init -- call as a pseudo-constructor immediately after attachMovie
@@ -148,8 +154,22 @@ class com.ElTorqiro.AegisHUD.AegisBar extends Button
 	{
 		super.configUI();
 		
+		// enable right mouse button handling
 		this["onPressAux"] = handleMousePress;
-		this["onReleaseAux"] = handleMouseRelease;		
+		this["onReleaseAux"] = handleMouseRelease;
+		this["onReleaseOutsideAux"] = handleMouseRelease;
+		
+		this.onMouseWheel = function(delta : Number, targetPath : String) {
+			
+			if ( !Key.isDown( Key.CONTROL )) return;
+			
+			// determine scale
+			var scaleTo:Number = this._xscale + (delta * 5);
+			scaleTo = Math.max(scaleTo, 50);
+			scaleTo = Math.min(scaleTo, 100);
+
+			SignalScaleChange.Emit(scaleTo, this);
+		};
 	}
 	
 	// layout bar internally
@@ -193,14 +213,10 @@ class com.ElTorqiro.AegisHUD.AegisBar extends Button
 			
 		}
 		
-		
 		// position and resize background to wrap buttons
-		if ( showBackground )
-		{
-			_backgroundMC._width = _buttonContainerMC._width + (barPadding * 2);
-			_backgroundMC._height = _buttonContainerMC._height + (barPadding * 2);
-		}
-		_backgroundMC._visible = showBackground;
+		_backgroundMC._width = _buttonContainerMC._width + (barPadding * 2);
+		_backgroundMC._height = _buttonContainerMC._height + (barPadding * 2);
+		_backgroundMC._alpha = showBackground ? 100 : 0;
 		
 		_buttonContainerMC._x = _buttonContainerMC._y = barPadding;
 	}
@@ -369,13 +385,13 @@ class com.ElTorqiro.AegisHUD.AegisBar extends Button
 	// Move Drag and Click Handler
 	// note that this has to be done in a single onPress because there is no event bubbling in Flash
 	// -- if this needed to be more complex, use EventDispatcher similar to e.g. http://peterelst.com/blog/2006/01/07/Event-Bubbling
-	private function PressHandler():Void
+	private function PressHandler(e:Object):Void
 	{
 		// drag handler
 		if (Key.isDown(Key.CONTROL))
 		{
 			if ( handleDrag ) this.startDrag();
-			SignalStartDrag.Emit(this);
+			SignalStartDrag.Emit(this, e.button == 0);
 		}
 		
 		// click button handler

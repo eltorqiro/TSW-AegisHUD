@@ -44,7 +44,6 @@ function onLoad()
 		scale:					100,
 		
 		hideDefaultSwapButtons: true,
-		linkBars:				true,
 		barStyle:				AegisBarLayoutStyles.HORIZONTAL,
 		showWeapons:			true,
 		showWeaponHighlight:	true,
@@ -53,14 +52,14 @@ function onLoad()
 		showTooltips:			false,
 		primaryWeaponFirst:		true,
 		secondaryWeaponFirst:	true,
-		lockBars:				true
+		hudScale:				100,
+		lockBars:				false
 	};
 	
 	// RPC permissable settings/commands
 	g_RPCFilter = {
 		/* settings */
 		hideDefaultSwapButtons: "setting",
-		linkBars:				"setting",
 		barStyle:				"setting",
 		showWeapons:			"setting",
 		showWeaponHighlight:	"setting",
@@ -104,14 +103,23 @@ function OnModuleDeactivated()
 {
 	// disconnect from DValues
 	g_RPC.SignalChanged.Disconnect(RPCListener, this);
+
+	// persist settings
+	SaveData();
 	
+	// clean up elements
+	g_HUD.Destroy();
+	g_HUD = null;
+}
+
+function SaveData():Void
+{
 	// save module settings
 	var saveData:Archive = new Archive();
 
 	saveData.AddEntry( "hideDefaultSwapButtons", g_HUD.hideDefaultSwapButtons );
 	saveData.AddEntry( "primaryPosition", g_HUD.primaryPosition );
 	saveData.AddEntry( "secondaryPosition", g_HUD.secondaryPosition );
-	saveData.AddEntry( "linkBars", g_HUD.linkBars );
 	saveData.AddEntry( "barStyle", g_HUD.barStyle );
 	saveData.AddEntry( "showWeapons", g_HUD.showWeapons );
 	saveData.AddEntry( "showWeaponHighlight", g_HUD.showWeaponHighlight );
@@ -120,16 +128,12 @@ function OnModuleDeactivated()
 	saveData.AddEntry( "showTooltips", g_HUD.showTooltips );
 	saveData.AddEntry( "primaryWeaponFirst", g_HUD.primaryWeaponFirst );
 	saveData.AddEntry( "secondaryWeaponFirst", g_HUD.secondaryWeaponFirst );
+	saveData.AddEntry( "hudScale", g_HUD.hudScale );
 	saveData.AddEntry( "lockBars", g_HUD.lockBars );
-	
+
 	// because LoginPrefs.xml has a reference to this DValue, the contents will be saved whenever the game thinks it is necessary (e.g. closing the game, reloadui etc)
 	DistributedValue.SetDValue(AddonInfo.Name + "_Data", saveData);
-	
-	// clean up elements
-	g_HUD.Destroy();
-	g_HUD = null;
 }
-
 
 // RPC listener
 function RPCListener():Void
@@ -153,4 +157,7 @@ function RPCListener():Void
 			}
 		}
 	}
+	
+	// a setting may have changed, update the persistence object
+	SaveData();
 }

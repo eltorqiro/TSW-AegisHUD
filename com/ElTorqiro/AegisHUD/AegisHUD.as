@@ -1,5 +1,7 @@
 import com.Components.WinComp;
+import com.ElTorqiro.Utils;
 import com.GameInterface.Tooltip.TooltipData;
+import com.Utils.Rect;
 import flash.geom.Point;
 
 import gfx.core.UIComponent;
@@ -38,7 +40,6 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 	
 	// user configurable option
 	private var _hideDefaultSwapButtons:Boolean = true;
-	private var _linkBars:Boolean = true;
 	private var _barStyle:Number = 0;
 	private var _showWeapons:Boolean = true;
 	private var _showWeaponHighlight:Boolean = true;
@@ -47,7 +48,7 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 	private var _showTooltips:Boolean = false;
 	private var _primaryWeaponFirst:Boolean = true;
 	private var _secondaryWeaponFirst:Boolean = true;
-	private var _lockBars = true;
+	private var _lockBars = false;
 
 	private var _slotSize:Number = 30;
 	private var _barPadding:Number = 5;
@@ -64,6 +65,7 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 	private var _inventory:Inventory;
 	private var _iconLoader:MovieClipLoader;
 	private var _findPassiveBarThrashCount:Number = 0;
+	private var _isDraggingLinked:Boolean = false;
 	
 	// external distributed value listeners
 	private var _showAegisSwapDV:DistributedValue;
@@ -167,9 +169,10 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 		// wire up signals
 		m_PrimaryBar.SignalStartDrag.Connect(MoveDragHandler, this);
 		m_PrimaryBar.SignalStopDrag.Connect(MoveDragReleaseHandler, this);
+		m_PrimaryBar.SignalScaleChange.Connect(ScaleChangeHandler, this);
 		m_SecondaryBar.SignalStartDrag.Connect(MoveDragHandler, this);
 		m_SecondaryBar.SignalStopDrag.Connect(MoveDragReleaseHandler, this);
-		
+		m_SecondaryBar.SignalScaleChange.Connect(ScaleChangeHandler, this);
 		
 		// layout bars on screen per user preferences
 		Layout();
@@ -181,6 +184,10 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 		// can't layout if there is nothing to layout
 		if ( m_PrimaryBar == undefined )  return;
 
+		// apply scale
+		m_PrimaryBar._xscale = m_PrimaryBar._yscale = _hudScale;
+		m_SecondaryBar._xscale = m_SecondaryBar._yscale = _hudScale;
+		
 		if ( _primaryPosition )
 		{
 			// Despite Point.x being a number, the +0 below is a quicker way of doing Math.round() on the Point.x property.
@@ -206,9 +213,9 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 	public function SetDefaultPosition():Void
 	{
 		// ... surprised this worked without some localToGlobal() usage
-		m_PrimaryBar._x = Math.round( Stage["visibleRect"].width / 2 - m_PrimaryBar._width - 3 );
+		m_PrimaryBar._x = Math.round( (Stage["visibleRect"].width / 2) - m_PrimaryBar._width - 3 );
 		m_SecondaryBar._x = Math.round( m_PrimaryBar._x + m_PrimaryBar._width + 6 );
-		m_PrimaryBar._y = m_SecondaryBar._y = Math.round( (_root.passivebar._y != undefined ? _root.passivebar._y : Stage["visibleRect"].bottom - 75) - m_PrimaryBar._height - 3 );
+		m_PrimaryBar._y = m_SecondaryBar._y = Math.round( (_root.passivebar._y != undefined ? _root.passivebar._y : Stage["visibleRect"].height - 75) - m_PrimaryBar._height - 3 );
 	}
 
 	// handler for situation where AEGIS system becomes unlocked during play session
@@ -227,11 +234,84 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 		CreateHUD();
 	}
 	
-	// Move Drag Handler
-	private function MoveDragHandler(bar:MovieClip):Void
+	
+	/**
+	 * Scale change handler
+	 * 
+	 * An unsatisfactory implementation, the scaleMult coupled with the rounding produces tiny inconsistences when doing lots of scale down/up in a row.
+	 * A continuously present proxy object might be better for tracking scale and setting positions.
+	 * Or perhaps wrapping entire HUD in a scaleable, moveable movieclip, although that worries me for saved positions at the moment.
+	 * 
+	 * @param	scaleTo Scale to change to
+	 * @param	bar Bar that called the event
+	 */
+	private function ScaleChangeHandler(scaleTo:Number, bar:MovieClip)
 	{
-		if ( !lockBars ) return;
+		// do nothing if locked
+		if ( _lockBars ) return;
+		
+		_hudScale = scaleTo;
+		
+		// get scale change multiplier
+		var scaleMult = scaleTo / m_PrimaryBar._xscale;
 
+		// get current box dimensions
+		var oldRect:Rect = new Rect(
+			Math.min( m_PrimaryBar._x, m_SecondaryBar._x ),
+			Math.min( m_PrimaryBar._y, m_SecondaryBar._y ),
+			Math.max( m_PrimaryBar._x + m_PrimaryBar._width, m_SecondaryBar._x + m_SecondaryBar._width ),
+			Math.max( m_PrimaryBar._y + m_PrimaryBar._height, m_SecondaryBar._y + m_SecondaryBar._height)
+		);
+
+		m_PrimaryBar._xscale = m_PrimaryBar._yscale = scaleTo;
+		m_SecondaryBar._xscale = m_SecondaryBar._yscale = scaleTo;
+
+		var newRect:Rect = new Rect( oldRect.left, oldRect.top, oldRect.right, oldRect.bottom );
+		newRect.Scale( scaleMult, scaleMult );
+		
+		var padWidth = (oldRect.Width() - newRect.Width()) / 2;
+		var padHeight = (oldRect.Height() - newRect.Height()) / 2;
+		
+		var transRect:Rect = new Rect(
+			Math.round(oldRect.left + padWidth),
+			Math.round(oldRect.top + padHeight),
+			Math.round(oldRect.right - padWidth),
+			Math.round(oldRect.bottom - padHeight)
+			
+		);
+		
+		// move bars to new scaled positions
+		var coll = { primary: m_PrimaryBar, secondary: m_SecondaryBar };
+		for ( var s:String in  coll )
+		{
+			var bar:MovieClip = coll[s];
+
+			if ( bar._x == oldRect.left ) {
+				bar._x = transRect.left + 0;
+				
+			}
+			else {
+				bar._x = transRect.right - bar._width + 0;
+			}
+			
+			if ( bar._y == oldRect.top ) {
+				bar._y = transRect.top + 0;
+			}
+			else {
+				bar._y = transRect.bottom - bar._height + 0;
+			}
+		}
+		
+	}
+	
+	
+	// Move Drag Handler
+	private function MoveDragHandler(bar:MovieClip, linked:Boolean):Void
+	{
+		if ( lockBars ) return;
+
+		if ( linked != undefined )  _isDraggingLinked = linked;
+		
 		// highlight bars to indicate which one(s) will drag
 		var filter_glow:GlowFilter = new GlowFilter(
 			0x0099ff, 	/* glow_color */
@@ -245,7 +325,7 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 		);
 		
 		// since flash can only drag one item at a time with startDrag(), create a proxy drag object to drag around
-		if ( linkBars )
+		if ( _isDraggingLinked )
 		{
 			m_PrimaryBar.filters = [filter_glow];
 			m_SecondaryBar.filters = [filter_glow];
@@ -278,7 +358,7 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 	private function MoveDragReleaseHandler(bar:MovieClip):Void
 	{
 		// destroy proxy drag object
-		if ( linkBars )
+		if ( _isDraggingLinked )
 		{
 			// remove highlight
 			m_PrimaryBar.filters = [];
@@ -373,14 +453,6 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 		HideDefaultSwapButtons();
 	}
 		
-	// link bars together when being dragged
-	public function get linkBars():Boolean {
-		return _linkBars;
-	}
-	public function set linkBars(value:Boolean) {
-		_linkBars = value;
-	}
-
 	public function get showWeapons():Boolean {
 		return _showWeapons;
 	}
@@ -454,6 +526,14 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 		_secondaryPosition = value;
 	}
 
+	// overall hud scale
+	public function get hudScale():Number {
+		return _hudScale;
+	}
+	public function set hudScale(scale:Number) {
+		_hudScale = scale;
+	}
+	
 	public function get primaryWeaponFirst():Boolean {
 		return _primaryWeaponFirst;
 	}

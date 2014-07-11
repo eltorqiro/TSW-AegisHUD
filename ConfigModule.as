@@ -292,7 +292,6 @@ function CreateConfigWindow():Void
 
 function DestroyConfigWindow():Void
 {
-	//UtilsBase.PrintChatText("destroy config window");
 	if ( g_configWindow )
 	{	
 		g_configWindow.GetContent().Destroy();
