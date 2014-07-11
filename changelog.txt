@@ -6,10 +6,12 @@
 
  * made it easier to drag bars when bar background is disabled
  * changed setting save structure, settings will need to be applied fresh
- * fixed issue of "default position" being incorrect if bar backgrounds were displayed
- * user setting "enable drag" removed, no longer needed with new drag system
+ * fixed issue of "default position" being incorrect if bar backgrounds were not displayed
+ * user setting "enable drag" changed to "lock bars" with a corresponding change in meaning
  * HUD will now be at the same z-order as the other default HUD elements (i.e. below character sheet etc)
  * added RPC interface so HUD can now be configured with DValues from other addons
+
+ * game must be reloaded if upgrading, to pick up Modules.xml changes
 
 
 1.5.1 -- 2014-07-08
