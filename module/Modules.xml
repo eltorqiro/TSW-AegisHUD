@@ -4,7 +4,7 @@
     movie       = "ElTorqiro_AegisHUD\HUD.swf"
     flags       = ""
     depth_layer = "Middle"
-    sub_depth   = "2"
+    sub_depth   = "0"
     variable    = "ElTorqiro_AegisHUD"
     criteria    = "ElTorqiro_AegisHUD &amp;&amp; (guimode &amp; (GUIMODEFLAGS_INPLAY | GUIMODEFLAGS_ENABLEALLGUI))"
     config_name = "ElTorqiro_AegisHUD_Data"
