@@ -21,7 +21,6 @@ import com.GameInterface.Tooltip.TooltipDataProvider;
 import com.GameInterface.Lore
 import com.GameInterface.Tooltip.TooltipManager;
 
-import AddonInfo;
 import com.ElTorqiro.Utils;
 import com.ElTorqiro.AegisHUD.*;
 
@@ -134,7 +133,7 @@ function CreateIcon():Void
 	if ( g_icon != undefined )  return;
 	
 	// load config icon & tooltip
-	g_icon = this.attachMovie("ConfigIcon", "m_Icon", this.getNextHighestDepth() );
+	g_icon = this.attachMovie("com.ElTorqiro.AegisHUD.Config.Icon", "m_Icon", this.getNextHighestDepth() );
 	CreateTooltipData();
 
 	// restore location
@@ -271,14 +270,14 @@ function CreateConfigWindow():Void
 	// do nothing if window already open
 	if ( g_configWindow )  return;
 	
-	g_configWindow = WinComp(attachMovie( "WindowComponent", "m_ConfigWindow", getNextHighestDepth() ));
+	g_configWindow = WinComp(attachMovie( "com.ElTorqiro.AegisHUD.Config.WindowComponent", "m_ConfigWindow", getNextHighestDepth() ));
 	g_configWindow.SetTitle(AddonInfo.Name + " v" + AddonInfo.Version);
 	g_configWindow.ShowStroke(false);
 	g_configWindow.ShowFooter(false);
 	g_configWindow.ShowResizeButton(false);
 
 	// load the content panel
-	g_configWindow.SetContent( "ConfigWindowContent" );
+	g_configWindow.SetContent( "com.ElTorqiro.AegisHUD.Config.WindowContent" );
 
 	// set position -- rounding of the values is critical here, else it will not reposition reliably
 	g_configWindow._x = Math.round(g_settings.configWindowPosition.x);

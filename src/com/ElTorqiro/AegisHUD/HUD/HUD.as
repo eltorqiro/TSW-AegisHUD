@@ -19,19 +19,18 @@ import com.GameInterface.Lore
 import com.GameInterface.Game.Shortcut;
 import flash.filters.GlowFilter
 
-import com.ElTorqiro.AegisHUD.AegisBar;
-import com.ElTorqiro.AegisHUD.ConfigWindowContent;
+import com.ElTorqiro.AegisHUD.HUD.Bar;
 import com.ElTorqiro.AegisHUD.Enums.AegisBarLayoutStyles;
 
-class com.ElTorqiro.AegisHUD.AegisHUD
+class com.ElTorqiro.AegisHUD.HUD.HUD
 {
 	// constants
 	private static var AEGIS_SLOT_ACHIEVEMENT:Number = 6817;	// The Lore number that unlocks the AEGIS system
 																// 6817 is pulled straight from Funcom's PassiveBar
 
 	// movie clip elements
-	private var m_PrimaryBar:AegisBar;
-	private var m_SecondaryBar:AegisBar;
+	private var m_PrimaryBar:Bar;
+	private var m_SecondaryBar:Bar;
 	private var m_ConfigWindow:WinComp;
 	private var m_LinkedDragProxy:MovieClip;
 	
@@ -77,7 +76,7 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 	 * @param	hostMCName Name of the movieclip that will be created under the parent to host all AEGIS content -- default "m_AegisHUD"
 	 * @param	deferCreate Don't create the HUD immedately -- handy if a lot of visual parameters need to be set prior to HUD creation to prevent a heap of Layouts
 	 */
-	public function AegisHUD(parentMC:MovieClip, hostMCName:String, initObj:Object, deferCreate:Boolean)
+	public function HUD(parentMC:MovieClip, hostMCName:String, initObj:Object, deferCreate:Boolean)
 	{ 
 		// if no parentMC is provided, do nothing at all
 		if (parentMC == undefined) return;
@@ -145,7 +144,7 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 		var _inventory:Inventory = new Inventory( new ID32(_global.Enums.InvType.e_Type_GC_WeaponContainer, Character.GetClientCharID().GetInstance()) );
 
 		// create bars
-		m_PrimaryBar = _hostMC.attachMovie("AegisBar", "m_PrimaryBar", _hostMC.getNextHighestDepth()).init( AegisBar.AEGIS_GROUP_PRIMARY, _character, _inventory );
+		m_PrimaryBar = _hostMC.attachMovie("com.ElTorqiro.AegisHUD.HUD.Bar", "m_PrimaryBar", _hostMC.getNextHighestDepth()).init( Bar.AEGIS_GROUP_PRIMARY, _character, _inventory );
 		m_PrimaryBar.handleDrag = false;
 		m_PrimaryBar.showBackground = this.showBarBackground;
 		m_PrimaryBar.showXPBar = this.showXPBars;
@@ -154,7 +153,7 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 		m_PrimaryBar.showWeaponHighlight = this.showWeaponHighlight;
 		m_PrimaryBar.barStyle = this.barStyle;
 
-		m_SecondaryBar = _hostMC.attachMovie("AegisBar", "m_SecondaryBar", _hostMC.getNextHighestDepth()).init( AegisBar.AEGIS_GROUP_SECONDARY, _character, _inventory );
+		m_SecondaryBar = _hostMC.attachMovie("com.ElTorqiro.AegisHUD.HUD.Bar", "m_SecondaryBar", _hostMC.getNextHighestDepth()).init( Bar.AEGIS_GROUP_SECONDARY, _character, _inventory );
 		m_SecondaryBar.handleDrag = false;
 		m_SecondaryBar.showBackground = this.showBarBackground;
 		m_SecondaryBar.showXPBar = this.showXPBars;
@@ -501,12 +500,12 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 	}
 	
 	// readonly
-	public function get primaryBar():AegisBar {
+	public function get primaryBar():Bar {
 		return m_PrimaryBar;
 	}
 	
 	// readonly
-	public function get secondaryBar():AegisBar {
+	public function get secondaryBar():Bar {
 		return m_SecondaryBar;
 	}
 	
@@ -561,7 +560,7 @@ class com.ElTorqiro.AegisHUD.AegisHUD
 	public function get barStyle():Number {
 		return _barStyle;
 	}	
-	// TODO: some sanity checking to make sure this is in a valid range of available styles, although AegisBar currently filters that
+	// TODO: some sanity checking to make sure this is in a valid range of available styles, although Bar currently filters that
 	public function set barStyle(value:Number) {
 		_barStyle = value;
 		m_PrimaryBar.barStyle = _barStyle;

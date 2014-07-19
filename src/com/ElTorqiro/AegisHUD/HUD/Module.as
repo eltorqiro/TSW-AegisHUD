@@ -19,12 +19,11 @@ import com.GameInterface.Tooltip.TooltipDataProvider;
 import com.GameInterface.Lore
 
 import com.ElTorqiro.Utils;
-import com.ElTorqiro.AegisHUD.*;
-import com.ElTorqiro.AegisHUD.Enums.AegisBarLayoutStyles;
-import AddonInfo;
+import com.ElTorqiro.AegisHUD.HUD.HUD;
+import com.ElTorqiro.AegisHUD.Enums.*;
 
 // the AegisHUD instance
-var g_HUD:AegisHUD;
+var g_HUD:HUD;
 
 // settings persistence objects
 var g_settings:Object;
@@ -90,7 +89,7 @@ function OnModuleActivated()
 	}
 	
 	// instantiate HUD
-	g_HUD = new AegisHUD(this, "m_AegisHUD", g_settings );
+	g_HUD = new HUD(this, "m_AegisHUD", g_settings );
 
 	// wire up RPC listener
 	g_RPC = DistributedValue.Create(AddonInfo.Name + "_RPC");

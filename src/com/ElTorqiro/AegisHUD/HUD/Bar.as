@@ -14,7 +14,7 @@ import com.GameInterface.UtilsBase;
 import com.Utils.LDBFormat;
 import com.ElTorqiro.AegisHUD.Enums.AegisBarLayoutStyles;
 
-class com.ElTorqiro.AegisHUD.AegisBar extends gfx.controls.Button
+class com.ElTorqiro.AegisHUD.HUD.Bar extends gfx.controls.Button
 {
 	// constants
 	public static var AEGIS_GROUP_PRIMARY:Number = 0;
@@ -66,7 +66,7 @@ class com.ElTorqiro.AegisHUD.AegisBar extends gfx.controls.Button
 	
 
 	// constructor
-	public function AegisBar()
+	public function Bar()
 	{
 		super();
 

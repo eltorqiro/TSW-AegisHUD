@@ -10,7 +10,7 @@ import mx.utils.Delegate;
 import com.GameInterface.UtilsBase;
 import com.GameInterface.DistributedValue;
 
-class ConfigWindowContent extends WindowComponentContent
+class com.ElTorqiro.AegisHUD.Config.WindowContent extends WindowComponentContent
 {
 	private var _hudData:DistributedValue;
 	private var _uiControls:Object = {};
@@ -19,7 +19,7 @@ class ConfigWindowContent extends WindowComponentContent
 	private var m_ContentSize:MovieClip;
 	private var m_Content:MovieClip;
 	
-	public function ConfigWindowContent()
+	public function WindowContent()
 	{
 		super();
 		
