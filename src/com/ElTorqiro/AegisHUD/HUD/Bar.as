@@ -22,7 +22,11 @@ class com.ElTorqiro.AegisHUD.HUD.Bar extends gfx.controls.Button
 	
 	// movie clip elements
 	private var m_Background:MovieClip;
-	private var m_ButtonContainer:MovieClip;
+	private var m_Aegis1:MovieClip;
+	private var m_Aegis2:MovieClip;
+	private var m_Aegis3:MovieClip;
+	private var m_Weapon:MovieClip;
+
 	
 	// movie clip shortcuts
 	private var _aegisMC1:MovieClip;
@@ -30,7 +34,7 @@ class com.ElTorqiro.AegisHUD.HUD.Bar extends gfx.controls.Button
 	private var _aegisMC3:MovieClip;
 	private var _weaponMC:MovieClip;
 	private var _backgroundMC:MovieClip;
-	private var _buttonContainerMC:MovieClip;
+
 	
 	// slot configuration values
 	private var _aegisGroup:Number;
@@ -92,12 +96,11 @@ class com.ElTorqiro.AegisHUD.HUD.Bar extends gfx.controls.Button
 		*/
 		
 		// movieclip shortcuts
-		_aegisMC1 = m_ButtonContainer.m_Aegis1;
-		_aegisMC2 = m_ButtonContainer.m_Aegis2;
-		_aegisMC3 = m_ButtonContainer.m_Aegis3;
-		_weaponMC = m_ButtonContainer.m_Weapon;
+		_aegisMC1 = m_Aegis1;
+		_aegisMC2 = m_Aegis2;
+		_aegisMC3 = m_Aegis3;
+		_weaponMC = m_Weapon;
 		_backgroundMC = m_Background;
-		_buttonContainerMC = m_ButtonContainer;
 
 		// other objects that need creating
 		_iconLoader = new MovieClipLoader();
@@ -180,7 +183,7 @@ class com.ElTorqiro.AegisHUD.HUD.Bar extends gfx.controls.Button
 		{
 			if (this[prop] instanceof MovieClip)
 			{
-				this[prop]._x = this[prop]._y = 0;
+				this[prop]._x = this[prop]._y = barPadding;
 			}
 		}
 		
@@ -200,25 +203,28 @@ class com.ElTorqiro.AegisHUD.HUD.Bar extends gfx.controls.Button
 			var propSpan:String = barStyle == AegisBarLayoutStyles.HORIZONTAL ? "_width" : "_height";
 
 			// move weapon first if necessary
-			if ( weaponFirst && showWeapon )	_aegisMC1[propStart] = _weaponMC[propStart] + _weaponMC[propSpan] + (slotPadding * 3);
+			if ( weaponFirst && showWeapon )  _aegisMC1[propStart] = _weaponMC[propStart] + _weaponMC[propSpan] + (slotPadding * 3);
 			
 			_aegisMC2[propStart] = _aegisMC1[propStart] + _aegisMC1[propSpan] + slotPadding;
 			_aegisMC3[propStart] = _aegisMC2[propStart] + _aegisMC2[propSpan] + slotPadding;
 
 			// move weapon last if necessary
-			if ( !weaponFirst && showWeapon )	_weaponMC[propStart] = _aegisMC3[propStart] + _aegisMC3[propSpan] + (slotPadding * 3);
-
+			if ( !weaponFirst && showWeapon )  _weaponMC[propStart] = _aegisMC3[propStart] + _aegisMC3[propSpan] + (slotPadding * 3);
+			
 			// weapon slot visibility
 			_weaponMC._visible = showWeapon;
-			
 		}
 		
+		var firstButton:MovieClip = weaponFirst ? _weaponMC : _aegisMC1;
+		var lastButton:MovieClip = weaponFirst ? _aegisMC3 : _weaponMC;
+		
 		// position and resize background to wrap buttons
-		_backgroundMC._width = _buttonContainerMC._width + (barPadding * 2);
-		_backgroundMC._height = _buttonContainerMC._height + (barPadding * 2);
+		_backgroundMC._x = _backgroundMC._y = 0;
+		_backgroundMC._width = lastButton._x + lastButton._width + (barPadding);
+		_backgroundMC._height = lastButton._y + lastButton._height + (barPadding);
 		_backgroundMC._alpha = showBackground ? 100 : 0;
 		
-		_buttonContainerMC._x = _buttonContainerMC._y = barPadding;
+		//_buttonContainerMC._x = _buttonContainerMC._y = barPadding;
 	}
 
 	// map defaults for primary/secondary groups onto internal equipment list
