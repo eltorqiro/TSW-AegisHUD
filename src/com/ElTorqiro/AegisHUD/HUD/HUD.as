@@ -17,6 +17,8 @@ import com.ElTorqiro.AegisHUD.Enums.AegisBarLayoutStyles;
 import com.ElTorqiro.AegisHUD.Enums.SlotBackgroundBehaviour;
 import com.ElTorqiro.AegisHUD.Enums.ActiveAegisBackgroundTintBehaviour;
 import flash.filters.GlowFilter;
+import gfx.motion.Tween;
+import mx.transitions.easing.Bounce;
 
 /**
  * 
@@ -33,6 +35,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	private var _neonGlowEntireBar:Boolean = true;
 	private var _lockBars:Boolean = false;
 	private var _attachToPassiveBar:Boolean = true;
+	private var _animateMovementsToDefaultPosition:Boolean = true;
 	
 	private var _showBarBackground:Boolean = true;
 	private var _tintBarBackgroundByActiveAegis:Boolean = true;
@@ -48,6 +51,10 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	private var _neonGlowWeapon:Boolean = true;
 	
 	private var _showXP:Boolean = true;
+	private var _showXPProgressBackground:Boolean = true;
+	private var _xpUseTextDisplay:Boolean = false;
+	private var _pollAegisXPInterval:Number = 30; // seconds
+
 	private var _showTooltips:Boolean = true;
 
 	private var _showAegisBackgroundBehaviour:Number = 1;	// SlotBackgroundBehaviour
@@ -75,7 +82,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
     private var _tooltip:TooltipInterface;
 	private var _tooltipTimeoutID:Number;
 	private var _tooltipSlot:Object;
-	
+	private var _pollAegisXPTimeoutID:Number;
 	
 	// internal movieclips
 	private var m_Primary:MovieClip;
@@ -263,6 +270,9 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		this.addEventListener("select", this, "AegisSelectHandler");
 		this.addEventListener("rollover", this, "AegisRollOverHandler");
 		this.addEventListener("rollout", this, "AegisRollOutHandler");
+		
+		// start the XP polling if necessary
+		UpdateAegisXP();
 	}
 
 	// layout bar internally
@@ -319,7 +329,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		
 		// if hud is attached to passivebar, reset to default swap button position
 		if ( _attachToPassiveBar ) {
-			SetDefaultPosition();
+			MoveToDefaultPosition();
 		}
 	}
 	
@@ -345,18 +355,15 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		// set default positions to simulate the default buttons
 		else
 		{
-			SetDefaultPosition();
+			MoveToDefaultPosition();
 		}
 	}
 
 	/**
 	 * layout bars in same location as default passivebar swap buttons
 	 */
-	public function SetDefaultPosition():Void
+	public function MoveToDefaultPosition(userTriggered:Boolean):Void
 	{
-		// ... surprised this worked without some localToGlobal() usage
-
-		
 		if ( _root.passivebar.m_Bar != undefined ) {
 
 			var pb = _root.passivebar;
@@ -367,10 +374,36 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			var globalPassiveBarPos:Point = new Point( pbx, pby );
 			pb.localToGlobal( globalPassiveBarPos );
 			this.globalToLocal( globalPassiveBarPos );
+
+			var primaryDefaultPosition = new Point( globalPassiveBarPos.x - m_Primary._width - 2, globalPassiveBarPos.y - m_Primary._height - 3 );
+			var secondaryDefaultPosition = new Point( globalPassiveBarPos.x + 2, globalPassiveBarPos.y - m_Secondary._height - 3 );
 			
-			m_Primary._x = globalPassiveBarPos.x - m_Primary._width - 2;
-			m_Secondary._x = globalPassiveBarPos.x + 2;
-			m_Primary._y = m_Secondary._y = globalPassiveBarPos.y - m_Primary._height - 3;
+			// userTriggered parameter needed to prevent the annoying pop-in when first loading into an area
+			// when the bars are initially positioned
+			if( userTriggered && _animateMovementsToDefaultPosition ) {
+			
+				m_Primary.tweenTo(1, {
+						_x: primaryDefaultPosition.x,
+						_y: primaryDefaultPosition.y
+					},
+					Bounce.easeOut
+				);
+				
+				m_Secondary.tweenTo(1, {
+						_x: secondaryDefaultPosition.x,
+						_y: secondaryDefaultPosition.y
+					},
+					Bounce.easeOut
+				);
+				
+			}
+			else {
+				m_Primary._x = primaryDefaultPosition.x;
+				m_Primary._y = primaryDefaultPosition.y;
+				m_Secondary._x = secondaryDefaultPosition.x;
+				m_Secondary._y = secondaryDefaultPosition.y;
+			}
+			
 		}
 		
 		else {
@@ -416,9 +449,13 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 		var slotMC:MovieClip = slot.mc;
 		var item:InventoryItem = _inventory.GetItemAt( equipLocation );
-
+		if ( item.m_Name == undefined || item.m_Name == "" ) item = undefined;
+		
 		slot.item = item;
-		if( slot.type == "aegis") slot.aegisType = "empty";
+		if ( slot.type == "aegis") {
+			slot.aegisType = "empty";
+			slot.aegisXP = undefined;
+		}
 		
 		// if an item is slotted, show it
 		if ( item != undefined)
@@ -444,10 +481,10 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 				else if ( item.m_Name.indexOf("Psy") >= 0 ) {
 					slot.aegisType = "psychic";
 				}
+				
+				// if XP is being shown, fetch just this item's XP, the rest can wait for the update interval
+				UpdateAegisSlotXP(slot);
 			}
-			
-			//slotMC.SetTooltipText(LDBFormat.LDBGetText("GenericGUI", "SwapAegis"));
-			//slotMC.SetTooltipMaxWidth(275);
 			
 		}
 		
@@ -499,7 +536,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			}
 			else barMC.m_Background.filters = [];
 			
-			// handle weaponj slot
+			// handle weapon slot
 			var weaponSlot = bar.weaponSlot;
 			var weaponSlotMC = weaponSlot.mc;
 
@@ -564,13 +601,28 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 					slotMC.m_Icon._visible = true;
 				}
 				
-				// show xp bars
-				slotMC.m_XPBar._visible = _showXP && slot.item != undefined;
-				
-				// tint xp bar elements
-				Utils.Colorize( slotMC.m_XPBar.m_Progress, _tints.xpProgress );
-				Utils.Colorize( slotMC.m_XPBar.m_Background, _tints.xpBackground );
-				
+				// show xp display
+				if ( !_showXP || slot.item == undefined ) slotMC.m_XPBar._visible = slotMC.m_XPText._visible = false;
+				else {
+
+					// use text display
+					if ( _xpUseTextDisplay ) {
+						slotMC.m_XPBar._visible = false;
+						
+						slotMC.m_XPText._visible = _xpUseTextDisplay;
+					}
+					
+					// use progress bar display
+					else {
+						slotMC.m_XPText._visible = false;
+						
+						Utils.Colorize( slotMC.m_XPBar.m_Background, _tints.xpBackground );						
+						
+						slotMC.m_XPBar.m_Background._visible = _showXPProgressBackground;
+						slotMC.m_XPBar._visible = true;
+					}
+				}
+
 				// show aegis background
 				slotMC.m_Background._visible = _showAegisBackgroundBehaviour == SlotBackgroundBehaviour.ALWAYS
 					|| ( _showAegisBackgroundBehaviour == SlotBackgroundBehaviour.WHEN_SLOTTED && slot.item != undefined );
@@ -825,8 +877,69 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		mc.onRollOut = Delegate.create(this, handleRollOut);
 		mc.onDragOut = mc.onRollOut;
 	}
-	
 
+	// poll periodically for aegis XP for each slotted controller, using tooltip data as the source of the values
+	private function UpdateAegisXP():Void {
+		
+		// cancel any existing poll wait underway
+		if ( _pollAegisXPTimeoutID != undefined) {
+			_global.clearTimeout( _pollAegisXPTimeoutID );
+			_pollAegisXPTimeoutID = undefined;
+		}		
+		
+		// do nothing else if XP isn't being shown
+		if ( !_showXP ) return;
+		
+		// for each aegis controller, get the tooltip data and extract the XP value
+		for ( var s:String in _itemSlots ) {
+			UpdateAegisSlotXP( _itemSlots[s] );
+		}
+		
+		// set up a new poll wait
+		_pollAegisXPTimeoutID = _global.setTimeout( Delegate.create(this, UpdateAegisXP), _pollAegisXPInterval * 1000 );
+	}
+	
+	// update aegis xp for a single item
+	private function UpdateAegisSlotXP(slot:Object):Void {
+		
+		// do nothing if there is nothing sensible to act on
+		// important clause at the end there for efficiency -- the only way to get a slotted item away from 100 is to unslot it
+		// which will clear the xp value, this when it gets reslotted after being upgraded it won't be on 100 anymore... :)
+		if ( !_showXP || slot == undefined || slot.type != "aegis" || slot.item == undefined || slot.aegisXP == 100) return;
+		
+		// fetch tooltip for item
+		var tooltipData:TooltipData = TooltipDataProvider.GetInventoryItemTooltip( _inventory.GetInventoryID(), slot.equip );
+
+		// break out xp value
+		var xpString:String = tooltipData.m_Descriptions[2];
+		xpString = xpString.substring( xpString.indexOf(":") + 2, xpString.indexOf("%") );
+
+		// strip the remaining HTML formatting
+		var istart;
+		while ((istart = xpString.indexOf("<")) != -1)
+		{
+			xpString = xpString.split(xpString.substr(istart, xpString.indexOf(">")-istart+1)).join("");
+		}
+
+		var xp:Number = Math.floor( Number(xpString) );
+
+		// put xp value into slot and publish into component
+		slot.aegisXP = xp == Number.NaN ? undefined : xp;
+
+		// text display being used
+		if ( _xpUseTextDisplay ) {
+			slot.mc.m_XPText.m_Text.text = xp == Number.NaN ? "?" : xp;
+			Utils.Colorize( slot.mc.m_XPText, xp >= 100 ? _tints.xpFull : _tints.none );
+		}
+		
+		// progress bar being used
+		else {
+			slot.mc.m_XPBar.m_Progress._xscale = xp == Number.NaN ? 150: xp;
+			Utils.Colorize( slot.mc.m_XPBar.m_Progress, xp >= 100 ? _tints.xpFull : _tints.xpProgress );
+		}
+	}
+	
+	
 	// signal handlers for inventory and character stat changes
 	// I think some of these are not necessary just for Aegis or Weapon swapping, but they are the complete list
 	// used by the default CharacterSheetController, as I'd rather cover everything than have
@@ -905,7 +1018,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	private function PassiveBarOnTweenCompleteProxy():Void {
 		// let the original function run
 		_root.passivebar.m_Bar.onTweenComplete_AegisHUD_Saved();
-		SetDefaultPosition();
+		MoveToDefaultPosition(true);
 	}
 
 	
@@ -1084,5 +1197,32 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			invalidate();
 		}
 	}
-
+	public function get xpUseTextDisplay():Boolean { return _xpUseTextDisplay; }
+	public function set xpUseTextDisplay(value:Boolean):Void {
+		if ( _xpUseTextDisplay != value ) {
+			_xpUseTextDisplay = value;
+			if( showXP ) invalidate();
+		}
+	}
+	public function get showXPProgressBackground():Boolean { return _showXPProgressBackground; }
+	public function set showXPProgressBackground(value:Boolean):Void 
+	{
+		if ( _showXPProgressBackground != value ) {
+			_showXPProgressBackground = value;
+			
+			if ( showXP && !xpUseTextDisplay ) invalidate();
+		}
+	}
+	public function get pollAegisXPInterval():Number { return _pollAegisXPInterval; }
+	public function set pollAegisXPInterval(value:Number):Void 
+	{
+		if ( _pollAegisXPInterval != value) {
+			_pollAegisXPInterval = value;
+			UpdateAegisXP();
+		}
+	}
+	public function get animateMovementsToDefaultPosition():Boolean { return _animateMovementsToDefaultPosition; }
+	public function set animateMovementsToDefaultPosition(value:Boolean):Void {
+		_animateMovementsToDefaultPosition = value;
+	}
 }
