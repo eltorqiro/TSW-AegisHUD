@@ -114,7 +114,7 @@ function OnModuleActivated()
 	g_RPC = DistributedValue.Create(AddonInfo.Name + "_RPC");
 	g_RPC.SignalChanged.Connect(RPCListener, this);
 	
-	HideDefaultSwapButtons();
+	HideDefaultSwapButtons(g_hideDefaultSwapButtons);
 }
 
 
@@ -205,66 +205,54 @@ function SlotTagAdded(tag:Number)
 
 
 // hide or show default buttons
-function HideDefaultSwapButtons():Void
+function HideDefaultSwapButtons(hide:Boolean):Void
 {
 	// hack to wait for the passivebar to be loaded, as it actually gets unloaded during teleports etc, not just deactivated
 	if ( _root.passivebar.LoadAegisButtons == undefined )
 	{
 		// if the thrash count is exceeded, reset count and do nothing
 		if (g_findPassiveBarThrashCount++ == 10)  g_findPassiveBarThrashCount = 0;
-
 		// otherwise try again
-		else _global.setTimeout( HideDefaultSwapButtons, 300 );
+		else _global.setTimeout( HideDefaultSwapButtons, 300, hide );
 		
 		return;
 	}
-
 	// if we reached this far, reset thrash count
 	g_findPassiveBarThrashCount = 0;
 
-	
 	// hide buttons
-	if ( g_hideDefaultSwapButtons )
+	if ( hide )
 	{
-		// note that none of these removal methods work after zoning if the module is set to GMF_DONT_UNLOAD
-		// as the default inbuilt HUD does get reloaded on zoning, not just deactivated, so _root.passivebar wouldn't exist
-		// when this function gets called
-		// 
-		// if for some reason the module must be GMF_DONT_UNLOAD then some kind of polling routine will need to be
-		// used to checek for the existence of _root.passivebar
-		
-		// this is very hacky, it's the only way I can prevent the default swap buttons being loaded
-		// refer to GUI.HUD.PassiveBar.LoadAegisButtons()
-		_root.passivebar.AEGIS_SLOT_ACHIEVEMENT = null;
-		_root.passivebar.LoadAegisButtons();
-		
-		// seems like this would be a race condition, but it seems to reliably clean up any clips that get through
-		// BUT ONLY ON INITIAL LOAD, not on signal triggered loads
-		// these lines are currently taken care of by _root.passivebar.LoadAegisButtons()
-		//			_root.passivebar.m_PrimaryAegisSwap.removeMovieClip();
-		//			_root.passivebar.m_SecondaryAegisSwap.removeMovieClip();
-		
-		
-		/* none of the below methods solve the problem reliably, kept here for reference
-		 * 
-			delete _root.passivebar.LoadAegisButtons;	// actually does delete the function, but next time it is called it comes back and runs
-			_root.passivebar.LoadAegisButtons = function() { UtilsBase.PrintChatText("test"); };	// can't overwrite function, unlike javascript
+		if ( _root.passivebar.LoadPrimaryAegisButton_AegisHUD_Saved == undefined ) {
+			_root.passivebar.LoadPrimaryAegisButton_AegisHUD_Saved = _root.passivebar.LoadPrimaryAegisButton;
+			// break the link
+			_root.passivebar.LoadPrimaryAegisButton = undefined;
+			_root.passivebar.LoadPrimaryAegisButton = function() { };
 
-			delete _root.passivebar.m_Inventory; // actually does delete the property, and prevents the icon loading, but the movieclip still gets added so it remains a clickable empty square
+			_root.passivebar.LoadSecondaryAegisButton_AegisHUD_Saved = _root.passivebar.LoadSecondaryAegisButton;
+			// break the link
+			_root.passivebar.LoadSecondaryAegisButton = undefined;
+			_root.passivebar.LoadSecondaryAegisButton = function() { };
 			
-			_root.passivebar.m_PrimaryAegisSwap._visible = false;	// race condition, same reason as the above removeMovieClip() only works on initial load
-		
-			_root.passivebar.attachMovie("AegisButton", "m_PrimaryAegisSwap", getNextHighestDespth() ); // can't block by taking the name first, also a race condition anyway
-		*/
+			// remove any existing movieclips
+			_root.passivebar.m_PrimaryAegisSwap.unloadMovie();
+			_root.passivebar.m_PrimaryAegisSwap.removeMovieClip();
 			
+			_root.passivebar.m_SecondaryAegisSwap.unloadMovie();
+			_root.passivebar.m_SecondaryAegisSwap.removeMovieClip();
+		}
 	}
 
 	// restore default buttons if they have been previously disabled
-	// having the conditional check on the current _root.passivebar.AEGIS_SLOT_ACHIEVEMENT value is necessary
-	// otherwise on initial load the button icons don't load because LoadAegisButtons() is called too quickly back to back and the icon loader hasn't finished loading
-	else if ( _root.passivebar.AEGIS_SLOT_ACHIEVEMENT != AEGIS_SLOT_ACHIEVEMENT )
+	else if ( _root.passivebar.LoadPrimaryAegisButton_AegisHUD_Saved != undefined )
 	{
-		_root.passivebar.AEGIS_SLOT_ACHIEVEMENT = AEGIS_SLOT_ACHIEVEMENT;
+		_root.passivebar.LoadPrimaryAegisButton = _root.passivebar.LoadPrimaryAegisButton_AegisHUD_Saved;
+		_root.passivebar.LoadPrimaryAegisButton_AegisHUD_Saved = undefined;
+
+		_root.passivebar.LoadSecondaryAegisButton = _root.passivebar.LoadSecondaryAegisButton_AegisHUD_Saved;
+		_root.passivebar.LoadSecondaryAegisButton_AegisHUD_Saved = undefined;
+		
+		// do a load to restore buttons naturally if they need to be visible
 		_root.passivebar.LoadAegisButtons();
 	}
 }

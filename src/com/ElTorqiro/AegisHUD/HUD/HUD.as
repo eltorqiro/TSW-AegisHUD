@@ -85,7 +85,6 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	private var _primary:Object = {};
 	private var _secondary:Object = {};
 	private var _sides:Object = { primary: _primary, secondary: _secondary };
-	private var _aegisButtons:Array;
 	private var _itemSlots:Object = { };
 	
 	// internal states
@@ -185,17 +184,12 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		_secondary.weaponSlot = _itemSlots[sWeapon];
 		_secondary.slots = [ _itemSlots[sWeapon], _itemSlots[sAegis1], _itemSlots[sAegis2], _itemSlots[sAegis3] ];
 
-		
 		// wire up button mouse handlers
-		_aegisButtons = [];
-		_aegisButtons.push( m_Primary.m_Aegis1 );
-		_aegisButtons.push( m_Primary.m_Aegis2 );
-		_aegisButtons.push( m_Primary.m_Aegis3 );
-		_aegisButtons.push( m_Secondary.m_Aegis1 );
-		_aegisButtons.push( m_Secondary.m_Aegis2 );
-		_aegisButtons.push( m_Secondary.m_Aegis3 );
-		for ( var i = 0; i < _aegisButtons.length; i++ ) {
-			SetupButtonHandlers( _aegisButtons[i] );
+		for ( var s:String in _itemSlots ) {
+			if ( _itemSlots[s].type == "aegis" ) {
+				SetupButtonHandlers( _itemSlots[s].mc );
+			}
+			
 		}
 		
 		// wire up background mouse handlers
@@ -773,7 +767,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			// if the thrash count is exceeded, reset count and do nothing
 			if (_findPassiveBarThrashCount++ == 30)  _findPassiveBarThrashCount = 0;
 			// otherwise try again
-			else _global.setTimeout( Delegate.create(this, AttachToPassiveBar), 100 );
+			else _global.setTimeout( Delegate.create(this, AttachToPassiveBar), 100, attach );
 			
 			return;
 		}
@@ -785,60 +779,31 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		
 		// set up proxies and force HUD into position
 		if ( attach ) {
-			//passivebar.OpenPassiveBar_AegisHUD_Saved = passivebar.OpenPassiveBar;
-			//passivebar.ClosePassiveBar_AegisHUD_Saved = passivebar.ClosePassiveBar;
-			passivebar.m_Bar.onTweenComplete_AegisHUD_Saved = passivebar.m_Bar.onTweenComplete;
-
-			// break the link
-			//passivebar.OpenPassiveBar = undefined;
-			//passivebar.ClosePassiveBar = undefined;
-			passivebar.m_Bar.onTweenComplete = undefined;
 			
-			//passivebar.OpenPassiveBar = Delegate.create(this, OpenPassiveBarProxy);
-			//passivebar.ClosePassiveBar = Delegate.create(this, ClosePassiveBarProxy);
-			passivebar.m_Bar.onTweenComplete = Delegate.create(this, PassiveBarOnTweenCompleteProxy);
+			if( passivebar.m_Bar.onTweenComplete_AegisHUD_Saved == undefined ) {
+				passivebar.m_Bar.onTweenComplete_AegisHUD_Saved = passivebar.m_Bar.onTweenComplete;
+				// break the link
+				passivebar.m_Bar.onTweenComplete = undefined;
+				passivebar.m_Bar.onTweenComplete = Delegate.create(this, PassiveBarOnTweenCompleteProxy);
+			}
 		}
 		
-		// remove proxies and restore original functions
-		else {
-			//passivebar.OpenPassiveBar = passivebar.OpenPassiveBar_AegisHUD_Saved;
-			//passivebar.ClosePassiveBar = passivebar.ClosePassiveBar_AegisHUD_Saved;
+		// remove proxy and restore original function
+		else if( passivebar.m_Bar.onTweenComplete_AegisHUD_Saved != undefined ) {
 			passivebar.m_Bar.onTweenComplete = passivebar.m_Bar.onTweenComplete_AegisHUD_Saved;
-			
-			//passivebar.OpenPassiveBar_AegisHUD_Saved = undefined;
-			//passivebar.ClosePassiveBar_AegisHUD_Saved = undefined;
 			passivebar.m_Bar.onTweenComplete_AegisHUD_Saved = undefined;
 		}
 	}
 	
-	// proxy functions for hooking into the passivebar OpenPassiveBar() and ClosePassiveBar() functions
-	private function OpenPassiveBarProxy():Void {
-		UtilsBase.PrintChatText("open passive bar");
-
-		// let the original function run
-		_root.passivebar.OpenPassiveBar_AegisHUD_Saved();
-	}
-	
-	
-	private function ClosePassiveBarProxy():Void {
-		UtilsBase.PrintChatText("close passive bar");
-
-		// let the original function run
-		_root.passivebar.ClosePassiveBar_AegisHUD_Saved();
-	}
-
+	// proxy function for hooking into the passivebar onTweenComplete listener that fires after each open/close
 	private function PassiveBarOnTweenCompleteProxy():Void {
-		UtilsBase.PrintChatText("tween complete passive bar");
-
 		// let the original function run
 		_root.passivebar.m_Bar.onTweenComplete_AegisHUD_Saved();
-		
 		SetDefaultPosition();
 	}
 
 	
 	// getters & setters
-	
 	public function get showWeapons():Boolean {
 		return _showWeapons;
 	}
