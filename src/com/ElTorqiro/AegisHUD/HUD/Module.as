@@ -148,7 +148,7 @@ function SaveData():Void
 	saveData.AddEntry( "showWeapons", g_HUD.showWeapons );
 //	saveData.AddEntry( "showWeaponHighlight", g_HUD.showWeaponHighlight );
 	saveData.AddEntry( "showBarBackground", g_HUD.showBarBackground );
-	saveData.AddEntry( "showXPBars", g_HUD.showXPBars );
+	saveData.AddEntry( "showXP", g_HUD.showXP );
 	saveData.AddEntry( "showTooltips", g_HUD.showTooltips );
 	saveData.AddEntry( "primaryWeaponFirst", g_HUD.primaryWeaponFirst );
 	saveData.AddEntry( "secondaryWeaponFirst", g_HUD.secondaryWeaponFirst );

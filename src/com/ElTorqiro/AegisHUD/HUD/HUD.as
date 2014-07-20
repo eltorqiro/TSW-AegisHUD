@@ -1,5 +1,3 @@
-import com.Components.FCButton;
-import com.Components.ItemSlot;
 import com.GameInterface.DistributedValue;
 import com.GameInterface.Game.Character;
 import com.GameInterface.Inventory;
@@ -15,7 +13,6 @@ import com.Utils.ID32;
 import com.Utils.LDBFormat;
 import com.GameInterface.Tooltip.*;
 import mx.utils.Delegate;
-//import com.ElTorqiro.AegisHUD.HUD.Bar;
 import com.ElTorqiro.AegisHUD.Enums.AegisBarLayoutStyles;
 import com.ElTorqiro.AegisHUD.Enums.SlotBackgroundBehaviour;
 import com.ElTorqiro.AegisHUD.Enums.ActiveAegisBackgroundTintBehaviour;
@@ -50,7 +47,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	private var _tintWeaponIconByActiveAegis:Boolean = false;
 	private var _neonGlowWeapon:Boolean = true;
 	
-	private var _showXPBars:Boolean = false;
+	private var _showXP:Boolean = true;
 	private var _showTooltips:Boolean = true;
 
 	private var _showAegisBackgroundBehaviour:Number = 1;	// SlotBackgroundBehaviour
@@ -75,6 +72,10 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	private var _character:Character;
 	private var _inventory:Inventory;
 	private var _iconLoader:MovieClipLoader;
+    private var _tooltip:TooltipInterface;
+	private var _tooltipTimeoutID:Number;
+	private var _tooltipSlot:Object;
+	
 	
 	// internal movieclips
 	private var m_Primary:MovieClip;
@@ -122,12 +123,49 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		_tints.empty   = 0x999999;
 		_tints.none    = 0xffffff;
 		_tints.standard = 0x006AFF;
+
+		_tints.xpBackground = 0xffffff;
+		_tints.xpProgress	= 0xFF8800; // 0x00E5A3;
+		_tints.xpFull		= 0x00FFA2; // 0x4EE500; // 0x19FDFF;
+		
+		//dumpEnums();
 	}
 	
+	private var _enumNames:Array = [];
+	public function dumpEnums(obj:Object) {
+		
+		var theEnum:Object;
+		if ( obj == undefined ) {
+			theEnum = _global.Enums;
+			_enumNames.push("_global");
+			_enumNames.push("Enums");
+		}
+		else theEnum = obj;
 
+		var path:String = _enumNames.join(".");
+		var varName:String;
+		for ( var s:String in theEnum ) {
+			
+			if ( theEnum[s] instanceof Object ) {
+				_enumNames.push(s);
+				dumpEnums(theEnum[s]);
+			}
+			else {
+				varName = path + "." + s;
+				if( varName.indexOf("Achievement") > -1 ) UtilsBase.PrintChatText( varName + ": " + theEnum[s] );
+			}
+		}
+		
+		_enumNames.pop();
+	}
+	
 	public function onUnload():Void
 	{
 		super.onUnload();
+
+		// close any open tooltip
+		CloseTooltip();
+
 		
 		// unwire signal listeners
 		_character.SignalStatChanged.Disconnect( SlotStatChanged, this);
@@ -223,13 +261,10 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		
 		// wire up event listener
 		this.addEventListener("select", this, "AegisSelectHandler");
+		this.addEventListener("rollover", this, "AegisRollOverHandler");
+		this.addEventListener("rollout", this, "AegisRollOutHandler");
 	}
 
-	function AegisSelectHandler(event:Object):Void {
-		SwapToAegisSlot( event.itemSlot.equip, event.dualSelect );
-	}
-
-	
 	// layout bar internally
 	private function LayoutBars():Void
 	{
@@ -281,10 +316,15 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			bar.m_Background._width = lastButton._x + lastButton._width + (_barPadding);
 			bar.m_Background._height = lastButton._y + lastButton._height + (_barPadding);
 		}
+		
+		// if hud is attached to passivebar, reset to default swap button position
+		if ( _attachToPassiveBar ) {
+			SetDefaultPosition();
+		}
 	}
 	
 	// position HUD elements on the screen
-	public function PositionHUD():Void
+	private function PositionHUD():Void
 	{
 		// apply scale
 		m_Primary._xscale = m_Primary._yscale = _hudScale;
@@ -525,7 +565,11 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 				}
 				
 				// show xp bars
-				slotMC.m_XPBar._visible = _showXPBars && slot.item != undefined;
+				slotMC.m_XPBar._visible = _showXP && slot.item != undefined;
+				
+				// tint xp bar elements
+				Utils.Colorize( slotMC.m_XPBar.m_Progress, _tints.xpProgress );
+				Utils.Colorize( slotMC.m_XPBar.m_Background, _tints.xpBackground );
 				
 				// show aegis background
 				slotMC.m_Background._visible = _showAegisBackgroundBehaviour == SlotBackgroundBehaviour.ALWAYS
@@ -587,7 +631,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 	// swap to an aegis slot
 	// -- note that slotNumber is equipment location in the inventory
-	public function SwapToAegisSlot(equipLocation:Number, dualSelect:Boolean)
+	private function SwapToAegisSlot(equipLocation:Number, dualSelect:Boolean)
 	{
 		// do nothing if no slot location provided
 		if ( equipLocation == undefined) return;
@@ -617,6 +661,68 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			SwapToAegisSlot( _itemSlots[equipLocation].dualSelectPartner );
 		}
 	}
+
+	// handle mouse clicks that select an aegis
+	private function AegisSelectHandler(event:Object):Void {
+		SwapToAegisSlot( event.itemSlot.equip, event.dualSelect );
+	}
+
+	// handle mouse rolling over an aegis
+	private function AegisRollOverHandler(event:Object):Void {
+		// prepare tooltip data
+		if ( event.itemSlot.item != undefined ) {
+			_tooltipSlot = event.itemSlot;
+			StartTooltipTimeout();
+		}
+	}
+
+	
+	private function AegisRollOutHandler(event:Object):Void {
+		StopTooltipTimeout();
+		CloseTooltip();
+	}
+	
+	private function StartTooltipTimeout():Void {
+		if (_tooltipTimeoutID != undefined) return
+
+		var delay:Number = DistributedValue.GetDValue("HoverInfoShowDelay");
+
+		if( delay <= 0 ) OpenTooltip();
+		else _tooltipTimeoutID = _global.setTimeout( Delegate.create( this, OpenTooltip ), delay * 1000 );
+	}
+
+	private function StopTooltipTimeout():Void {
+		if ( _tooltipTimeoutID != undefined) {
+			_global.clearTimeout( _tooltipTimeoutID );
+			_tooltipTimeoutID = undefined;
+		}
+	}
+    
+    private function OpenTooltip():Void {
+		// close any existing tooltip
+		CloseTooltip();
+		
+		// don't show anything if setting disabled
+		if ( !_showTooltips ) return;
+
+        if ( _tooltipSlot.item != undefined ) {
+            var tooltipData:TooltipData = TooltipDataProvider.GetInventoryItemTooltip( _inventory.GetInventoryID(), _tooltipSlot.equip );			
+			
+			//tooltipData.m_Descriptions.push(m_TooltipText);
+            //tooltipData.m_Padding = 4;
+            //tooltipData.m_MaxWidth = m_MaxWidth;
+			
+			_tooltip = TooltipManager.GetInstance().ShowTooltip( _tooltipSlot.mc, TooltipInterface.e_OrientationVertical, 0, tooltipData );
+		}
+    }
+    
+    private function CloseTooltip():Void {
+		StopTooltipTimeout();
+        if (_tooltip != undefined) {
+            _tooltip.Close();
+			_tooltip = undefined;
+        }
+    }
 
 	
 	private function handleMousePress(controllerIdx:Number, keyboardOrMouse:Number, button:Number):Void {
@@ -664,8 +770,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	
 	private function handleRollOver(mouseIdx:Number):Void {
 		// check which aegis selector button was involved
-		var buttonMC:MovieClip = getItemSlotMouseOver();
-		dispatchEvent( { type:"rollover", target:buttonMC } );
+		var slot:MovieClip = getItemSlotMouseOver();
+		dispatchEvent( { type:"rollover", itemSlot:slot } );
 	}
 
 	private function handleRollOut(mouseIdx:Number):Void {
@@ -804,93 +910,179 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 	
 	// getters & setters
-	public function get showWeapons():Boolean {
-		return _showWeapons;
-	}
+	public function get showWeapons():Boolean { return _showWeapons; }
 	public function set showWeapons(value:Boolean) {
-		_showWeapons = value;
+		if( _showWeapons != value) {
+			_showWeapons = value;
+			LayoutBars();
+		}
 	}
 	
-	public function get showBarBackground():Boolean {
-		return _showBarBackground;
-	}
+	public function get showBarBackground():Boolean { return _showBarBackground; }
 	public function set showBarBackground(value:Boolean) {
-		_showBarBackground = value;
+		if( _showBarBackground != value) {
+			_showBarBackground = value;
+			invalidate();
+		}
 	}
 	
-	public function get showXPBars():Boolean {
-		return _showXPBars;
-	}
-	public function set showXPBars(value:Boolean) {
-		_showXPBars = value;
-	}
-	
-	public function get showTooltips():Boolean {
-		return _showTooltips;
-	}
-	public function set showTooltips(value:Boolean) {
-		_showTooltips = value;
+	public function get showXP():Boolean { return _showXP; }
+	public function set showXP(value:Boolean) {
+		if( _showXP != value ) {
+			_showXP = value;
+			invalidate();
+		}
 	}
 	
-	// readonly
-	public function get primaryBar():MovieClip {
-		return m_Primary;
-	}
+	public function get showTooltips():Boolean { return _showTooltips; }
+	public function set showTooltips(value:Boolean) { _showTooltips = value; }
 	
-	// readonly
-	public function get secondaryBar():MovieClip {
-		return m_Secondary;
-	}
-	
-	public function get primaryPosition():Point {
-		return new Point(m_Primary._x, m_Primary._y);
-	}
-	public function set primaryPosition(value:Point) {
-		_primaryPosition = value;
-	}
+	public function get primaryPosition():Point { return new Point(m_Primary._x, m_Primary._y); }
+	public function set primaryPosition(value:Point) { _primaryPosition = value; }
 
-	public function get secondaryPosition():Point {
-		return new Point(m_Secondary._x, m_Secondary._y);
-	}
-	public function set secondaryPosition(value:Point) {
-		_secondaryPosition = value;
-	}
+	public function get secondaryPosition():Point { return new Point(m_Secondary._x, m_Secondary._y); }
+	public function set secondaryPosition(value:Point) { _secondaryPosition = value; }
 
 	// overall hud scale
-	public function get hudScale():Number {
-		return _hudScale;
-	}
-	public function set hudScale(scale:Number) {
-		_hudScale = scale;
-	}
+	public function get hudScale():Number { return _hudScale; }
+	public function set hudScale(scale:Number) { _hudScale = scale; }
 	
-	public function get primaryWeaponFirst():Boolean {
-		return _primaryWeaponFirst;
-	}
+
+	public function get primaryWeaponFirst():Boolean { return _primaryWeaponFirst; }
 	public function set primaryWeaponFirst(value:Boolean) {
-		_primaryWeaponFirst = value;
+		if( _primaryWeaponFirst != value ) {
+			_primaryWeaponFirst = value;
+			LayoutBars();
+		}
 	}
 
-	public function get secondaryWeaponFirst():Boolean {
-		return _secondaryWeaponFirst;
-	}
+	public function get secondaryWeaponFirst():Boolean { return _secondaryWeaponFirst; }
 	public function set secondaryWeaponFirst(value:Boolean) {
-		_secondaryWeaponFirst = value;
+		if( _secondaryWeaponFirst != value ) {
+			_secondaryWeaponFirst = value;
+			LayoutBars();
+		}
 	}
 
-	public function get lockBars():Boolean {
-		return _lockBars;
-	}
-	public function set lockBars(value:Boolean) {
-		_lockBars = value;
-	}
+	public function get lockBars():Boolean { return _lockBars; }
+	public function set lockBars(value:Boolean) { _lockBars = value; }
 		
-	public function get barStyle():Number {
-		return _barStyle;
-	}	
-	// TODO: some sanity checking to make sure this is in a valid range of available styles, although Bar currently filters that
+	public function get barStyle():Number { return _barStyle; }	
 	public function set barStyle(value:Number) {
-		_barStyle = value;
+		if ( _barStyle != value ) {
+			_barStyle = value;
+			LayoutBars();
+		}
 	}
 	
+	public function get neonGlowEntireBar():Boolean { return _neonGlowEntireBar; }
+	public function set neonGlowEntireBar(value:Boolean):Void {
+		if ( _neonGlowEntireBar != value ) {
+			_neonGlowEntireBar = value;
+			invalidate();
+		}
+	}
+	
+	public function get attachToPassiveBar():Boolean { return _attachToPassiveBar; }
+	public function set attachToPassiveBar(value:Boolean):Void {
+		_attachToPassiveBar = value;
+		AttachToPassiveBar(_attachToPassiveBar);
+	}
+	
+	public function get tintBarBackgroundByActiveAegis():Boolean { return _tintBarBackgroundByActiveAegis; }
+	public function set tintBarBackgroundByActiveAegis(value:Boolean):Void {
+		if ( _tintBarBackgroundByActiveAegis != value ) {
+			_tintBarBackgroundByActiveAegis = value;
+			invalidate();
+		}
+	}
+	
+	public function get neonGlowBarBackground():Boolean { return _neonGlowBarBackground; }
+	public function set neonGlowBarBackground(value:Boolean):Void {
+		if ( _neonGlowBarBackground != value ) {
+			_neonGlowBarBackground = value;
+			invalidate();
+		}
+	}
+	
+	public function get showWeaponBackgroundBehaviour():Number { return _showWeaponBackgroundBehaviour; }
+	public function set showWeaponBackgroundBehaviour(value:Number):Void {
+		if ( _showWeaponBackgroundBehaviour != value) {
+			_showWeaponBackgroundBehaviour = value;
+			invalidate();
+		}
+	}
+	
+	public function get tintWeaponBackgroundByActiveAegis():Boolean { return _tintWeaponBackgroundByActiveAegis; }
+	public function set tintWeaponBackgroundByActiveAegis(value:Boolean):Void {
+		if ( _tintWeaponBackgroundByActiveAegis != value) {
+			_tintWeaponBackgroundByActiveAegis = value;
+			invalidate();
+		}
+	}
+	
+	public function get tintWeaponIconByActiveAegis():Boolean { return _tintWeaponIconByActiveAegis; }
+	public function set tintWeaponIconByActiveAegis(value:Boolean):Void {
+		if( _tintWeaponIconByActiveAegis != value ) {
+			_tintWeaponIconByActiveAegis = value;
+			invalidate();
+		}
+	}
+	
+	public function get neonGlowWeapon():Boolean { return _neonGlowWeapon; }
+	public function set neonGlowWeapon(value:Boolean):Void {
+		if( _neonGlowWeapon != value ) {
+			_neonGlowWeapon = value;
+			invalidate();
+		}
+	}
+	
+	public function get showAegisBackgroundBehaviour():Number { return _showAegisBackgroundBehaviour; }
+	public function set showAegisBackgroundBehaviour(value:Number):Void {
+		if ( _showAegisBackgroundBehaviour != value ) {
+			_showAegisBackgroundBehaviour = value;
+			invalidate();
+		}
+	}
+	
+	public function get tintAegisBackgroundByType():Boolean { return _tintAegisBackgroundByType; }
+	public function set tintAegisBackgroundByType(value:Boolean):Void {
+		if( _tintAegisBackgroundByType != value ) {
+			_tintAegisBackgroundByType = value;
+			invalidate();
+		}
+	}
+	
+	public function get showActiveAegisBackground():Boolean { return _showActiveAegisBackground; }
+	public function set showActiveAegisBackground(value:Boolean):Void {
+		if( _showActiveAegisBackground != value ) {
+			_showActiveAegisBackground = value;
+			invalidate();
+		}
+	}
+	
+	public function get tintActiveAegisBackgroundBehaviour():Number { return _tintActiveAegisBackgroundBehaviour; }
+	public function set tintActiveAegisBackgroundBehaviour(value:Number):Void {
+		if( _tintActiveAegisBackgroundBehaviour != value ) {
+			_tintActiveAegisBackgroundBehaviour = value;
+			invalidate();
+		}
+	}
+	
+	public function get neonGlowAegis():Boolean { return _neonGlowAegis; }
+	public function set neonGlowAegis(value:Boolean):Void {
+		if( _neonGlowAegis != value ) {
+			_neonGlowAegis = value;
+			invalidate();
+		}
+	}
+	
+	public function get neonEnabled():Boolean { return _neonEnabled; }
+	public function set neonEnabled(value:Boolean):Void {
+		if( _neonEnabled != value ) {
+			_neonEnabled = value;
+			invalidate();
+		}
+	}
+
 }
