@@ -4,6 +4,7 @@
   <Value name="ElTorqiro_AegisHUD" value="true" />
   <Value name="ElTorqiro_AegisHUD_Config" value="true" />
   <Value name="ElTorqiro_AegisHUD_ShowConfig" value="false" />
-  <Archive name="ElTorqiro_AegisHUD_Data" />
+  <Archive name="ElTorqiro_AegisHUD_HUD_Settings" />
+  <Archive name="ElTorqiro_AegisHUD_HUD_Options" />
   <Archive name="ElTorqiro_AegisHUD_Config_Data" />
 </Root>

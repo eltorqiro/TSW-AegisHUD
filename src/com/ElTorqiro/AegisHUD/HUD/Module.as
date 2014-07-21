@@ -21,6 +21,7 @@ import com.GameInterface.Lore
 import com.ElTorqiro.Utils;
 import com.ElTorqiro.AegisHUD.HUD.HUD;
 import com.ElTorqiro.AegisHUD.Enums.*;
+import com.ElTorqiro.AegisHUD.AddonInfo;
 
 // the AegisHUD instance
 var g_HUD:HUD;
@@ -33,7 +34,7 @@ var g_options:Object;	// options
 var g_RPC:DistributedValue;
 var g_RPCFilter:Object;
 
-// event listeners for Aegis unlocks
+// TSW user setting that shows/hides the swap UI
 var g_showAegisSwapUI:DistributedValue;
 
 var AEGIS_SLOT_ACHIEVEMENT:Number = 6817;	// The Lore number that unlocks the AEGIS system
@@ -41,57 +42,43 @@ var AEGIS_SLOT_ACHIEVEMENT:Number = 6817;	// The Lore number that unlocks the AE
 
 // internal variables
 var g_findPassivebarThrashCount:Number = 0;
-var g_hideDefaultSwapButtons:Boolean = true;
 
 
 //Init
-function onLoad()
-{
+function onLoad():Void {
+	UtilsBase.PrintChatText("loaded: " + AddonInfo.Name);
+	
 	// default values for settings
-	g_settings = {
-		primaryPosition:		new Point( -1, -1 ),
-		secondaryPosition:		new Point( -1, -1 ),
-		scale:					100,
-		
-		hideDefaultSwapButtons: true,
-		barStyle:				AegisBarLayoutStyles.HORIZONTAL,
-		showWeapons:			true,
-		showWeaponHighlight:	true,
-		showBarBackground:		true,
-		showXPBars:				false,
-		showTooltips:			false,
-		primaryWeaponFirst:		true,
-		secondaryWeaponFirst:	true,
-		hudScale:				100,
-		lockBars:				false
+	g_settings = HUD.defaultSettingsPack;
+
+	// create initial settings values
+	g_options = {
+		hideDefaultSwapButtons: true
 	};
 	
 	// RPC permissable settings/commands
 	g_RPCFilter = {
-		/* settings */
-		hideDefaultSwapButtons: "setting",
-		barStyle:				"setting",
-		showWeapons:			"setting",
-		showWeaponHighlight:	"setting",
-		showBarBackground:		"setting",
-		showXPBars:				"setting",
-		showTooltips:			"setting",
-		primaryWeaponFirst:		"setting",
-		secondaryWeaponFirst:	"setting",
-		lockBars:				"setting",
+		settings: { },
+
+		commands: {
+			MoveToDefaultPosition: true
+		},
 		
-		/* commands */
-		SetDefaultPosition:		"command"
+		options: {
+			hideDefaultSwapButtons: true
+		}
 	};
+	
+	// poulate allowed RPC filter settings - for now just allow every possible setting provided by HUD
+	for ( var s:String in HUD.defaultSettingsPack ) {
+		g_RPCFilter.settings[s] = true;
+	}
 }
 
-function onUnload()
-{
-}
+function onUnload():Void {}
 
 // module activated (i.e. its distributed value set to 1)
-function OnModuleActivated()
-{
+function OnModuleActivated():Void {
 
 	// handle the TSW user config option for showing/hiding AEGIS HUD UI
 	g_showAegisSwapUI = DistributedValue.Create( "ShowAegisSwapUI" );
@@ -101,87 +88,101 @@ function OnModuleActivated()
 	if ( Lore.IsLocked(AEGIS_SLOT_ACHIEVEMENT) )  Lore.SignalTagAdded.Connect(SlotTagAdded, this);
 	
 	// load settings values
-	var hudData = DistributedValue.GetDValue(AddonInfo.Name + "_Data");
-	for (var s:String in g_settings)
-	{
-		g_settings[s] = hudData.FindEntry( s, g_settings[s] );
-	}
+	LoadData();
 	
 	// instantiate HUD
-	var settings = { test: "hello" };
-	
-	g_HUD = HUD( this.attachMovie("com.ElTorqiro.AegisHUD.HUD.HUD", "m_HUD", this.getNextHighestDepth(), { settings: settings }) );
+	g_settings.attachToPassiveBar = false;
+	ShowHUD();
 
+	// hide default swap buttons if specified
+	HideDefaultSwapButtons( g_options.hideDefaultSwapButtons );
+	
 	// wire up RPC listener
 	g_RPC = DistributedValue.Create(AddonInfo.Name + "_RPC");
 	g_RPC.SignalChanged.Connect(RPCListener, this);
 	
-	HideDefaultSwapButtons(g_hideDefaultSwapButtons);
 }
 
-
 // module deactivated (i.e. its distributed value set to 0)
-function OnModuleDeactivated()
-{
-	// clean up listeners game related listeners
+function OnModuleDeactivated():Void {
+
+	// clean up game related listeners
 	Lore.SignalTagAdded.Disconnect(SlotTagAdded, this);
 	g_showAegisSwapUI.SignalChanged.Disconnect( ShowAegisSwapUIChanged, this );
 	
 	// disconnect from internal DValues
 	g_RPC.SignalChanged.Disconnect(RPCListener, this);
 
-	// persist settings
+	// close HUD
+	ShowHUD( false );
+	
+	// persist settings (must happen after HUD is closed to make sure most up to date values are available)
 	SaveData();
 
-	// clean up elements
-	g_HUD.unloadMovie();
-	g_HUD.removeMovieClip();
+	// restore regular default swap button behaviour
+	HideDefaultSwapButtons( false );
 }
 
-function SaveData():Void
-{
-	// save module settings
+// prepare settings for saving by TSW
+function SaveData():Void {
+
+	// because LoginPrefs.xml has a reference to these DValues, the contents will be saved whenever the game thinks it is necessary
+	// (e.g. closing the game, reloadui etc)
+	
+	// store HUD settings
+	UpdateSettingsFromHUD();	
 	var saveData:Archive = new Archive();
 
-	saveData.AddEntry( "hideDefaultSwapButtons", g_hideDefaultSwapButtons );
-	saveData.AddEntry( "primaryPosition", g_HUD.primaryPosition );
-	saveData.AddEntry( "secondaryPosition", g_HUD.secondaryPosition );
-	saveData.AddEntry( "barStyle", g_HUD.barStyle );
-	saveData.AddEntry( "showWeapons", g_HUD.showWeapons );
-//	saveData.AddEntry( "showWeaponHighlight", g_HUD.showWeaponHighlight );
-	saveData.AddEntry( "showBarBackground", g_HUD.showBarBackground );
-	saveData.AddEntry( "showXP", g_HUD.showXP );
-	saveData.AddEntry( "showTooltips", g_HUD.showTooltips );
-	saveData.AddEntry( "primaryWeaponFirst", g_HUD.primaryWeaponFirst );
-	saveData.AddEntry( "secondaryWeaponFirst", g_HUD.secondaryWeaponFirst );
-	saveData.AddEntry( "hudScale", g_HUD.hudScale );
-	saveData.AddEntry( "lockBars", g_HUD.lockBars );
+	for ( var s:String in g_settings ) {
+		saveData.AddEntry( s, g_settings[s] );
+	}
+	DistributedValue.SetDValue(AddonInfo.Name + "_HUD_Settings", saveData);
 
-	// because LoginPrefs.xml has a reference to this DValue, the contents will be saved whenever the game thinks it is necessary (e.g. closing the game, reloadui etc)
-	DistributedValue.SetDValue(AddonInfo.Name + "_Data", saveData);
+	// store module options
+	saveData = new Archive();
+	for ( var s:String in g_options ) {
+		saveData.AddEntry( s, g_options[s] );
+	}
+	DistributedValue.SetDValue(AddonInfo.Name + "_HUD_Options", saveData);
+}
+
+// restore settings from DValue (initially populated by TSW)
+function LoadData():Void {
+	
+	// restore HUD settings
+	var loadData:Archive = DistributedValue.GetDValue(AddonInfo.Name + "_HUD_Settings");
+	if( loadData != undefined ) {
+		for ( var s:String in g_settings ) {
+			g_settings[s] = loadData.FindEntry( s, g_settings[s] );
+		}
+	}
+	
+	// restore module options
+	loadData = DistributedValue.GetDValue(AddonInfo.Name + "_HUD_Options");
+	if( loadData != undefined ) {
+		for ( var s:String in g_options ) {
+			g_options[s] = loadData.FindEntry( s, g_options[s] );
+		}
+	}
 }
 
 // RPC listener
-function RPCListener():Void
-{	
+function RPCListener():Void {
 	var rpcData = g_RPC.GetValue();
 
-	for ( var s:String in g_RPCFilter )
-	{
-		var value = rpcData.FindEntry( s, undefined );
-		if ( value != undefined )
-		{
-			switch( g_RPCFilter[s] )
-			{
-				case "setting":
-					g_HUD[s] = value;
-				break;
-				
-				case "command":
-					g_HUD[s](value);
-				break;
-			}
-		}
+	// HUD settings
+	for ( var s:String in g_RPCFilter.settings ) {
+		if ( g_RPCFilter.settings[s] ) g_HUD[s] = value;
+	}
+	
+	// HUD commands
+	for ( var s:String in g_RPCFilter.commands ) {
+		if ( g_RPCFilter.commands[s] ) g_HUD[s]( value );
+	}
+	
+	// module options
+	for ( var s:String in g_RPCFilter.options ) {
+		if ( g_RPCFilter.options[s] ) g_options[s] = value;
 	}
 	
 	// a setting may have changed, update the persistence object
@@ -190,28 +191,54 @@ function RPCListener():Void
 
 
 // handle user changing AEGIS swap visibility in control panel
-function ShowAegisSwapUIChanged()
-{
-	//CreateHUD();
+function ShowAegisSwapUIChanged():Void {
+	ShowHUD( g_showAegisSwapUI.GetValue() );
 }
 
 // handler for situation where AEGIS system becomes unlocked during play session
-function SlotTagAdded(tag:Number)
-{
-	if (tag == AEGIS_SLOT_ACHIEVEMENT)
-	{
+function SlotTagAdded(tag:Number):Void {
+	if (tag == AEGIS_SLOT_ACHIEVEMENT) {
 		Lore.SignalTagAdded.Disconnect(SlotTagAdded, this);
-		//CreateHUD();
+		ShowHUD( g_showAegisSwapUI.GetValue() );
 	}
 }
 
 
+// HUD load / destroy
+function ShowHUD(show:Boolean):Void {
+	
+	// if no variable passed, check automatically
+	if ( show == undefined ) {
+		show = g_showAegisSwapUI.GetValue() && !Lore.IsLocked(AEGIS_SLOT_ACHIEVEMENT);
+	}
+	
+	// attach HUD
+	if( show ) {
+		g_HUD = HUD( this.attachMovie("com.ElTorqiro.AegisHUD.HUD.HUD", "m_HUD", this.getNextHighestDepth(), { settings: g_settings }) );
+	}
+
+	// destroy HUD
+	else if( g_HUD != undefined ) {
+		UpdateSettingsFromHUD();
+		g_HUD.unloadMovie();
+		g_HUD.removeMovieClip();
+		g_HUD = undefined;
+	}
+}
+
+function UpdateSettingsFromHUD():Void {
+	// retrieve current settings directly from HUD to make sure we have the most up to date values
+	if ( g_HUD == undefined ) return;
+	
+	for ( var s:String in g_settings ) {
+		g_settings[s] = g_HUD[s];
+	}
+}
+
 // hide or show default buttons
-function HideDefaultSwapButtons(hide:Boolean):Void
-{
+function HideDefaultSwapButtons(hide:Boolean):Void {
 	// hack to wait for the passivebar to be loaded, as it actually gets unloaded during teleports etc, not just deactivated
-	if ( _root.passivebar.LoadAegisButtons == undefined )
-	{
+	if ( _root.passivebar.LoadAegisButtons == undefined ) {
 		// if the thrash count is exceeded, reset count and do nothing
 		if (g_findPassiveBarThrashCount++ == 10)  g_findPassiveBarThrashCount = 0;
 		// otherwise try again
@@ -223,8 +250,7 @@ function HideDefaultSwapButtons(hide:Boolean):Void
 	g_findPassiveBarThrashCount = 0;
 
 	// hide buttons
-	if ( hide )
-	{
+	if ( hide ) {
 		if ( _root.passivebar.LoadPrimaryAegisButton_AegisHUD_Saved == undefined ) {
 			_root.passivebar.LoadPrimaryAegisButton_AegisHUD_Saved = _root.passivebar.LoadPrimaryAegisButton;
 			// break the link
@@ -246,8 +272,7 @@ function HideDefaultSwapButtons(hide:Boolean):Void
 	}
 
 	// restore default buttons if they have been previously disabled
-	else if ( _root.passivebar.LoadPrimaryAegisButton_AegisHUD_Saved != undefined )
-	{
+	else if ( _root.passivebar.LoadPrimaryAegisButton_AegisHUD_Saved != undefined ) {
 		_root.passivebar.LoadPrimaryAegisButton = _root.passivebar.LoadPrimaryAegisButton_AegisHUD_Saved;
 		_root.passivebar.LoadPrimaryAegisButton_AegisHUD_Saved = undefined;
 

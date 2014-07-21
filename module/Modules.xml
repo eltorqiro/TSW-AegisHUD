@@ -7,7 +7,6 @@
     sub_depth   = "0"
     variable    = "ElTorqiro_AegisHUD"
     criteria    = "ElTorqiro_AegisHUD &amp;&amp; (guimode &amp; (GUIMODEFLAGS_INPLAY | GUIMODEFLAGS_ENABLEALLGUI))"
-    config_name = "ElTorqiro_AegisHUD_Data"
   />
   <Module  name = "ElTorqiro_AegisHUD_Config"
     movie       = "ElTorqiro_AegisHUD\Config.swf"

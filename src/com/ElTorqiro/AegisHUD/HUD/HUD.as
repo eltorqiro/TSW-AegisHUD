@@ -58,6 +58,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	private var _pollAegisXPInterval:Number; // seconds
 
 	private var _showTooltips:Boolean;
+	private var _suppressTooltipsInCombat:Boolean;
 
 	private var _showAegisBackgroundBehaviour:Number;	// SlotBackgroundBehaviour
 	private var _tintAegisBackgroundByType:Boolean;
@@ -118,9 +119,12 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	public var singleDragButton:Number = 1;
 	
 	public var scaleModifier:Number = Key.CONTROL;
+	public var scaleResetModifier:Number = Key.SHIFT;
 
-	public var dualSelectModifier:Number = Key.SHIFT;
-	public var dualSelectButton:Number = 0;
+	public var dualSelectModifier:Number = undefined; // Key.SHIFT;
+	public var dualSelectButton:Number = 1;
+	
+	public var singleSelectButton:Number = 0;
 
 	// parameters passed in through initObj of attachMovie( ..., initObj)
 	private var settings:Object;
@@ -140,7 +144,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		_iconLoader.addListener(this);
 		
 		// apply default settings pack
-		ApplySettingsPack( defaultSettingsPack );
+		ApplySettingsPack( HUD.defaultSettingsPack );
 		
 		// apply on top any settings passed in during init
 		ApplySettingsPack( settings );
@@ -333,12 +337,12 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	private function PositionHUD():Void
 	{
 		// apply scale
-		m_Primary._xscale = m_Primary._yscale = _hudScale;
-		m_Secondary._xscale = m_Secondary._yscale = _hudScale;
+		//m_Primary._xscale = m_Primary._yscale = _hudScale;
+		//m_Secondary._xscale = m_Secondary._yscale = _hudScale;
 		
 		if ( _primaryPosition )
 		{
-			// Despite Point.x being a number, the +0 below is a quicker way of doing Math.round() on the Point.x property.
+			// Despite Point.x being a number, the +0 below is a quick way to ensure the ._x accepts the Point.x property.
 			// If not doing this, then the number prints out as "xxx", but seems to get sent to the _x property as "xxx.0000000000"
 			// which the _x setter fails to interpret for some reason and does not set.
 			m_Primary._x = _primaryPosition.x + 0;
@@ -787,7 +791,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		CloseTooltip();
 		
 		// don't show anything if setting disabled OR if the hud elements are currently being dragged
-		if ( !_showTooltips && !_dragging ) return;
+		if ( !_showTooltips || _dragging || (!_suppressTooltipsInCombat && _character.IsInCombat()) ) return;
 
         if ( _tooltipSlot.item != undefined ) {
             var tooltipData:TooltipData = TooltipDataProvider.GetInventoryItemTooltip( _inventory.GetInventoryID(), _tooltipSlot.equip );			
@@ -874,28 +878,12 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			// check if an aegis selector button was involved
 			var slot:Object = getItemSlotMouseOver();
 			
-			if( slot == undefined || slot.type == "weapon" ) {}
-			else if ( Key.isDown( dualSelectModifier ) && button == dualSelectButton ) {
-				dispatchEvent({ type:"select", modifier:dualSelectModifier, button:button, itemSlot:slot, dualSelect:true });
-			}
-			else {
-				dispatchEvent({ type:"select", button:button, itemSlot:slot, dualSelect:false });
+			if ( slot.type == "aegis" ) {
+				var dual:Number = _dualSelectByDefault ? button == singleSelectButton : dualSelectButton;
+				dispatchEvent({ type:"select", modifier:dualSelectModifier, button:button, itemSlot:slot, dualSelect:dual });
 			}
 		}
 	}
-	
-
-	private function ScaleHandler(event:Object):Void {
-		
-		// simplified scale handler which doesn't bother scaling around centre of entire hud, unlike previous version
-
-		// do nothing if scale and movement is prevented
-		if ( _lockBars ) return;
-
-		// scale in 5% increments
-		hudScale += event.delta * 5;
-	}
-	
 	
 	private function handleMouseRelease(controllerIdx:Number, keyboardOrMouse:Number, button:Number):Void {
 		// only propogate if the release is associated with the originally held down button
@@ -905,12 +893,10 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		if( _dragging ) dispatchEvent({type:"dragEnd", button:button});
 	}
 	
-
 	private function handleReleaseOutside(controllerIdx:Number, button:Number):Void {
 		handleMouseRelease(controllerIdx, 0, button);
 	}
 
-	
 	private function handleRollOver(mouseIdx:Number):Void {
 		// check which aegis selector button was involved
 		var slot:Object = getItemSlotMouseOver();
@@ -921,9 +907,9 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		dispatchEvent( { type:"rollout" } );
 	}
 	
-	
 	private function handleMouseWheel(delta:Number, targetPath:String):Void {
-		if ( Key.isDown(scaleModifier) ) dispatchEvent({type:"scale", delta:delta, targetPath:targetPath});
+		if( Key.isDown(scaleResetModifier) ) dispatchEvent( { type:"scale", delta:delta, targetPath:targetPath, reset:true } );
+		else if ( Key.isDown(scaleModifier) ) dispatchEvent( { type:"scale", delta:delta, targetPath:targetPath, reset:false } );
 	}
 
 	
@@ -985,6 +971,23 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		mc.onDragOut = mc.onRollOut;
 	}
 
+	private function ScaleHandler(event:Object):Void {
+		
+		// simplified scale handler which doesn't bother scaling around centre of entire hud, unlike previous version
+
+		// do nothing if scale and movement is prevented
+		if ( _lockBars ) return;
+
+		// scale in 5% increments
+		if ( event.reset ) {
+			hudScale = 100;
+		}
+		else {
+			hudScale += event.delta * 5;
+		}
+	}
+
+	
 	// poll periodically for aegis XP for each slotted controller, using tooltip data as the source of the values
 	private function UpdateAegisXP():Void {
 		
@@ -1201,10 +1204,11 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	// overall hud scale
 	public function get hudScale():Number { return _hudScale; }
 	public function set hudScale(scale:Number) {
-		if ( _hudScale == scale || lockBars || scale == minHUDScale || scale == maxHUDScale ) return;
+		if ( _hudScale == scale || lockBars ) return;
 
 		if ( scale < minHUDScale ) _hudScale = minHUDScale;
 		else if ( scale > maxHUDScale ) _hudScale = maxHUDScale;
+		else if ( scale == Number.NaN ) _hudScale = 100;
 		else _hudScale = scale;
 		
 		// apply scale to bars
@@ -1399,63 +1403,65 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	}
 
 	// readonly
-	public function get defaultSettingsPack():Object {
-		return {
-			slotSize: 30,
-			barPadding: 5,
-			slotSpacing: 4,
-			hudScale: 100,
-			maxHUDScale: 150,
-			minHUDScale: 50,
-			
-			barStyle: 0,
-			neonGlowEntireBar: true,
-			lockBars: false,
-			attachToPassiveBar: false,
-			animateMovementsToDefaultPosition: true,
-			
-			showBarBackground: true,
-			tintBarBackgroundByActiveAegis: true,
-			neonGlowBarBackground: true,
+	public static var defaultSettingsPack:Object = {
+		slotSize: 30,
+		barPadding: 5,
+		slotSpacing: 4,
+		hudScale: 100,
+		maxHUDScale: 150,
+		minHUDScale: 50,
+		
+		primaryPosition: undefined,
+		secondaryPosition: undefined,
+		
+		barStyle: 0,
+		neonGlowEntireBar: true,
+		lockBars: false,
+		attachToPassiveBar: false,
+		animateMovementsToDefaultPosition: true,
+		
+		showBarBackground: true,
+		tintBarBackgroundByActiveAegis: true,
+		neonGlowBarBackground: true,
 
-			showWeapons: true,
-			primaryWeaponFirst: false,
-			secondaryWeaponFirst: true,
-			
-			showWeaponBackgroundBehaviour: 0,
-			tintWeaponBackgroundByActiveAegis: false,
-			tintWeaponIconByActiveAegis: false,
-			neonGlowWeapon: true,
-			
-			showXP: true,
-			showXPProgressBackground: true,
-			xpUseTextDisplay: true,
-			pollAegisXPInterval: 30,
+		showWeapons: true,
+		primaryWeaponFirst: false,
+		secondaryWeaponFirst: true,
+		
+		showWeaponBackgroundBehaviour: 0,
+		tintWeaponBackgroundByActiveAegis: false,
+		tintWeaponIconByActiveAegis: false,
+		neonGlowWeapon: true,
+		
+		showXP: true,
+		showXPProgressBackground: true,
+		xpUseTextDisplay: true,
+		pollAegisXPInterval: 30,
 
-			showTooltips: true,
+		showTooltips: true,
+		suppressTooltipsInCombat: true,
 
-			showAegisBackgroundBehaviour: 1,
-			tintAegisBackgroundByType: false,
-			tintAegisIconByType: false,
-			showActiveAegisBackground: true,
-			tintActiveAegisBackgroundBehaviour: 0,
-			neonGlowAegis: true,
-			
-			neonEnabled: true,
+		showAegisBackgroundBehaviour: 1,
+		tintAegisBackgroundByType: false,
+		tintAegisIconByType: false,
+		showActiveAegisBackground: true,
+		tintActiveAegisBackgroundBehaviour: 0,
+		neonGlowAegis: true,
+		
+		neonEnabled: true,
 
-			dualSelectByDefault: true,
-			dualSelectWithHotkey: true,
-			
-			tintAegisPsychic:		0xbf00ff,
-			tintAegisCybernetic:	0x0099ff,
-			tintAegisDemonic:		0xdd0000,
-			tintAegisEmpty:			0x999999,
-			tintAegisStandard:		0x006AFF,
+		dualSelectByDefault: true,
+		dualSelectWithHotkey: true,
+		
+		tintAegisPsychic:		0xbf00ff,
+		tintAegisCybernetic:	0x0099ff,
+		tintAegisDemonic:		0xdd0000,
+		tintAegisEmpty:			0x999999,
+		tintAegisStandard:		0x006AFF,
 
-			tintXPBackground:		0xffffff,
-			tintXPProgress:			0xFF8800,		/* 0x00E5A3 */
-			tintXPFull:				0x00FFA2		/* // 0x4EE500 // 0x19FDFF */
-		}
+		tintXPBackground:		0xffffff,
+		tintXPProgress:			0xFF8800,		/* 0x00E5A3 */
+		tintXPFull:				0x00FFA2		/* // 0x4EE500 // 0x19FDFF */
 	}
 	
 	public function get slotSize():Number { return _slotSize; }
