@@ -26,49 +26,53 @@ import mx.transitions.easing.Bounce;
  */
 class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
-	private var _slotSize:Number = 30;
-	private var _barPadding:Number = 5;
-	private var _slotSpacing:Number = 4;
-	private var _hudScale:Number = 100;
+	private var _slotSize:Number;
+	private var _barPadding:Number;
+	private var _slotSpacing:Number;
+	private var _hudScale:Number;
+	public  var maxHUDScale:Number;
+	public  var minHUDScale:Number;
 	
-	private var _barStyle:Number = 0;
-	private var _neonGlowEntireBar:Boolean = true;
-	private var _lockBars:Boolean = false;
-	private var _attachToPassiveBar:Boolean = true;
-	private var _animateMovementsToDefaultPosition:Boolean = true;
+	private var _barStyle:Number;
+	private var _neonGlowEntireBar:Boolean;
+	private var _lockBars:Boolean;
+	private var _attachToPassiveBar:Boolean;
+	private var _animateMovementsToDefaultPosition:Boolean;
 	
-	private var _showBarBackground:Boolean = true;
-	private var _tintBarBackgroundByActiveAegis:Boolean = true;
-	private var _neonGlowBarBackground:Boolean = true;
+	private var _showBarBackground:Boolean;
+	private var _tintBarBackgroundByActiveAegis:Boolean;
+	private var _neonGlowBarBackground:Boolean;
 
-	private var _showWeapons:Boolean = true;
-	private var _primaryWeaponFirst:Boolean = false;
-	private var _secondaryWeaponFirst:Boolean = true;
+	private var _showWeapons:Boolean;
+	private var _primaryWeaponFirst:Boolean;
+	private var _secondaryWeaponFirst:Boolean;
 	
-	private var _showWeaponBackgroundBehaviour:Number = 0;	// SlotBackgroundBehaviour
-	private var _tintWeaponBackgroundByActiveAegis:Boolean = false;
-	private var _tintWeaponIconByActiveAegis:Boolean = false;
-	private var _neonGlowWeapon:Boolean = true;
+	private var _showWeaponBackgroundBehaviour:Number;	// SlotBackgroundBehaviour
+	private var _tintWeaponBackgroundByActiveAegis:Boolean;
+	private var _tintWeaponIconByActiveAegis:Boolean;
+	private var _neonGlowWeapon:Boolean;
 	
-	private var _showXP:Boolean = true;
-	private var _showXPProgressBackground:Boolean = true;
-	private var _xpUseTextDisplay:Boolean = false;
-	private var _pollAegisXPInterval:Number = 30; // seconds
+	private var _showXP:Boolean;
+	private var _showXPProgressBackground:Boolean;
+	private var _xpUseTextDisplay:Boolean;
+	private var _pollAegisXPInterval:Number; // seconds
 
-	private var _showTooltips:Boolean = true;
+	private var _showTooltips:Boolean;
 
-	private var _showAegisBackgroundBehaviour:Number = 1;	// SlotBackgroundBehaviour
-	private var _tintAegisBackgroundByType:Boolean = false;
-	private var _showActiveAegisBackground:Boolean = true;
-	private var _tintActiveAegisBackgroundBehaviour:Number = 0;	// ActiveAegisBackgroundTintBehaviour
-	private var _neonGlowAegis:Boolean = true;
+	private var _showAegisBackgroundBehaviour:Number;	// SlotBackgroundBehaviour
+	private var _tintAegisBackgroundByType:Boolean;
+	private var _tintAegisIconByType:Boolean;
+	private var _showActiveAegisBackground:Boolean;
+	private var _tintActiveAegisBackgroundBehaviour:Number;	// ActiveAegisBackgroundTintBehaviour
+	private var _neonGlowAegis:Boolean;
 	
-	private var _neonEnabled:Boolean = true;
+	private var _neonEnabled:Boolean;
 
-	private var _tints:Object = {};
+	private var _dualSelectByDefault:Boolean;
+	private var _dualSelectWithHotkey:Boolean;
 	
+	private var _tints:Object = { none: 0xffffff };
 	
-	private var _findPassiveBarThrashCount:Number = 0;
 	
 	// position restoration for windows
 	private var _primaryPosition:Point;
@@ -83,11 +87,15 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	private var _tooltipTimeoutID:Number;
 	private var _tooltipSlot:Object;
 	private var _pollAegisXPTimeoutID:Number;
+	private var _findPassiveBarThrashCount:Number = 0;
+	private var _swapTimeoutID:Number;
+	private var _postSwapCatchupInterval:Number = 500;
 	
 	// internal movieclips
 	private var m_Primary:MovieClip;
 	private var m_Secondary:MovieClip;
 	private var m_Background:MovieClip;
+	private var m_DragProxy:MovieClip;	// not in flash, instantiated dynamically during drag events
 
 	// internal shortcuts
 	private var _primary:Object = {};
@@ -98,6 +106,9 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	// internal states
 	private var _dragging:Boolean = false;
 	private var _mouseDown:Number = -1;
+	
+	// collection of drag objects used by drag proxy to move as one
+	private var _dragObjects:Array;
 	
 	// behaviour modifier keys
 	public var dualDragModifier:Number = Key.CONTROL;
@@ -110,6 +121,10 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 	public var dualSelectModifier:Number = Key.SHIFT;
 	public var dualSelectButton:Number = 0;
+
+	// parameters passed in through initObj of attachMovie( ..., initObj)
+	private var settings:Object;
+
 	
 	/**
 	 * constructor
@@ -124,46 +139,18 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		_iconLoader = new MovieClipLoader();
 		_iconLoader.addListener(this);
 		
-		_tints.psychic = 0xbf00ff;
-		_tints.cyber   = 0x0099ff;
-		_tints.demonic = 0xdd0000;
-		_tints.empty   = 0x999999;
-		_tints.none    = 0xffffff;
-		_tints.standard = 0x006AFF;
-
-		_tints.xpBackground = 0xffffff;
-		_tints.xpProgress	= 0xFF8800; // 0x00E5A3;
-		_tints.xpFull		= 0x00FFA2; // 0x4EE500; // 0x19FDFF;
+		// apply default settings pack
+		ApplySettingsPack( defaultSettingsPack );
 		
-		//dumpEnums();
-	}
-	
-	private var _enumNames:Array = [];
-	public function dumpEnums(obj:Object) {
+		// apply on top any settings passed in during init
+		ApplySettingsPack( settings );
+		delete settings;
 		
-		var theEnum:Object;
-		if ( obj == undefined ) {
-			theEnum = _global.Enums;
-			_enumNames.push("_global");
-			_enumNames.push("Enums");
-		}
-		else theEnum = obj;
-
-		var path:String = _enumNames.join(".");
-		var varName:String;
-		for ( var s:String in theEnum ) {
-			
-			if ( theEnum[s] instanceof Object ) {
-				_enumNames.push(s);
-				dumpEnums(theEnum[s]);
-			}
-			else {
-				varName = path + "." + s;
-				if( varName.indexOf("Achievement") > -1 ) UtilsBase.PrintChatText( varName + ": " + theEnum[s] );
-			}
-		}
 		
-		_enumNames.pop();
+		// get hotkey names from C:\Users\Torq\AppData\Local\Funcom\TSW\Prefs\ElTorqira\hotkeys.xml
+		//UtilsBase.PrintChatText("<variable name='hotkey:Combat_NextPrimaryAEGIS'/ >");
+		//Utils.FindGlobalEnum( "hotkey" );
+		//com.GameInterface.Input.RegisterHotkey( 32, "
 	}
 	
 	public function onUnload():Void
@@ -173,6 +160,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		// close any open tooltip
 		CloseTooltip();
 
+		// undo passivebar attachment
+		AttachToPassiveBar( false );
 		
 		// unwire signal listeners
 		_character.SignalStatChanged.Disconnect( SlotStatChanged, this);
@@ -217,6 +206,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		_itemSlots[pWeapon] = { side: _primary, type: "weapon", equip: pWeapon, mc: _primary.mc.m_Weapon };
 		_primary.activeAegisStat = pActiveAegisStat;
 		_primary.activeAegisEquipLocation = null;
+		_primary.selectedAegisEquipLocation = _character.GetStat( pActiveAegisStat );;
 		_primary.weaponSlot = _itemSlots[pWeapon]; 
 		_primary.slots   = [ _itemSlots[pWeapon], _itemSlots[pAegis1], _itemSlots[pAegis2], _itemSlots[pAegis3] ];
 		
@@ -226,6 +216,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		_itemSlots[sWeapon] = { side: _secondary, type: "weapon", equip: sWeapon, mc: _secondary.mc.m_Weapon };
 		_secondary.activeAegisStat = sActiveAegisStat;
 		_secondary.activeAegisEquipLocation = null;
+		_secondary.selectedAegisEquipLocation = _character.GetStat( sActiveAegisStat );
 		_secondary.weaponSlot = _itemSlots[sWeapon];
 		_secondary.slots = [ _itemSlots[sWeapon], _itemSlots[sAegis1], _itemSlots[sAegis2], _itemSlots[sAegis3] ];
 
@@ -238,9 +229,9 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		}
 		
 		// wire up background mouse handlers
-		SetupMoveHandlers( m_Primary.m_Background );
-		SetupMoveHandlers( m_Secondary.m_Background );
-		SetupMoveHandlers( m_Background );
+		SetupGlobalMouseHandlers( m_Primary.m_Background );
+		SetupGlobalMouseHandlers( m_Secondary.m_Background );
+		SetupGlobalMouseHandlers( m_Background );
 		
 		// layout bar internals
 		LayoutBars();
@@ -271,7 +262,12 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		this.addEventListener("rollover", this, "AegisRollOverHandler");
 		this.addEventListener("rollout", this, "AegisRollOutHandler");
 		
-		// start the XP polling if necessary
+		this.addEventListener("dragStart", this, "DragStartHandler");
+		this.addEventListener("dragEnd", this, "DragEndHandler");
+		
+		this.addEventListener("scale", this, "ScaleHandler");
+		
+		// start the Aegis XP polling
 		UpdateAegisXP();
 	}
 
@@ -600,6 +596,11 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 					slotMC.m_Watermark._visible = false;
 					slotMC.m_Icon._visible = true;
 				}
+
+				// tint aegis icon
+				if ( _tintAegisIconByType ) {
+					Utils.Colorize( slotMC.m_Icon, slotTint );
+				}
 				
 				// show xp display
 				if ( !_showXP || slot.item == undefined ) slotMC.m_XPBar._visible = slotMC.m_XPText._visible = false;
@@ -663,8 +664,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 						slotMC.filters = [ aegisGlow ];
 					}
 
-					
-					// TODO: bring active aegis button to the front
+					// bring active aegis to front
 					if ( slotMC.getDepth() < _itemSlots[slot.prev].mc.getDepth() ) slotMC.swapDepths( _itemSlots[slot.prev].mc );
 					if ( slotMC.getDepth() < _itemSlots[slot.next].mc.getDepth() ) slotMC.swapDepths( _itemSlots[slot.next].mc );
 				}
@@ -672,13 +672,17 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		}	
 	}
 	
-	
+	// set the current active aegis stat straight from the game
+	// note that this will NOT cause an invalidate() so no redraw will occur
 	private function UpdateActiveAegis():Void
 	{
 		_primary.activeAegisEquipLocation = _character.GetStat( _primary.activeAegisStat );
 		_secondary.activeAegisEquipLocation = _character.GetStat( _secondary.activeAegisStat );
 		
-		invalidate();
+		// if this when the selection catchup timer isn't running, update the selected as well
+		if ( _swapTimeoutID == undefined ) {
+			SyncSelectedWithActive();
+		}
 	}
 
 	// swap to an aegis slot
@@ -691,22 +695,25 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		var side = _itemSlots[equipLocation].side;
 
 		// switch forward?
-		if ( _itemSlots[ side.activeAegisEquipLocation ].next == equipLocation )
+		if ( _itemSlots[ side.selectedAegisEquipLocation ].next == equipLocation )
 		{
 			// first param is first/second aegis, second param is forward/back
 			Character.SwapAegisController( side == _primary, true);
 		}
 		
 		// or switch back? (doing the extra check instead of a raw else prevents double-jumps with the switch latency)
-		else if ( _itemSlots[ side.activeAegisEquipLocation ].prev == equipLocation )
+		else if ( _itemSlots[ side.selectedAegisEquipLocation ].prev == equipLocation )
 		{
 			Character.SwapAegisController( side == _primary, false);
 		}
 		
+		// clear existing post-swap callback
+		PostSwapCatchup(true);
+		
 		// important to update the internal pointer for the aegis location
 		// even before we find out if the swap was successful
 		// otherwise rapid clicks can cause the selection to jump 2 spots
-		side.activeAegisEquipLocation = equipLocation;
+		side.selectedAegisEquipLocation = equipLocation;
 		
 		// select other side partner slot if dualSelect in use
 		if ( dualSelect ) {
@@ -714,6 +721,32 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		}
 	}
 
+	// post-swap callback that will catch up the selectedAegisEquipLocation for each side
+	// this is needed in case of users going bonkers with very rapid clicks, which can
+	// get out of sync with the server if the server drops one of the request packets
+	// (yes it happens often under command spam)
+	private function PostSwapCatchup(restart:Boolean):Void {
+		if ( _swapTimeoutID != undefined ) {
+			_global.clearTimeout( _swapTimeoutID );
+			_swapTimeoutID = undefined;
+		}
+		
+		// if restarting, not actioning, set up timer again
+		if ( restart ) {
+			_swapTimeoutID = setTimeout( Delegate.create(this, PostSwapCatchup), _postSwapCatchupInterval );
+		}
+		
+		// otherwise action the catchup
+		else {
+			SyncSelectedWithActive();
+		}
+	}
+	
+	private function SyncSelectedWithActive():Void {
+			_primary.selectedAegisEquipLocation = _primary.activeAegisEquipLocation;
+			_secondary.selectedAegisEquipLocation = _secondary.activeAegisEquipLocation;
+	}
+	
 	// handle mouse clicks that select an aegis
 	private function AegisSelectHandler(event:Object):Void {
 		SwapToAegisSlot( event.itemSlot.equip, event.dualSelect );
@@ -728,7 +761,6 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		}
 	}
 
-	
 	private function AegisRollOutHandler(event:Object):Void {
 		StopTooltipTimeout();
 		CloseTooltip();
@@ -754,8 +786,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		// close any existing tooltip
 		CloseTooltip();
 		
-		// don't show anything if setting disabled
-		if ( !_showTooltips ) return;
+		// don't show anything if setting disabled OR if the hud elements are currently being dragged
+		if ( !_showTooltips && !_dragging ) return;
 
         if ( _tooltipSlot.item != undefined ) {
             var tooltipData:TooltipData = TooltipDataProvider.GetInventoryItemTooltip( _inventory.GetInventoryID(), _tooltipSlot.equip );			
@@ -776,6 +808,53 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
         }
     }
 
+	// handle move / drag start of one or both bars
+	private function DragStartHandler(event:Object):Void {
+
+		// do nothing if scale and movement is prevented
+		if ( _lockBars || _attachToPassiveBar ) return;
+		
+		// close any open tooltip
+		CloseTooltip();
+		
+		// instantiate the drag proxy
+		m_DragProxy = this.createEmptyMovieClip("m_DragProxy", this.getNextHighestDepth());
+
+		if ( event.dual ) {
+			_dragObjects = [ _primary.mc, _secondary.mc ];
+		}
+		else {
+			_dragObjects = [ event.bar ];
+		}
+		
+		this.onMouseMove = DragMovementHandler;
+		m_DragProxy.startDrag();
+		
+	}
+	
+	private function DragMovementHandler():Void {
+		
+		for ( var i:Number = 0; i < _dragObjects.length; i++ ) {
+			
+			var moveObject:MovieClip = _dragObjects[i];
+			moveObject._x += m_DragProxy._x - m_DragProxy._prevX;
+			moveObject._y += m_DragProxy._y - m_DragProxy._prevY;
+			
+		}
+		
+		m_DragProxy._prevX = m_DragProxy._x;
+		m_DragProxy._prevY = m_DragProxy._y;		
+	}
+	
+	private function DragEndHandler(event:Object):Void {
+
+		_dragObjects = undefined;
+		
+		this.onMouseMove = undefined;
+		m_DragProxy.stopDrag();
+		m_DragProxy.unloadMovie();
+		m_DragProxy.removeMovieClip();
+	}
 	
 	private function handleMousePress(controllerIdx:Number, keyboardOrMouse:Number, button:Number):Void {
 		// only allow one mouse button to be pressed at once
@@ -785,15 +864,15 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		// TODO: check if no modifiers held down, and only fire click if that is the case, otherwise fire appropriate start drag etc
 		if ( Key.isDown( dualDragModifier ) && button == dualDragButton ) {
 			_dragging = true;
-			dispatchEvent( { type:"dualDrag", modifier:dualDragModifier, button:button } );
+			dispatchEvent( { type:"dragStart", modifier:dualDragModifier, button:button, dual:true, bar: getBarMouseOver() } );
 		}
 		else if ( Key.isDown( singleDragModifier ) && button == singleDragButton ) {
 			_dragging = true;
-			dispatchEvent( { type:"drag", modifier:singleDragModifier, button:button } );
+			dispatchEvent( { type:"dragStart", modifier:singleDragModifier, button:button, dual:false, bar: getBarMouseOver() } );
 		}
 		else {
 			// check if an aegis selector button was involved
-			var slot:MovieClip = getItemSlotMouseOver();
+			var slot:Object = getItemSlotMouseOver();
 			
 			if( slot == undefined || slot.type == "weapon" ) {}
 			else if ( Key.isDown( dualSelectModifier ) && button == dualSelectButton ) {
@@ -806,12 +885,24 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	}
 	
 
+	private function ScaleHandler(event:Object):Void {
+		
+		// simplified scale handler which doesn't bother scaling around centre of entire hud, unlike previous version
+
+		// do nothing if scale and movement is prevented
+		if ( _lockBars ) return;
+
+		// scale in 5% increments
+		hudScale += event.delta * 5;
+	}
+	
+	
 	private function handleMouseRelease(controllerIdx:Number, keyboardOrMouse:Number, button:Number):Void {
 		// only propogate if the release is associated with the originally held down button
 		if ( _mouseDown != button ) return;
 		_mouseDown = -1;
 
-		if( _dragging ) dispatchEvent({type:"stopDrag", button:button});
+		if( _dragging ) dispatchEvent({type:"dragEnd", button:button});
 	}
 	
 
@@ -822,7 +913,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	
 	private function handleRollOver(mouseIdx:Number):Void {
 		// check which aegis selector button was involved
-		var slot:MovieClip = getItemSlotMouseOver();
+		var slot:Object = getItemSlotMouseOver();
 		dispatchEvent( { type:"rollover", itemSlot:slot } );
 	}
 
@@ -830,8 +921,13 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		dispatchEvent( { type:"rollout" } );
 	}
 	
+	
+	private function handleMouseWheel(delta:Number, targetPath:String):Void {
+		if ( Key.isDown(scaleModifier) ) dispatchEvent({type:"scale", delta:delta, targetPath:targetPath});
+	}
 
-	private function getItemSlotMouseOver():MovieClip {
+	
+	private function getItemSlotMouseOver():Object {
 
 		var slot;
 		for ( var s:String in _itemSlots ) {
@@ -844,12 +940,21 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		return slot;
 	}
 	
+	private function getBarMouseOver():MovieClip {
+		
+		for ( var s:String in _sides ) {
+			if ( _sides[s].mc.hitTest(_root._xmouse, _root._ymouse, true) ) return _sides[s].mc;
+		}
+		
+		return undefined;
+	}
+	
 	/**
 	 * Sets up mouse event handlers for hud or bar movement
 	 * 
 	 * @param	mc Movieclip to configure move handlers on
 	 */
-	private function SetupMoveHandlers(mc:MovieClip) {
+	private function SetupGlobalMouseHandlers(mc:MovieClip) {
 		
 		if ( !mc ) return;
 		
@@ -859,6 +964,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		mc["onPressAux"] = mc.onPress;
 		mc["onReleaseAux"] = mc.onRelease;
 		mc["onReleaseOutsideAux"] = mc.onReleaseOutside;
+		
+		mc["onMouseWheel"] = Delegate.create( this, handleMouseWheel );
 	}
 	
 	
@@ -871,7 +978,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 		if ( !mc ) return;
 		
-		SetupMoveHandlers( mc );
+		SetupGlobalMouseHandlers( mc );
 		
 		mc.onRollOver = Delegate.create(this, handleRollOver);
 		mc.onRollOut = Delegate.create(this, handleRollOut);
@@ -947,7 +1054,31 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	
 	// handles active aegis being swapped
 	private function SlotStatChanged(statID:Number):Void {
-		if ( statID == _primary.activeAegisStat || statID == _secondary.activeAegisStat ) UpdateActiveAegis();
+		// only proceed if stat is to do with aegis selector
+		if ( !(statID == _primary.activeAegisStat || statID == _secondary.activeAegisStat) ) return;
+
+		// TODO: play with the hotkeys to better manage this, there is a race condition and infinite loop of events happening otherwise
+		/*
+		if ( _dualSelectByDefault && _dualSelectWithHotkey ) {
+
+			if ( statID == _primary.activeAegisStat ) {
+				_primary.activeAegisEquipLocation = _character.GetStat( statID );
+				SwapToAegisSlot( _primary.activeAegisEquipLocation, true );
+			}
+			
+			else {
+				_secondary.activeAegisEquipLocation = _character.GetStat( statID );
+				SwapToAegisSlot( _secondary.activeAegisEquipLocation, true );
+			}
+		}
+		
+		else {
+			
+		}
+		*/
+
+		UpdateActiveAegis();		
+		invalidate();
 	}
 
 	//Slot Item Added
@@ -999,6 +1130,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		// set up proxies and force HUD into position
 		if ( attach ) {
 			
+			// make sure not to "re-attach"
 			if( passivebar.m_Bar.onTweenComplete_AegisHUD_Saved == undefined ) {
 				passivebar.m_Bar.onTweenComplete_AegisHUD_Saved = passivebar.m_Bar.onTweenComplete;
 				// break the link
@@ -1007,7 +1139,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			}
 		}
 		
-		// remove proxy and restore original function
+		// remove proxy and restore original function -- make sure not to "detach when not attached"
 		else if( passivebar.m_Bar.onTweenComplete_AegisHUD_Saved != undefined ) {
 			passivebar.m_Bar.onTweenComplete = passivebar.m_Bar.onTweenComplete_AegisHUD_Saved;
 			passivebar.m_Bar.onTweenComplete_AegisHUD_Saved = undefined;
@@ -1021,6 +1153,16 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		MoveToDefaultPosition(true);
 	}
 
+	
+	// apply a bundle of settings all at once
+	public function ApplySettingsPack(pack:Object) {
+		
+		for ( var s:String in pack ) {
+			// TODO : implement something equivalent to AS3's .hasOwnProperty(name)
+			this[s] = pack[s];
+		}
+	}
+	
 	
 	// getters & setters
 	public function get showWeapons():Boolean { return _showWeapons; }
@@ -1058,7 +1200,22 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 	// overall hud scale
 	public function get hudScale():Number { return _hudScale; }
-	public function set hudScale(scale:Number) { _hudScale = scale; }
+	public function set hudScale(scale:Number) {
+		if ( _hudScale == scale || lockBars || scale == minHUDScale || scale == maxHUDScale ) return;
+
+		if ( scale < minHUDScale ) _hudScale = minHUDScale;
+		else if ( scale > maxHUDScale ) _hudScale = maxHUDScale;
+		else _hudScale = scale;
+		
+		// apply scale to bars
+		m_Primary._xscale = m_Primary._yscale = _hudScale;
+		m_Secondary._xscale = m_Secondary._yscale = _hudScale;
+		
+		// if attached to passivebar, reset position
+		if ( _attachToPassiveBar ) {
+			MoveToDefaultPosition();
+		}
+	}
 	
 
 	public function get primaryWeaponFirst():Boolean { return _primaryWeaponFirst; }
@@ -1221,8 +1378,170 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			UpdateAegisXP();
 		}
 	}
+
 	public function get animateMovementsToDefaultPosition():Boolean { return _animateMovementsToDefaultPosition; }
 	public function set animateMovementsToDefaultPosition(value:Boolean):Void {
 		_animateMovementsToDefaultPosition = value;
 	}
+
+	public function get dualSelectByDefault():Boolean { return _dualSelectByDefault; }
+	public function set dualSelectByDefault(value:Boolean):Void { _dualSelectByDefault = value; }
+
+	public function get dualSelectWithHotkey():Boolean { return _dualSelectWithHotkey; }
+	public function set dualSelectWithHotkey(value:Boolean):Void { _dualSelectWithHotkey = value; }
+
+	public function get tintAegisIconByType():Boolean { return _tintAegisIconByType; }
+	public function set tintAegisIconByType(value:Boolean):Void {
+		if ( _tintAegisIconByType != value ) {
+			_tintAegisIconByType = value;
+			invalidate();
+		}
+	}
+
+	// readonly
+	public function get defaultSettingsPack():Object {
+		return {
+			slotSize: 30,
+			barPadding: 5,
+			slotSpacing: 4,
+			hudScale: 100,
+			maxHUDScale: 150,
+			minHUDScale: 50,
+			
+			barStyle: 0,
+			neonGlowEntireBar: true,
+			lockBars: false,
+			attachToPassiveBar: false,
+			animateMovementsToDefaultPosition: true,
+			
+			showBarBackground: true,
+			tintBarBackgroundByActiveAegis: true,
+			neonGlowBarBackground: true,
+
+			showWeapons: true,
+			primaryWeaponFirst: false,
+			secondaryWeaponFirst: true,
+			
+			showWeaponBackgroundBehaviour: 0,
+			tintWeaponBackgroundByActiveAegis: false,
+			tintWeaponIconByActiveAegis: false,
+			neonGlowWeapon: true,
+			
+			showXP: true,
+			showXPProgressBackground: true,
+			xpUseTextDisplay: true,
+			pollAegisXPInterval: 30,
+
+			showTooltips: true,
+
+			showAegisBackgroundBehaviour: 1,
+			tintAegisBackgroundByType: false,
+			tintAegisIconByType: false,
+			showActiveAegisBackground: true,
+			tintActiveAegisBackgroundBehaviour: 0,
+			neonGlowAegis: true,
+			
+			neonEnabled: true,
+
+			dualSelectByDefault: true,
+			dualSelectWithHotkey: true,
+			
+			tintAegisPsychic:		0xbf00ff,
+			tintAegisCybernetic:	0x0099ff,
+			tintAegisDemonic:		0xdd0000,
+			tintAegisEmpty:			0x999999,
+			tintAegisStandard:		0x006AFF,
+
+			tintXPBackground:		0xffffff,
+			tintXPProgress:			0xFF8800,		/* 0x00E5A3 */
+			tintXPFull:				0x00FFA2		/* // 0x4EE500 // 0x19FDFF */
+		}
+	}
+	
+	public function get slotSize():Number { return _slotSize; }
+	public function set slotSize(value:Number):Void {
+		if( _slotSize != value ) {
+			_slotSize = value;
+			LayoutBars();
+		}
+	}
+	public function get barPadding():Number { return _barPadding; }
+	public function set barPadding(value:Number):Void {
+		if( _barPadding != value ) {
+			_barPadding = value;
+			LayoutBars();
+		}
+	}
+	public function get slotSpacing():Number { return _slotSpacing; }
+	public function set slotSpacing(value:Number):Void {
+		if ( _slotSpacing != value ) {
+			_slotSpacing = value;
+			LayoutBars();
+		}
+	}
+
+	public function get tintAegisPsychic():Number { return _tints.psychic };
+	public function set tintAegisPsychic(value:Number):Void {
+		if ( _tints.psychic != value && Utils.isRGB(value)) {
+			_tints.psychic = value;
+			invalidate();
+		}
+	}
+	
+	public function get tintAegisCybernetic():Number { return _tints.cyber };
+	public function set tintAegisCybernetic(value:Number):Void {
+		if ( _tints.cyber != value && Utils.isRGB(value)) {
+			_tints.cyber = value;
+			invalidate();
+		}
+	}
+
+	public function get tintAegisDemonic():Number { return _tints.demonic };
+	public function set tintAegisDemonic(value:Number):Void {
+		if ( _tints.demonic != value && Utils.isRGB(value)) {
+			_tints.demonic = value;
+			invalidate();
+		}
+	}
+
+	public function get tintAegisEmpty():Number { return _tints.empty };
+	public function set tintAegisEmpty(value:Number):Void {
+		if ( _tints.empty != value && Utils.isRGB(value)) {
+			_tints.empty = value;
+			invalidate();
+		}
+	}
+
+	public function get tintAegisStandard():Number { return _tints.standard };
+	public function set tintAegisStandard(value:Number):Void {
+		if ( _tints.standard != value && Utils.isRGB(value)) {
+			_tints.standard = value;
+			invalidate();
+		}
+	}
+	
+	public function get tintXPBackground():Number { return _tints.xpBackground };
+	public function set tintXPBackground(value:Number):Void {
+		if ( _tints.xpBackground != value && Utils.isRGB(value)) {
+			_tints.xpBackground = value;
+			invalidate();
+		}
+	}
+
+	public function get tintXPProgress():Number { return _tints.xpProgress };
+	public function set tintXPProgress(value:Number):Void {
+		if ( _tints.xpProgress != value && Utils.isRGB(value)) {
+			_tints.xpProgress = value;
+			invalidate();
+		}
+	}
+
+	public function get tintXPFull():Number { return _tints.xpFull };
+	public function set tintXPFull(value:Number):Void {
+		if ( _tints.xpFull != value && Utils.isRGB(value)) {
+			_tints.xpFull = value;
+			invalidate();
+		}
+	}
+	
 }

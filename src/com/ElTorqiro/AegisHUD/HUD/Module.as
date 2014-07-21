@@ -108,7 +108,9 @@ function OnModuleActivated()
 	}
 	
 	// instantiate HUD
-	g_HUD = HUD( this.attachMovie("com.ElTorqiro.AegisHUD.HUD.HUD", "m_HUD", this.getNextHighestDepth()) );
+	var settings = { test: "hello" };
+	
+	g_HUD = HUD( this.attachMovie("com.ElTorqiro.AegisHUD.HUD.HUD", "m_HUD", this.getNextHighestDepth(), { settings: settings }) );
 
 	// wire up RPC listener
 	g_RPC = DistributedValue.Create(AddonInfo.Name + "_RPC");
