@@ -229,12 +229,13 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			if ( _itemSlots[s].type == "aegis" ) {
 				SetupButtonHandlers( _itemSlots[s].mc );
 			}
-			
 		}
 		
 		// wire up background mouse handlers
 		SetupGlobalMouseHandlers( m_Primary.m_Background );
 		SetupGlobalMouseHandlers( m_Secondary.m_Background );
+		SetupGlobalMouseHandlers( m_Primary.m_Weapon );
+		SetupGlobalMouseHandlers( m_Secondary.m_Weapon );
 		SetupGlobalMouseHandlers( m_Background );
 		
 		// layout bar internals

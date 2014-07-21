@@ -22,7 +22,7 @@ import com.GameInterface.Lore
 import com.GameInterface.Tooltip.TooltipManager;
 
 import com.ElTorqiro.Utils;
-import com.ElTorqiro.AegisHUD.*;
+import com.ElTorqiro.AegisHUD.AddonInfo;
 
 
 // config window

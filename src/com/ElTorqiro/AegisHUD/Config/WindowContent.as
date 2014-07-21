@@ -2,6 +2,7 @@ import com.Components.FCSlider;
 import com.Components.WindowComponentContent;
 import com.ElTorqiro.AegisHUD.Enums.AegisBarLayoutStyles;
 import com.Utils.Archive;
+import flash.geom.Point;
 import gfx.controls.CheckBox;
 import gfx.controls.DropdownMenu;
 import gfx.controls.Button;
@@ -9,8 +10,9 @@ import gfx.controls.Slider;
 import mx.utils.Delegate;
 import com.GameInterface.UtilsBase;
 import com.GameInterface.DistributedValue;
+import com.ElTorqiro.AegisHUD.AddonInfo;
 
-class com.ElTorqiro.AegisHUD.Config.WindowContent extends WindowComponentContent
+class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowComponentContent
 {
 	private var _hudData:DistributedValue;
 	private var _uiControls:Object = {};
@@ -19,7 +21,9 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends WindowComponentContent
 	private var m_ContentSize:MovieClip;
 	private var m_Content:MovieClip;
 	
-	public function WindowContent()
+	private var _layoutCursor:Point;
+	
+	public function ConfigWindowContent()
 	{
 		super();
 		
@@ -43,9 +47,25 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends WindowComponentContent
 	
 	private function configUI():Void
 	{
+		_layoutCursor = new Point(0, 0);
+		
 		super.configUI();
 
 		m_Content = createEmptyMovieClip("m_Content", getNextHighestDepth() );
+
+		// positioning section
+		AddHeading("Position");
+		_uiControls.lockBars = {
+			control:	AddCheckbox( "lockBars", "Lock bar position and scale" ),
+			event:		"click",
+			type:		"setting"
+		};
+		_uiControls.SetDefaultPosition = {
+			control:	AddButton("SetDefaultPosition", "Reset to default position"),
+			event:		"click",
+			type:		"command"
+		};
+
 		
 		// add options section
 		AddHeading("Options");
@@ -54,14 +74,24 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends WindowComponentContent
 			event:		"click",
 			type:		"setting"
 		};
-		_uiControls.lockBars = {
-			control:	AddCheckbox( "lockBars", "Lock bar position and scale" ),
+		_uiControls.autoHidePerZone = {
+			control:	AddCheckbox( "autoHidePerZone", "Auto-hide HUD based on zone" ),
 			event:		"click",
 			type:		"setting"
 		};
 
+		
+		// add layout section
+		AddHeading("Bar Style");
+		_uiControls.barStyle = {
+			control:	AddDropdown( "barStyle", "Bar Style", ["Horizontal", "Vertical"] ),
+			event:		"change",
+			type:		"setting"
+		};
+
+		
 		// add visuals section
-		AddHeading("Visuals");
+		AddHeading("HUD Elements");
 		_uiControls.showWeapons = {
 			control:	AddCheckbox( "showWeapons", "Show weapon slots" ),
 			event:		"click",
@@ -90,21 +120,42 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends WindowComponentContent
 		//AddCheckbox( "m_ShowXPBars", "Show AEGIS XP progress on slots", g_HUD.showXPBars ).addEventListener("click", this, "ShowXPBarsClickHandler");
 		//AddCheckbox( "m_ShowTooltips", "Show Tooltips", g_HUD.showTooltips ).addEventListener("click", this, "ShowTooltipsClickHandler");
 
-		// add layout section
-		AddHeading("Bar Style");
-		_uiControls.barStyle = {
-			control:	AddDropdown( "barStyle", "Bar Style", ["Horizontal", "Vertical"] ),
-			event:		"change",
-			type:		"setting"
-		}
-		
-		// positioning section
-		AddHeading("Position");
-		_uiControls.SetDefaultPosition = {
-			control:	AddButton("SetDefaultPosition", "Reset to default position"),
+
+		// neon highlighting section
+		AddColumn();
+		AddHeading("Neon Highlighting");
+		_uiControls.neonEnabled = {
+			control:	AddCheckbox( "neonEnabled", "Enable neon highlighting" ),
 			event:		"click",
-			type:		"command"
-		}
+			type:		"setting"
+		};
+		AddIndent();
+		_uiControls.neonDisableDefaultActiveHighlight = {
+			control:	AddCheckbox( "neonDisableDefaultActiveHighlight", "Highlight active AEGIS with glow only" ),
+			event:		"click",
+			type:		"setting"
+		};
+		_uiControls.neonColouriseBarBackground = {
+			control:	AddCheckbox( "neonColouriseBarBackground", "Colourise bar background" ),
+			event:		"click",
+			type:		"setting"
+		};
+		_uiControls.neonGlowBarBackground = {
+			control:	AddCheckbox( "neonGlowBarBackground", "Glow bar background" ),
+			event:		"click",
+			type:		"setting"
+		};
+		_uiControls.neonColouriseWeaponIcon = {
+			control:	AddCheckbox( "neonColouriseWeapon", "Colourise weapon icon" ),
+			event:		"click",
+			type:		"setting"
+		};
+		_uiControls.neonWeaponGlow = {
+			control:	AddCheckbox( "neonWeaponGlow", "Weapon glow" ),
+			event:		"click",
+			type:		"setting"
+		};
+		
 		
 		SetSize( Math.round(Math.max(m_Content._width, 200)), Math.round(Math.max(m_Content._height, 200)) );
 		
@@ -180,7 +231,7 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends WindowComponentContent
 	
 	// add and return a new checkbox, layed out vertically
 	private function AddCheckbox(name:String, text:String):CheckBox
-	{
+	{	
 		var y:Number = m_Content._height;
 		
 		var o:CheckBox = CheckBox(m_Content.attachMovie( "Checkbox", "m_" + name, m_Content.getNextHighestDepth() ));
@@ -191,8 +242,13 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends WindowComponentContent
 			disableFocus = true;
 			textField.autoSize = true;
 			textField.text = text;
-			_y = y;
+			//_y = y;
 		}
+
+		o._y = _layoutCursor.y;
+		o._x = _layoutCursor.x;
+		
+		_layoutCursor.y += o._height;
 		
 		return o;
 	}
@@ -208,7 +264,11 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends WindowComponentContent
 		o.label = text;
 		o.autoSize = "center";
 		o.disableFocus = true;
-		o._y = y;
+//o._y = y;
+		o._y = _layoutCursor.y;
+		o._x = _layoutCursor.x + 6;
+
+		_layoutCursor.y += o._height;
 		
 		return o;
 	}
@@ -230,7 +290,11 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends WindowComponentContent
 			dataProvider = values;
 		}
 		o.dropdown.addEventListener("focusIn", this, "RemoveFocus");
-		o._y = y;
+//		o._y = y;
+		o._y = _layoutCursor.y;
+		o._x = _layoutCursor.x + 3;
+
+		_layoutCursor.y += o._height;
 		
 		return o;
 	}
@@ -243,7 +307,14 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends WindowComponentContent
 		
 		var o:MovieClip = m_Content.attachMovie( "ConfigGroupHeading", "m_Heading", m_Content.getNextHighestDepth() );
 		o.textField.text = text;
-		o._y = y;
+//		o._y = y;
+
+		if ( _layoutCursor.y > 0 )  _layoutCursor.y += 15;
+
+		o._y = _layoutCursor.y;
+		o._x = _layoutCursor.x;
+
+		_layoutCursor.y += o._height;		
 	}
 	
 	private function AddSlider(name:String, label:String, minValue:Number, maxValue:Number):FCSlider
@@ -261,9 +332,27 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends WindowComponentContent
 		o.snapInterval = 1;
 		o.snapping = true;
 		o.liveDragging = true;
-		o._y = y;
+//		o._y = y;
+
+		o._y = _layoutCursor.y;
+		o._x = _layoutCursor.x;
+
+		_layoutCursor.y += o._height;
 		
 		return o;
+	}
+	
+	private function AddColumn():Void
+	{
+		_layoutCursor.x = this._width + 30;
+		_layoutCursor.y = 0;
+	}
+	
+	private function AddIndent(indent:Number):Void
+	{
+		if ( indent == undefined) indent = 10;
+		
+		_layoutCursor.x += indent;
 	}
 	
     //Remove Focus
