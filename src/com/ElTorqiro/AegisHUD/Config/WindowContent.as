@@ -15,6 +15,7 @@ import com.ElTorqiro.AegisHUD.AddonInfo;
 class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowComponentContent
 {
 	private var _hudSettings:DistributedValue;
+	private var _hudOptions:DistributedValue;
 	private var _uiControls:Object = {};
 	private var _uiInitialised:Boolean = false;
 	
@@ -29,7 +30,10 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 		
 		// hud data listener
 		_hudSettings = DistributedValue.Create(AddonInfo.Name + "_HUD_Settings");
+		_hudOptions = DistributedValue.Create(AddonInfo.Name + "_HUD_Options");
+		
 		_hudSettings.SignalChanged.Connect(LoadValues, this);
+		_hudOptions.SignalChanged.Connect(LoadValues, this);
 	}
 
 	// cleanup operations
@@ -37,6 +41,7 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 	{
 		// disconnnect from signals
 		_hudSettings.SignalChanged.Disconnect(LoadValues, this);
+		_hudOptions.SignalChanged.Disconnect(LoadValues, this);
 	}
 	
 	private function configUI():Void
@@ -53,12 +58,12 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 		_uiControls.hideDefaultSwapButtons = {
 			control:	AddCheckbox( "hideDefaultSwapButtons", "Hide default AEGIS swap buttons" ),
 			event:		"click",
-			type:		"setting"
+			type:		"option"
 		};
 		_uiControls.autoHidePerZone = {
 			control:	AddCheckbox( "autoHidePerZone", "Auto-hide HUD based on zone" ),
 			event:		"click",
-			type:		"setting"
+			type:		"option"
 		};
 
 		
@@ -194,16 +199,16 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 			type:		"setting"
 		};
 		AddIndent();
-		_uiControls.xpUseTextDisplay = {
-			control:	AddCheckbox( "xpUseTextDisplay", "Display numbers instead of progress bar" ),
-			event:		"click",
-			type:		"setting"
-		};			
 		_uiControls.showXPProgressBackground = {
 			control:	AddCheckbox( "showXPProgressBackground", "Show background in progress bar" ),
 			event:		"click",
 			type:		"setting"
 		};
+		_uiControls.xpUseTextDisplay = {
+			control:	AddCheckbox( "xpUseTextDisplay", "Display numbers instead of progress bar" ),
+			event:		"click",
+			type:		"setting"
+		};			
 		AddIndent(-10);
 
 		_uiControls.showTooltips = {
@@ -301,8 +306,8 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 		var eventValue = eval(e.target.eventValue + "");
 
 		// invalidate previous value to make sure the change signal is triggered
-		rpcArchive.AddEntry( "_setTime", new Date().valueOf() );
-		rpcArchive.AddEntry( e.target.controlName, ( eventValue == undefined ? true : eventValue ) );
+		rpcArchive.AddEntry( "_sequence", new Date().valueOf() );
+		rpcArchive.AddEntry( _uiControls[e.target.controlName].type + '.' + e.target.controlName, ( eventValue == undefined ? true : eventValue ) );
 
 		DistributedValue.SetDValue(AddonInfo.Name + "_RPC", rpcArchive);
 	}

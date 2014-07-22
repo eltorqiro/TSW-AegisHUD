@@ -9,6 +9,7 @@ import mx.utils.Delegate;
 import com.GameInterface.Chat;
 import com.GameInterface.DistributedValue;
 import com.Utils.Archive;
+import com.ElTorqiro.AddonUtils.PublicArchive;
 import com.GameInterface.UtilsBase;
 import com.GameInterface.Game.Shortcut;
 
@@ -55,7 +56,8 @@ function onLoad():Void {
 
 	// create initial settings values
 	g_options = {
-		hideDefaultSwapButtons: true
+		hideDefaultSwapButtons: true,
+		hudEnabled: true
 	};
 	
 	// RPC permissable settings/commands
@@ -67,7 +69,8 @@ function onLoad():Void {
 		},
 		
 		options: {
-			hideDefaultSwapButtons: true
+			hideDefaultSwapButtons: true,
+			hudEnabled: true
 		}
 	};
 	
@@ -82,6 +85,26 @@ function onLoad():Void {
 	Input.RegisterHotkey( HotkeyHijacker.e_Hotkey_SecondaryAegisNext, "com.ElTorqiro.AegisHUD.HUD.HotkeyHijacker.HotkeySecondaryAegisNext", _global.Enums.Hotkey.eHotkeyDown , 0 );
 	Input.RegisterHotkey( HotkeyHijacker.e_Hotkey_SecondaryAegisPrev, "com.ElTorqiro.AegisHUD.HUD.HotkeyHijacker.HotkeySecondaryAegisPrev", _global.Enums.Hotkey.eHotkeyDown , 0 );
 }
+
+// options router for setting g_options, in lieu of a getter/setter model -- this is the setter
+function SetOption(name:String, value) {
+
+	// globally do this, don't think there is any sanity checking needed
+	g_options[name] = value;
+	
+	switch( name ) {
+		
+		case "hideDefaultSwapButtons":
+			HideDefaultSwapButtons(g_options.hideDefaultSwapButtons);
+		break;
+		
+		
+		case "hudEnabled":
+			EnableHUD(g_options.hudEnabled);
+		break;
+	}
+}
+
 
 function onUnload():Void {
 
@@ -182,23 +205,24 @@ function LoadData():Void {
 
 // RPC listener
 function RPCListener():Void {
-	var rpcData:Archive = g_RPC.GetValue();
+	var rpcData:Archive = Archive( g_RPC.GetValue() );
 
 	// HUD settings
 	for ( var s:String in g_RPCFilter.settings ) {
-		var value = rpcData.FindEntry( s, null );
+		var value = rpcData.FindEntry( "setting." + s, null );
 		if ( value != null && g_RPCFilter.settings[s] ) g_HUD[s] = value;
 	}
 	
 	// HUD commands
 	for ( var s:String in g_RPCFilter.commands ) {
-		var value = rpcData.FindEntry( s, null );		
-		//if ( g_RPCFilter.commands[s] ) g_HUD[s]( value );
+		var value = rpcData.FindEntry( "command." + s, null );		
+		if ( value != null && g_RPCFilter.commands[s] ) g_HUD[s]( value );
 	}
 	
 	// module options
 	for ( var s:String in g_RPCFilter.options ) {
-		//if ( g_RPCFilter.options[s] ) g_options[s] = value;
+		var value = rpcData.FindEntry( "option." + s, null );
+		if ( value != null && g_RPCFilter.options[s] ) SetOption( s, value );
 	}
 	
 	// a setting may have changed, update the persistence object
