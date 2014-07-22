@@ -31,8 +31,7 @@ import com.ElTorqiro.AegisHUD.AddonInfo;
 var g_HUD:HUD;
 
 // settings persistence objects
-var g_settings:Object;	// visual / HUD type settings
-var g_options:Object;	// options
+var g_data:Object;		// settings & options
 
 // RPC DValue for receiving settings changes from other modules  (e.g. the Config module)
 var g_RPC:DistributedValue;
@@ -52,31 +51,13 @@ var g_findPassivebarThrashCount:Number = 0;
 //Init
 function onLoad():Void {
 	// default values for settings
-	g_settings = HUD.defaultSettingsPack;
-
-	// create initial settings values
-	g_options = {
-		hideDefaultSwapButtons: true,
-		hudEnabled: true
-	};
-	
-	// RPC permissable settings/commands
-	g_RPCFilter = {
-		settings: { },
-
-		commands: {
-			MoveToDefaultPosition: true
-		},
+	g_data = {
+		settings: HUD.defaultSettingsPack,
 		
 		options: {
 			hideDefaultSwapButtons: true,
 			hudEnabled: true
 		}
-	};
-	
-	// poulate allowed RPC filter settings - for now just allow every possible setting provided by HUD
-	for ( var s:String in HUD.defaultSettingsPack ) {
-		g_RPCFilter.settings[s] = true;
 	}
 	
 	// hijack hotkeys
@@ -86,25 +67,40 @@ function onLoad():Void {
 	Input.RegisterHotkey( HotkeyHijacker.e_Hotkey_SecondaryAegisPrev, "com.ElTorqiro.AegisHUD.HUD.HotkeyHijacker.HotkeySecondaryAegisPrev", _global.Enums.Hotkey.eHotkeyDown , 0 );
 }
 
-// options router for setting g_options, in lieu of a getter/setter model -- this is the setter
-function SetOption(name:String, value) {
 
-	// globally do this, don't think there is any sanity checking needed
-	g_options[name] = value;
+// options router for actions (setting values, performing commands), in lieu of a getter/setter model -- this is the setter
+function Do(name:String, value) {
 	
-	switch( name ) {
+	// split name into constituent parts
+	var node:Array = name.split( '.' );
+	var type:String = node[0];
+	var key:String = node[1];
+	
+	if ( type == undefined || key == undefined ) return;
+	
+	switch( type ) {
 		
-		case "hideDefaultSwapButtons":
-			HideDefaultSwapButtons(g_options.hideDefaultSwapButtons);
+		// settings are routed through to the HUD if it exists
+		case "setting":
+			g_data.settings[key] = value;
+			if ( g_HUD != undefined ) g_HUD[key] = value;
+		break;
+
+
+		// commands are routed through to the HUD if it exists
+	case "command":
+			if ( g_HUD != undefined ) g_HUD[key]( value );
 		break;
 		
 		
-		case "hudEnabled":
-			EnableHUD(g_options.hudEnabled);
+		// options are handled here in the module
+		case "option":
+			g_data.options[key] = value;
+			if( this[key] instanceof Function ) this[key]( value );
 		break;
 	}
+	
 }
-
 
 function onUnload():Void {
 
@@ -132,12 +128,7 @@ function OnModuleActivated():Void {
 	ShowHUD();
 
 	// hide default swap buttons if specified
-	HideDefaultSwapButtons( g_options.hideDefaultSwapButtons );
-	
-	// wire up RPC listener
-	g_RPC = DistributedValue.Create(AddonInfo.Name + "_RPC");
-	g_RPC.SignalChanged.Connect(RPCListener, this);
-	
+	hideDefaultSwapButtons( g_data.options.hideDefaultSwapButtons );
 }
 
 // module deactivated (i.e. its distributed value set to 0)
@@ -147,9 +138,6 @@ function OnModuleDeactivated():Void {
 	Lore.SignalTagAdded.Disconnect(SlotTagAdded, this);
 	g_showAegisSwapUI.SignalChanged.Disconnect( ShowAegisSwapUIChanged, this );
 	
-	// disconnect from internal DValues
-	g_RPC.SignalChanged.Disconnect(RPCListener, this);
-
 	// close HUD
 	ShowHUD( false );
 	
@@ -157,76 +145,49 @@ function OnModuleDeactivated():Void {
 	SaveData();
 
 	// restore regular default swap button behaviour
-	HideDefaultSwapButtons( false );
+	hideDefaultSwapButtons( false );
 }
 
 // prepare settings for saving by TSW
 function SaveData():Void {
 
-	// because LoginPrefs.xml has a reference to these DValues, the contents will be saved whenever the game thinks it is necessary
-	// (e.g. closing the game, reloadui etc)
+	var saveData:Archive = new Archive();
 	
 	// store HUD settings
-	UpdateSettingsFromHUD();	
-	var saveData:Archive = new Archive();
-
-	for ( var s:String in g_settings ) {
-		saveData.AddEntry( s, g_settings[s] );
+	UpdateSettingsFromHUD();
+	for ( var s:String in g_data.settings ) {
+		saveData.AddEntry( 'setting.' + s, g_data.settings[s] );
 	}
-	DistributedValue.SetDValue(AddonInfo.Name + "_HUD_Settings", saveData);
-
-	// store module options
-	saveData = new Archive();
-	for ( var s:String in g_options ) {
-		saveData.AddEntry( s, g_options[s] );
+	
+	// store HUD options
+	for ( var s:String in g_data.options ) {
+		saveData.AddEntry( 'option.' + s, g_data.settings[s] );
 	}
-	DistributedValue.SetDValue(AddonInfo.Name + "_HUD_Options", saveData);
+
+	// persistence object
+	// because LoginPrefs.xml has a reference to these DValues, the contents will be saved whenever the game thinks it is necessary
+	// (e.g. closing the game, reloadui etc)
+	DistributedValue.SetDValue(AddonInfo.Name + "_HUD_Data", saveData);
 }
 
 // restore settings from DValue (initially populated by TSW)
 function LoadData():Void {
 	
 	// restore HUD settings
-	var loadData:Archive = DistributedValue.GetDValue(AddonInfo.Name + "_HUD_Settings");
+	var loadData:Archive = DistributedValue.GetDValue(AddonInfo.Name + "_HUD_Data");
+
 	if( loadData != undefined ) {
-		for ( var s:String in g_settings ) {
-			g_settings[s] = loadData.FindEntry( s, g_settings[s] );
+
+		// restore HUD settings
+		for ( var s:String in g_data.settings ) {
+			g_data.settings[s] = loadData.FindEntry( 'setting.' + s, g_data.settings[s] );
+		}
+		
+		// restore HUD options
+		for ( var s:String in g_data.options ) {
+			g_data.options[s] = loadData.FindEntry( 'option.' + s, g_data.options[s] );
 		}
 	}
-	
-	// restore module options
-	loadData = DistributedValue.GetDValue(AddonInfo.Name + "_HUD_Options");
-	if( loadData != undefined ) {
-		for ( var s:String in g_options ) {
-			g_options[s] = loadData.FindEntry( s, g_options[s] );
-		}
-	}
-}
-
-// RPC listener
-function RPCListener():Void {
-	var rpcData:Archive = Archive( g_RPC.GetValue() );
-
-	// HUD settings
-	for ( var s:String in g_RPCFilter.settings ) {
-		var value = rpcData.FindEntry( "setting." + s, null );
-		if ( value != null && g_RPCFilter.settings[s] ) g_HUD[s] = value;
-	}
-	
-	// HUD commands
-	for ( var s:String in g_RPCFilter.commands ) {
-		var value = rpcData.FindEntry( "command." + s, null );		
-		if ( value != null && g_RPCFilter.commands[s] ) g_HUD[s]( value );
-	}
-	
-	// module options
-	for ( var s:String in g_RPCFilter.options ) {
-		var value = rpcData.FindEntry( "option." + s, null );
-		if ( value != null && g_RPCFilter.options[s] ) SetOption( s, value );
-	}
-	
-	// a setting may have changed, update the persistence object
-	SaveData();
 }
 
 // handle user changing AEGIS swap visibility in control panel
@@ -253,7 +214,7 @@ function ShowHUD(show:Boolean):Void {
 	
 	// attach HUD
 	if( show ) {
-		g_HUD = HUD( this.attachMovie("com.ElTorqiro.AegisHUD.HUD.HUD", "m_HUD", this.getNextHighestDepth(), { settings: g_settings }) );
+		g_HUD = HUD( this.attachMovie("com.ElTorqiro.AegisHUD.HUD.HUD", "m_HUD", this.getNextHighestDepth(), { settings: g_data.settings }) );
 	}
 
 	// destroy HUD
@@ -269,13 +230,13 @@ function UpdateSettingsFromHUD():Void {
 	// retrieve current settings directly from HUD to make sure we have the most up to date values
 	if ( g_HUD == undefined ) return;
 	
-	for ( var s:String in g_settings ) {
-		g_settings[s] = g_HUD[s];
+	for ( var s:String in g_data.settings ) {
+		g_data.settings[s] = g_HUD[s];
 	}
 }
 
 // hide or show default buttons
-function HideDefaultSwapButtons(hide:Boolean):Void {
+function hideDefaultSwapButtons(hide:Boolean):Void {
 	// hack to wait for the passivebar to be loaded, as it actually gets unloaded during teleports etc, not just deactivated
 	if ( _root.passivebar.LoadAegisButtons == undefined ) {
 		// if the thrash count is exceeded, reset count and do nothing

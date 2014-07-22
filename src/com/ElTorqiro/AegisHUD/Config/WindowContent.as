@@ -7,15 +7,15 @@ import gfx.controls.CheckBox;
 import gfx.controls.DropdownMenu;
 import gfx.controls.Button;
 import gfx.controls.Slider;
+import gfx.controls.TextInput;
 import mx.utils.Delegate;
 import com.GameInterface.UtilsBase;
 import com.GameInterface.DistributedValue;
 import com.ElTorqiro.AegisHUD.AddonInfo;
+import com.ElTorqiro.AddonUtils.AddonUtils;
 
 class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowComponentContent
 {
-	private var _hudSettings:DistributedValue;
-	private var _hudOptions:DistributedValue;
 	private var _uiControls:Object = {};
 	private var _uiInitialised:Boolean = false;
 	
@@ -24,24 +24,19 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 	
 	private var _layoutCursor:Point;
 	
+	private var _hud:MovieClip;
+	
 	public function WindowContent()
 	{
 		super();
 		
-		// hud data listener
-		_hudSettings = DistributedValue.Create(AddonInfo.Name + "_HUD_Settings");
-		_hudOptions = DistributedValue.Create(AddonInfo.Name + "_HUD_Options");
-		
-		_hudSettings.SignalChanged.Connect(LoadValues, this);
-		_hudOptions.SignalChanged.Connect(LoadValues, this);
+		// get a handle on the hud module
+		_hud = _root["eltorqiro_aegishud\\hud"];
 	}
 
 	// cleanup operations
 	public function Destroy():Void
 	{
-		// disconnnect from signals
-		_hudSettings.SignalChanged.Disconnect(LoadValues, this);
-		_hudOptions.SignalChanged.Disconnect(LoadValues, this);
 	}
 	
 	private function configUI():Void
@@ -110,7 +105,7 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 			event:		"click",
 			type:		"setting"
 		};
-		_uiControls.SetDefaultPosition = {
+		_uiControls.MoveToDefaultPosition = {
 			control:	AddButton("MoveToDefaultPosition", "Reset to default position"),
 			event:		"click",
 			type:		"command"
@@ -159,7 +154,7 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 			type:		"setting"
 		};
 		_uiControls.showWeaponBackgroundBehaviour = {
-			control:	AddDropdown( "showWeaponBackgroundBehaviour", "Background Visibility", ["Never", "Always", "Only when slotted"] ),
+			control:	AddDropdown( "showWeaponBackgroundBehaviour", "Show Background", ["Never", "Always", "Only when slotted"] ),
 			event:		"change",
 			type:		"setting"
 		};
@@ -178,7 +173,7 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 		// add XP section
 		AddHeading("AEGIS Slots");
 		_uiControls.showAegisBackgroundBehaviour = {
-			control:	AddDropdown( "showAegisBackgroundBehaviour", "Background Visibility", ["Never", "Always", "Only when slotted"] ),
+			control:	AddDropdown( "showAegisBackgroundBehaviour", "Show Background", ["Never", "Always", "Only when slotted"] ),
 			event:		"change",
 			type:		"setting"
 		};		
@@ -224,7 +219,8 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 		};	
 		AddIndent(-10);
 
-		AddColumn();
+
+		// active aegis section
 		AddHeading("Active AEGIS Slot");
 		_uiControls.showActiveAegisBackground = {
 			control:	AddCheckbox( "showActiveAegisBackground", "Show background" ),
@@ -232,12 +228,12 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 			type:		"setting"
 		};
 		_uiControls.tintActiveAegisBackgroundBehaviour = {
-			control:	AddDropdown( "tintActiveAegisBackgroundBehaviour", "Tint", ["Never", "Standard", "Per Active AEGIS"] ),
+			control:	AddDropdown( "tintActiveAegisBackgroundBehaviour", "Tint Background", ["Never", "Standard", "Per Active AEGIS"] ),
 			event:		"change",
 			type:		"setting"
 		};	
 		
-
+		AddColumn();
 		// neon highlighting section
 		AddHeading("NeonFX");
 		_uiControls.neonEnabled = {
@@ -266,6 +262,52 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 			event:		"click",
 			type:		"setting"
 		};
+		AddIndent(-10);		
+		
+		// Tints section
+		AddHeading("Tints");
+		_uiControls.tintAegisPsychic = {
+			control:	AddTextInput( "tintAegisPsychic", "Psychic", "", 6, true ),
+			event:		"textChange",
+			type:		"setting"
+		};
+		_uiControls.tintAegisCybernetic = {
+			control:	AddTextInput( "tintAegisCybernetic", "Cybernetic", "", 6, true ),
+			event:		"textChange",
+			type:		"setting"
+		};
+		_uiControls.tintAegisDemonic = {
+			control:	AddTextInput( "tintAegisDemonic", "Demonic", "", 6, true ),
+			event:		"textChange",
+			type:		"setting"
+		};
+		_uiControls.tintAegisEmpty = {
+			control:	AddTextInput( "tintAegisEmpty", "Empty Slot", "", 6, true ),
+			event:		"textChange",
+			type:		"setting"
+		};
+		_uiControls.tintAegisStandard = {
+			control:	AddTextInput( "tintAegisStandard", "Default Active Highlight", "", 6, true ),
+			event:		"textChange",
+			type:		"setting"
+		};
+
+		_uiControls.tintXPBackground = {
+			control:	AddTextInput( "tintXPBackground", "XP Bar Background", "", 6, true ),
+			event:		"textChange",
+			type:		"setting"
+		};
+		_uiControls.tintXPProgress = {
+			control:	AddTextInput( "tintXPProgress", "XP Bar Progress", "", 6, true ),
+			event:		"textChange",
+			type:		"setting"
+		};
+		_uiControls.tintXPFull = {
+			control:	AddTextInput( "tintXPFull", "XP Full", "", 6, true ),
+			event:		"textChange",
+			type:		"setting"
+		};
+		
 		
 		SetSize( Math.round(Math.max(m_Content._width, 200)), Math.round(Math.max(m_Content._height, 200)) );
 		
@@ -302,14 +344,16 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 	{
 		if ( !_uiInitialised ) return;
 		
-		var rpcArchive:Archive = new Archive();
 		var eventValue = eval(e.target.eventValue + "");
 
-		// invalidate previous value to make sure the change signal is triggered
-		rpcArchive.AddEntry( "_sequence", new Date().valueOf() );
-		rpcArchive.AddEntry( _uiControls[e.target.controlName].type + '.' + e.target.controlName, ( eventValue == undefined ? true : eventValue ) );
-
-		DistributedValue.SetDValue(AddonInfo.Name + "_RPC", rpcArchive);
+		// handle textinput hex color fields
+		if ( e.target instanceof TextInput && e.target["isHexColor"] ) {
+			eventValue = parseInt( '0x' + eventValue );
+			if ( !AddonUtils.isRGB(eventValue) ) return;
+		}
+		
+		// execute against HUD module
+		_hud.Do( _uiControls[e.target.controlName].type + '.' + e.target.controlName, ( eventValue == undefined ? true : eventValue ) );
 	}
 	
 
@@ -317,28 +361,41 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 	private function LoadValues():Void
 	{
 		_uiInitialised = false;
-		var hudValues:Archive = _hudSettings.GetValue();
+		
+		var data:Object = _hud.g_data;
 		
 		for ( var s:String in _uiControls )
 		{
 			var control = _uiControls[s].control;
-			var value = hudValues.FindEntry( s, 0 );
+			var value = data[ _uiControls[s].type + 's' ][s];
 			
-			if ( control instanceof DropdownMenu )
-			{
+			if ( control instanceof DropdownMenu ) {
 				if( control.selectedIndex != value )  control.selectedIndex = value;
 			}
 			
-			else if ( control instanceof CheckBox )
-			{
+			else if ( control instanceof CheckBox ) {
 				if( control.selected != value )  control.selected = value;				
+			}
+			
+			else if ( control instanceof TextInput ) {
+				var displayString:String = control["isHexColor"] ? decColor2hex(value) : value;
+				if ( control.text != displayString ) control.text = displayString;
 			}
 		}
 		
 		_uiInitialised = true;
 	}
 
+	private function decColor2hex(color:Number) {
+		// input:   (Number) decimal color (i.e. 16711680)
+		// returns: (String) hex color (i.e. 0xFF0000)
+		colArr = color.toString(16).toUpperCase().split('');
+		numChars = colArr.length;
+		for(a=0;a<(6-numChars);a++){colArr.unshift("0");}
+		return('' + colArr.join(''));
+	}
 	
+
 	// add and return a new checkbox, layed out vertically
 	private function AddCheckbox(name:String, text:String):CheckBox
 	{	
@@ -389,20 +446,26 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 	{
 		var y:Number = m_Content._height;
 
+		var l = m_Content.attachMovie( "ConfigLabel", "m_" + name + "_Label", m_Content.getNextHighestDepth() );
+		l.textField.autoSize = "left";
+		l.textField.text = label;
+		l._y = _layoutCursor.y;
+		l._x = _layoutCursor.x;
+		
 		var o:DropdownMenu = DropdownMenu(m_Content.attachMovie( "Dropdown", "m_" + name, m_Content.getNextHighestDepth() ));
+
 		o["controlName"] = name;
 		o["eventValue"] = "e.index";
-		with ( o )
-		{
-			disableFocus = true;
-			dropdown = "ScrollingList";
-			itemRenderer = "ListItemRenderer";
-			dataProvider = values;
-		}
+		//o["labelField"].autoSize = "left";
+		//o["labelField"].text = label;
+		o.disableFocus = true;
+		o.dropdown = "ScrollingList";
+		o.itemRenderer = "ListItemRenderer";
+		o.dataProvider = values;
 		o.dropdown.addEventListener("focusIn", this, "RemoveFocus");
 //		o._y = y;
 		o._y = _layoutCursor.y;
-		o._x = _layoutCursor.x + 3;
+		o._x = _layoutCursor.x + 3 + l._width;
 
 		_layoutCursor.y += o._height;
 		
@@ -450,6 +513,35 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 		_layoutCursor.y += o._height;
 		
 		return o;
+	}
+	
+	private function AddTextInput(name:String, label:String, defaultValue:String, maxChars:Number, isHexColor:Boolean):TextInput {
+		
+			var l = m_Content.attachMovie( "ConfigLabel", "m_" + name + "_Label", m_Content.getNextHighestDepth() );
+			l.textField.autoSize = "left";
+			l.textField.text = label;
+			l._y = _layoutCursor.y;
+			l._x = _layoutCursor.x;
+			
+			var o:TextInput = TextInput(m_Content.attachMovie( "TextInput", "m_" + name, m_Content.getNextHighestDepth() ));
+
+			o.maxChars = maxChars == undefined ? 0 : maxChars;
+			
+			o["controlName"] = name;
+			o["eventValue"] = "e.target.text";
+			if( isHexColor ) {
+				o["isHexColor"] = isHexColor;
+				o.maxChars = 6;
+			}
+			
+//			o.disableFocus = true;
+			
+			o._y = _layoutCursor.y;
+			o._x = _layoutCursor.x + 3 + 130;	// hardcoded because textinput is currently only used for one thing -- clean up in future
+
+			_layoutCursor.y += o._height;
+			
+			return o;
 	}
 	
 	private function AddColumn():Void

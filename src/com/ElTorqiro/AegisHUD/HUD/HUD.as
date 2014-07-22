@@ -965,7 +965,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 		var slot;
 		for ( var s:String in _itemSlots ) {
-			if ( _itemSlots[s].mc.hitTest(_root._xmouse, _root._ymouse, true) ) {
+			if ( _itemSlots[s].mc.hitTest(_root._xmouse, _root._ymouse, true, true) ) {
 				slot = _itemSlots[s];
 				break;
 			}
@@ -977,7 +977,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	private function getBarMouseOver():MovieClip {
 		
 		for ( var s:String in _sides ) {
-			if ( _sides[s].mc.hitTest(_root._xmouse, _root._ymouse, true) ) return _sides[s].mc;
+			if ( _sides[s].mc.hitTest(_root._xmouse, _root._ymouse, true, true) ) return _sides[s].mc;
 		}
 		
 		return undefined;
