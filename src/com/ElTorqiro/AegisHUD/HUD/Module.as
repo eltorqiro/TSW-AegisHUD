@@ -18,8 +18,11 @@ import com.GameInterface.Game.Character;
 import com.GameInterface.Tooltip.TooltipDataProvider;
 import com.GameInterface.Lore
 
-import com.ElTorqiro.Utils;
+import com.GameInterface.Input;
+
+import com.ElTorqiro.AddonUtils.AddonUtils;
 import com.ElTorqiro.AegisHUD.HUD.HUD;
+import com.ElTorqiro.AegisHUD.HUD.HotkeyHijacker;
 import com.ElTorqiro.AegisHUD.Enums.*;
 import com.ElTorqiro.AegisHUD.AddonInfo;
 
@@ -37,17 +40,16 @@ var g_RPCFilter:Object;
 // TSW user setting that shows/hides the swap UI
 var g_showAegisSwapUI:DistributedValue;
 
+// constants
 var AEGIS_SLOT_ACHIEVEMENT:Number = 6817;	// The Lore number that unlocks the AEGIS system
 											// 6817 is pulled straight from Funcom's PassiveBar
 
-// internal variables
+// internal state variables
 var g_findPassivebarThrashCount:Number = 0;
 
 
 //Init
 function onLoad():Void {
-	UtilsBase.PrintChatText("loaded: " + AddonInfo.Name);
-	
 	// default values for settings
 	g_settings = HUD.defaultSettingsPack;
 
@@ -73,9 +75,22 @@ function onLoad():Void {
 	for ( var s:String in HUD.defaultSettingsPack ) {
 		g_RPCFilter.settings[s] = true;
 	}
+	
+	// hijack hotkeys
+	Input.RegisterHotkey( HotkeyHijacker.e_Hotkey_PrimaryAegisNext, "com.ElTorqiro.AegisHUD.HUD.HotkeyHijacker.HotkeyPrimaryAegisNext", _global.Enums.Hotkey.eHotkeyDown , 0 );
+	Input.RegisterHotkey( HotkeyHijacker.e_Hotkey_PrimaryAegisPrev, "com.ElTorqiro.AegisHUD.HUD.HotkeyHijacker.HotkeyPrimaryAegisPrev", _global.Enums.Hotkey.eHotkeyDown , 0 );
+	Input.RegisterHotkey( HotkeyHijacker.e_Hotkey_SecondaryAegisNext, "com.ElTorqiro.AegisHUD.HUD.HotkeyHijacker.HotkeySecondaryAegisNext", _global.Enums.Hotkey.eHotkeyDown , 0 );
+	Input.RegisterHotkey( HotkeyHijacker.e_Hotkey_SecondaryAegisPrev, "com.ElTorqiro.AegisHUD.HUD.HotkeyHijacker.HotkeySecondaryAegisPrev", _global.Enums.Hotkey.eHotkeyDown , 0 );
 }
 
-function onUnload():Void {}
+function onUnload():Void {
+
+	// release hijacked hotkeys
+	Input.RegisterHotkey( HotkeyHijacker.e_Hotkey_PrimaryAegisNext, "", _global.Enums.Hotkey.eHotkeyDown , 0 );
+	Input.RegisterHotkey( HotkeyHijacker.e_Hotkey_PrimaryAegisPrev, "", _global.Enums.Hotkey.eHotkeyDown , 0 );
+	Input.RegisterHotkey( HotkeyHijacker.e_Hotkey_SecondaryAegisNext, "", _global.Enums.Hotkey.eHotkeyDown , 0 );
+	Input.RegisterHotkey( HotkeyHijacker.e_Hotkey_SecondaryAegisPrev, "", _global.Enums.Hotkey.eHotkeyDown , 0 );
+}
 
 // module activated (i.e. its distributed value set to 1)
 function OnModuleActivated():Void {
@@ -91,7 +106,6 @@ function OnModuleActivated():Void {
 	LoadData();
 	
 	// instantiate HUD
-	g_settings.attachToPassiveBar = false;
 	ShowHUD();
 
 	// hide default swap buttons if specified
@@ -168,27 +182,28 @@ function LoadData():Void {
 
 // RPC listener
 function RPCListener():Void {
-	var rpcData = g_RPC.GetValue();
+	var rpcData:Archive = g_RPC.GetValue();
 
 	// HUD settings
 	for ( var s:String in g_RPCFilter.settings ) {
-		if ( g_RPCFilter.settings[s] ) g_HUD[s] = value;
+		var value = rpcData.FindEntry( s, null );
+		if ( value != null && g_RPCFilter.settings[s] ) g_HUD[s] = value;
 	}
 	
 	// HUD commands
 	for ( var s:String in g_RPCFilter.commands ) {
-		if ( g_RPCFilter.commands[s] ) g_HUD[s]( value );
+		var value = rpcData.FindEntry( s, null );		
+		//if ( g_RPCFilter.commands[s] ) g_HUD[s]( value );
 	}
 	
 	// module options
 	for ( var s:String in g_RPCFilter.options ) {
-		if ( g_RPCFilter.options[s] ) g_options[s] = value;
+		//if ( g_RPCFilter.options[s] ) g_options[s] = value;
 	}
 	
 	// a setting may have changed, update the persistence object
 	SaveData();
 }
-
 
 // handle user changing AEGIS swap visibility in control panel
 function ShowAegisSwapUIChanged():Void {

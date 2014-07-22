@@ -5,9 +5,12 @@ import com.GameInterface.UtilsBase;
 import flash.geom.Point;
 import gfx.core.UIComponent;
 import com.GameInterface.Lore;
-
+import mx.data.encoders.Bool;
+import com.GameInterface.Input;
+import gfx.ui.InputDetails;
+import gfx.managers.InputDelegate;
 import flash.geom.ColorTransform;
-import com.ElTorqiro.Utils;
+import com.ElTorqiro.AddonUtils.AddonUtils;
 import com.GameInterface.InventoryItem;
 import com.Utils.ID32;
 import com.Utils.LDBFormat;
@@ -19,6 +22,7 @@ import com.ElTorqiro.AegisHUD.Enums.ActiveAegisBackgroundTintBehaviour;
 import flash.filters.GlowFilter;
 import gfx.motion.Tween;
 import mx.transitions.easing.Bounce;
+import com.ElTorqiro.AegisHUD.AddonInfo;
 
 /**
  * 
@@ -69,8 +73,10 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	
 	private var _neonEnabled:Boolean;
 
+	public  var dualSelectWithModifier:Boolean;
+	public  var dualSelectWithButton:Boolean;
 	private var _dualSelectByDefault:Boolean;
-	private var _dualSelectWithHotkey:Boolean;
+	private var _dualSelectFromHotkey:Boolean;
 	
 	private var _tints:Object = { none: 0xffffff };
 	
@@ -89,6 +95,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	private var _tooltipSlot:Object;
 	private var _pollAegisXPTimeoutID:Number;
 	private var _findPassiveBarThrashCount:Number = 0;
+	private var _findPassiveBarTimeoutID:Number;
 	private var _swapTimeoutID:Number;
 	private var _postSwapCatchupInterval:Number = 500;
 	
@@ -121,11 +128,14 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	public var scaleModifier:Number = Key.CONTROL;
 	public var scaleResetModifier:Number = Key.SHIFT;
 
-	public var dualSelectModifier:Number = undefined; // Key.SHIFT;
+	public var dualSelectModifier:Number = Key.SHIFT;
 	public var dualSelectButton:Number = 1;
 	
 	public var singleSelectButton:Number = 0;
 
+	// swap AEGIS RPC DV used as part of hotkey hijacking
+	private var _swapAegisRPC:DistributedValue;
+	
 	// parameters passed in through initObj of attachMovie( ..., initObj)
 	private var settings:Object;
 
@@ -150,11 +160,9 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		ApplySettingsPack( settings );
 		delete settings;
 		
-		
-		// get hotkey names from C:\Users\Torq\AppData\Local\Funcom\TSW\Prefs\ElTorqira\hotkeys.xml
-		//UtilsBase.PrintChatText("<variable name='hotkey:Combat_NextPrimaryAEGIS'/ >");
-		//Utils.FindGlobalEnum( "hotkey" );
-		//com.GameInterface.Input.RegisterHotkey( 32, "
+		// wire up hotkey hijacking listener
+		_swapAegisRPC = DistributedValue.Create( AddonInfo.Name + "_Swap" );
+		_swapAegisRPC.SignalChanged.Connect( SwapAegisRPCHandler, this );
 	}
 	
 	public function onUnload():Void
@@ -166,7 +174,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 		// undo passivebar attachment
 		AttachToPassiveBar( false );
-		
+
 		// unwire signal listeners
 		_character.SignalStatChanged.Disconnect( SlotStatChanged, this);
 	    _inventory.SignalItemAdded.Disconnect( SlotItemAdded, this);
@@ -176,6 +184,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		_inventory.SignalItemChanged.Disconnect( SlotItemChanged, this);
 		_inventory.SignalItemStatChanged.Disconnect( SlotItemStatChanged, this);
 
+		_swapAegisRPC.SignalChanged.Disconnect( SwapAegisRPCHandler, this );
+		
 		_character = undefined;
 		_inventory = undefined;
 		
@@ -319,8 +329,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 				bar.m_Weapon._visible = _showWeapons;
 			}
 			
-			var firstButton:MovieClip = this["_" + s + "WeaponFirst"] ? bar.m_Weapon : bar.m_Aegis1;
-			var lastButton:MovieClip = this["_" + s + "WeaponFirst"] ? bar.m_Aegis3 : bar.m_Weapon;
+			var firstButton:MovieClip = this["_" + s + "WeaponFirst"] ? (_showWeapons ? bar.m_Weapon : bar.m_Aegis1) : bar.m_Aegis1;
+			var lastButton:MovieClip = this["_" + s + "WeaponFirst"] ? bar.m_Aegis3 : (_showWeapons ? bar.m_Weapon : bar.m_Aegis3);
 			
 			// position and resize background to wrap buttons
 			bar.m_Background._x = bar.m_Background._y = 0;
@@ -518,10 +528,43 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			barMC.m_Background._alpha = _showBarBackground ? 100 : 0;
 
 			// tint bar background
-			Utils.Colorize( barMC.m_Background, _tintBarBackgroundByActiveAegis ? barTint : 0x000000 );
+			AddonUtils.Colorize( barMC.m_Background, _tintBarBackgroundByActiveAegis ? barTint : _tints.barStandard );
+			barMC.m_Background.gotoAndStop("white");
 			
 			// neon glow entire bar
+			if ( _neonEnabled && _neonGlowEntireBar ) {
+				var entireGlow:GlowFilter = new GlowFilter(
+					barTint, 	/* glow_color */
+					0.8, 		/* glow_alpha */
+					10, 		/* glow_blurX */
+					10, 		/* glow_blurY */
+					2,			/* glow_strength */
+					3, 			/* glow_quality */
+					false, 		/* glow_inner */
+					false 		/* glow_knockout */
+				);
+				
+				barMC.filters = [ entireGlow ];
+			}
+			else barMC.filters = [];
+			
+			// neon glow bar background
 			if ( _neonEnabled && _neonGlowBarBackground ) {
+				barMC.m_Background.gotoAndStop("black");
+
+				// two different methods available here
+				
+				// option 1, bolder colour than #2
+				// AddonUtils.Colorize( barMC.m_Background.m_Black, barTint );
+				// AddonUtils.Colorize( barMC.m_Background, barTint );
+				
+				// option 2
+				AddonUtils.Colorize( barMC.m_Background, barTint );
+
+				// this happens regardless
+				barMC.m_Background.m_White._visible = false;
+				barMC.m_Background.m_Black._visible = true;
+				
 				var barGlow:GlowFilter = new GlowFilter(
 					barTint, 	/* glow_color */
 					0.8, 		/* glow_alpha */
@@ -556,14 +599,12 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 				|| ( _showWeaponBackgroundBehaviour == SlotBackgroundBehaviour.WHEN_SLOTTED && weaponSlot.item != undefined );
 			
 			// tint weapon background
-			if ( _tintWeaponBackgroundByActiveAegis ) {
-				Utils.Colorize( weaponSlotMC.m_Background, barTint );
-			}
+			var weaponTint:Number = _tintWeaponBackgroundByActiveAegis ? barTint : _tints.none;
+			AddonUtils.Colorize( weaponSlotMC.m_Background, weaponTint );
 			
 			// tint weapon icon
-			if ( _tintWeaponIconByActiveAegis ) {
-				Utils.Colorize( weaponSlotMC.m_Icon, barTint );
-			}
+			var weaponIconTint:Number = _tintWeaponIconByActiveAegis ? barTint : _tints.none;
+			AddonUtils.Colorize( weaponSlotMC.m_Icon, weaponIconTint );
 			
 			// neon glow weapon
 			if ( _neonEnabled && _neonGlowWeapon ) {
@@ -603,9 +644,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 				}
 
 				// tint aegis icon
-				if ( _tintAegisIconByType ) {
-					Utils.Colorize( slotMC.m_Icon, slotTint );
-				}
+				var iconTint:Number = _tintAegisIconByType ? slotTint : _tints.none;
+				AddonUtils.Colorize( slotMC.m_Icon, iconTint );
 				
 				// show xp display
 				if ( !_showXP || slot.item == undefined ) slotMC.m_XPBar._visible = slotMC.m_XPText._visible = false;
@@ -622,7 +662,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 					else {
 						slotMC.m_XPText._visible = false;
 						
-						Utils.Colorize( slotMC.m_XPBar.m_Background, _tints.xpBackground );						
+						AddonUtils.Colorize( slotMC.m_XPBar.m_Background, _tints.xpBackground );						
 						
 						slotMC.m_XPBar.m_Background._visible = _showXPProgressBackground;
 						slotMC.m_XPBar._visible = true;
@@ -634,7 +674,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 					|| ( _showAegisBackgroundBehaviour == SlotBackgroundBehaviour.WHEN_SLOTTED && slot.item != undefined );
 				
 				// tint aegis background
-				Utils.Colorize( slotMC.m_Background, _tintAegisBackgroundByType ? slotTint : _tints.none );
+				AddonUtils.Colorize( slotMC.m_Background, _tintAegisBackgroundByType ? slotTint : _tints.none );
 
 				// take neon glow off slot before the active check
 				slotMC.filters = [];
@@ -649,8 +689,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 					switch( _tintActiveAegisBackgroundBehaviour ) {
 						
 						case ActiveAegisBackgroundTintBehaviour.NEVER: 		break;
-						case ActiveAegisBackgroundTintBehaviour.STANDARD: 	Utils.Colorize( slotMC.m_Background, _tints.standard ); break;
-						case ActiveAegisBackgroundTintBehaviour.AEGIS_TYPE:	Utils.Colorize( slotMC.m_Background, slotTint ); break;
+						case ActiveAegisBackgroundTintBehaviour.STANDARD: 	AddonUtils.Colorize( slotMC.m_Background, _tints.standard ); break;
+						case ActiveAegisBackgroundTintBehaviour.AEGIS_TYPE:	AddonUtils.Colorize( slotMC.m_Background, slotTint ); break;
 					}
 					
 					// neon glow aegis
@@ -880,7 +920,14 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			var slot:Object = getItemSlotMouseOver();
 			
 			if ( slot.type == "aegis" ) {
-				var dual:Number = _dualSelectByDefault ? button == singleSelectButton : dualSelectButton;
+				var dual:Boolean;
+				if ( _dualSelectByDefault ) {
+					dual = !(dualSelectWithModifier && Key.isDown(dualSelectModifier)) && !(dualSelectWithButton && button == dualSelectButton);
+				}
+				else {
+					dual = (dualSelectWithModifier && Key.isDown(dualSelectModifier)) || (dualSelectWithButton && button == dualSelectButton);
+				}
+
 				dispatchEvent({ type:"select", modifier:dualSelectModifier, button:button, itemSlot:slot, dualSelect:dual });
 			}
 		}
@@ -970,6 +1017,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		mc.onRollOver = Delegate.create(this, handleRollOver);
 		mc.onRollOut = Delegate.create(this, handleRollOut);
 		mc.onDragOut = mc.onRollOut;
+		mc.onDragOutAux = mc.onRollOut;
 	}
 
 	private function ScaleHandler(event:Object):Void {
@@ -1038,16 +1086,12 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		slot.aegisXP = xp == Number.NaN ? undefined : xp;
 
 		// text display being used
-		if ( _xpUseTextDisplay ) {
-			slot.mc.m_XPText.m_Text.text = xp == Number.NaN ? "?" : xp;
-			Utils.Colorize( slot.mc.m_XPText, xp >= 100 ? _tints.xpFull : _tints.none );
-		}
+		slot.mc.m_XPText.m_Text.text = xp == Number.NaN ? "?" : xp;
+		AddonUtils.Colorize( slot.mc.m_XPText, xp >= 100 ? _tints.xpFull : _tints.none );
 		
 		// progress bar being used
-		else {
-			slot.mc.m_XPBar.m_Progress._xscale = xp == Number.NaN ? 150: xp;
-			Utils.Colorize( slot.mc.m_XPBar.m_Progress, xp >= 100 ? _tints.xpFull : _tints.xpProgress );
-		}
+		slot.mc.m_XPBar.m_Progress._xscale = xp == Number.NaN ? 150: xp;
+		AddonUtils.Colorize( slot.mc.m_XPBar.m_Progress, xp >= 100 ? _tints.xpFull : _tints.xpProgress );
 	}
 	
 	
@@ -1060,28 +1104,21 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	private function SlotStatChanged(statID:Number):Void {
 		// only proceed if stat is to do with aegis selector
 		if ( !(statID == _primary.activeAegisStat || statID == _secondary.activeAegisStat) ) return;
-
+		UpdateActiveAegis();	
 		// TODO: play with the hotkeys to better manage this, there is a race condition and infinite loop of events happening otherwise
 		/*
-		if ( _dualSelectByDefault && _dualSelectWithHotkey ) {
+		if ( _dualSelectByDefault && _dualSelectFromHotkey ) {
 
 			if ( statID == _primary.activeAegisStat ) {
-				_primary.activeAegisEquipLocation = _character.GetStat( statID );
 				SwapToAegisSlot( _primary.activeAegisEquipLocation, true );
 			}
 			
 			else {
-				_secondary.activeAegisEquipLocation = _character.GetStat( statID );
 				SwapToAegisSlot( _secondary.activeAegisEquipLocation, true );
 			}
 		}
-		
-		else {
-			
-		}
 		*/
-
-		UpdateActiveAegis();		
+		//UpdateActiveAegis();		
 		invalidate();
 	}
 
@@ -1114,20 +1151,31 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	}
 	
 
-	// hooks into the passivebar to set up proxies for open/close
-	private function AttachToPassiveBar(attach:Boolean):Void {
-		
+	// separating this from AttachToPassiveBar to ensure only one of them runs at once, given how quickly it could be called in succession at startup
+	private function FindPassiveBarToAttach(attach:Boolean):Void {
 		if ( _root.passivebar.m_Bar.onTweenComplete == undefined ) {
 			// if the thrash count is exceeded, reset count and do nothing
-			if (_findPassiveBarThrashCount++ == 30)  _findPassiveBarThrashCount = 0;
+			if (_findPassiveBarThrashCount++ == 30) {
+				_findPassiveBarThrashCount = 0;
+				_findPassiveBarTimeoutID = undefined;
+			}
 			// otherwise try again
-			else _global.setTimeout( Delegate.create(this, AttachToPassiveBar), 100, attach );
+			else _findPassiveBarTimeoutID = _global.setTimeout( Delegate.create(this, AttachToPassiveBar), 100, attach );
 			
 			return;
 		}
 
 		// if we reached this far, reset thrash count
 		_findPassiveBarThrashCount = 0;
+		_findPassiveBarTimeoutID = undefined;
+		
+		AttachToPassiveBar( attach );
+	}
+	
+	// hooks into the passivebar to set up proxies for open/close
+	private function AttachToPassiveBar(attach:Boolean):Void {
+		
+		if ( _findPassiveBarTimeoutID != undefined ) return;
 		
 		var passivebar = _root.passivebar;
 		
@@ -1140,6 +1188,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 				// break the link
 				passivebar.m_Bar.onTweenComplete = undefined;
 				passivebar.m_Bar.onTweenComplete = Delegate.create(this, PassiveBarOnTweenCompleteProxy);
+				
+				MoveToDefaultPosition();
 			}
 		}
 		
@@ -1166,7 +1216,34 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			this[s] = pack[s];
 		}
 	}
+
+	/**
+	 * handler for the swap AEGIS RPC calls
+	 * 
+	 * format of message is specific:
+	 * <primary|secondary>.<next|prev>.<sequence>
+	 * 
+	 * sequence is just a unique number that forces the DValue SignalChanged to fire (becaues the value has changed)
+	 * so if the same command is sent twice in a row it still triggers
+	 * 
+	 */
 	
+	private function SwapAegisRPCHandler():Void {
+		
+		// split message into component parts
+		var parts:Array = String(_swapAegisRPC.GetValue()).split('.');
+		
+		if ( parts[0] == "primary" || parts[0] == "secondary" ) {
+			
+			var side:Object = this['_' + parts[0]];
+			
+			if ( parts[1] == "next" || parts[1] == "prev" ) {
+				var direction:String = parts[1];
+				
+				SwapToAegisSlot( _itemSlots[ side.selectedAegisEquipLocation ][direction], _dualSelectByDefault && _dualSelectFromHotkey);
+			}
+		}
+	}
 	
 	// getters & setters
 	public function get showWeapons():Boolean { return _showWeapons; }
@@ -1392,8 +1469,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	public function get dualSelectByDefault():Boolean { return _dualSelectByDefault; }
 	public function set dualSelectByDefault(value:Boolean):Void { _dualSelectByDefault = value; }
 
-	public function get dualSelectWithHotkey():Boolean { return _dualSelectWithHotkey; }
-	public function set dualSelectWithHotkey(value:Boolean):Void { _dualSelectWithHotkey = value; }
+	public function get dualSelectFromHotkey():Boolean { return _dualSelectFromHotkey; }
+	public function set dualSelectFromHotkey(value:Boolean):Void { _dualSelectFromHotkey = value; }
 
 	public function get tintAegisIconByType():Boolean { return _tintAegisIconByType; }
 	public function set tintAegisIconByType(value:Boolean):Void {
@@ -1451,8 +1528,10 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		
 		neonEnabled: true,
 
+		dualSelectWithModifier: false,
+		dualSelectWithButton: true,
 		dualSelectByDefault: true,
-		dualSelectWithHotkey: true,
+		dualSelectFromHotkey: true,
 		
 		tintAegisPsychic:		0xbf00ff,
 		tintAegisCybernetic:	0x0099ff,
@@ -1462,7 +1541,9 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 		tintXPBackground:		0xffffff,
 		tintXPProgress:			0xFF8800,		/* 0x00E5A3 */
-		tintXPFull:				0x00FFA2		/* // 0x4EE500 // 0x19FDFF */
+		tintXPFull:				0x00FFA2,		/* // 0x4EE500 // 0x19FDFF */
+		
+		tintBarStandard:		0x000000
 	}
 	
 	public function get slotSize():Number { return _slotSize; }
@@ -1489,7 +1570,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 	public function get tintAegisPsychic():Number { return _tints.psychic };
 	public function set tintAegisPsychic(value:Number):Void {
-		if ( _tints.psychic != value && Utils.isRGB(value)) {
+		if ( _tints.psychic != value && AddonUtils.isRGB(value)) {
 			_tints.psychic = value;
 			invalidate();
 		}
@@ -1497,7 +1578,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	
 	public function get tintAegisCybernetic():Number { return _tints.cyber };
 	public function set tintAegisCybernetic(value:Number):Void {
-		if ( _tints.cyber != value && Utils.isRGB(value)) {
+		if ( _tints.cyber != value && AddonUtils.isRGB(value)) {
 			_tints.cyber = value;
 			invalidate();
 		}
@@ -1505,7 +1586,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 	public function get tintAegisDemonic():Number { return _tints.demonic };
 	public function set tintAegisDemonic(value:Number):Void {
-		if ( _tints.demonic != value && Utils.isRGB(value)) {
+		if ( _tints.demonic != value && AddonUtils.isRGB(value)) {
 			_tints.demonic = value;
 			invalidate();
 		}
@@ -1513,7 +1594,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 	public function get tintAegisEmpty():Number { return _tints.empty };
 	public function set tintAegisEmpty(value:Number):Void {
-		if ( _tints.empty != value && Utils.isRGB(value)) {
+		if ( _tints.empty != value && AddonUtils.isRGB(value)) {
 			_tints.empty = value;
 			invalidate();
 		}
@@ -1521,7 +1602,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 	public function get tintAegisStandard():Number { return _tints.standard };
 	public function set tintAegisStandard(value:Number):Void {
-		if ( _tints.standard != value && Utils.isRGB(value)) {
+		if ( _tints.standard != value && AddonUtils.isRGB(value)) {
 			_tints.standard = value;
 			invalidate();
 		}
@@ -1529,7 +1610,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	
 	public function get tintXPBackground():Number { return _tints.xpBackground };
 	public function set tintXPBackground(value:Number):Void {
-		if ( _tints.xpBackground != value && Utils.isRGB(value)) {
+		if ( _tints.xpBackground != value && AddonUtils.isRGB(value)) {
 			_tints.xpBackground = value;
 			invalidate();
 		}
@@ -1537,7 +1618,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 	public function get tintXPProgress():Number { return _tints.xpProgress };
 	public function set tintXPProgress(value:Number):Void {
-		if ( _tints.xpProgress != value && Utils.isRGB(value)) {
+		if ( _tints.xpProgress != value && AddonUtils.isRGB(value)) {
 			_tints.xpProgress = value;
 			invalidate();
 		}
@@ -1545,8 +1626,16 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 	public function get tintXPFull():Number { return _tints.xpFull };
 	public function set tintXPFull(value:Number):Void {
-		if ( _tints.xpFull != value && Utils.isRGB(value)) {
+		if ( _tints.xpFull != value && AddonUtils.isRGB(value)) {
 			_tints.xpFull = value;
+			invalidate();
+		}
+	}
+
+	public function get tintBarStandard():Number { return _tints.barStandard };
+	public function set tintBarStandard(value:Number):Void {
+		if ( _tints.barStandard != value && AddonUtils.isRGB(value)) {
+			_tints.barStandard = value;
 			invalidate();
 		}
 	}

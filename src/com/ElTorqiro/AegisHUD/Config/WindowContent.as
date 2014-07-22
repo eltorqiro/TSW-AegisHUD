@@ -14,7 +14,7 @@ import com.ElTorqiro.AegisHUD.AddonInfo;
 
 class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowComponentContent
 {
-	private var _hudData:DistributedValue;
+	private var _hudSettings:DistributedValue;
 	private var _uiControls:Object = {};
 	private var _uiInitialised:Boolean = false;
 	
@@ -23,27 +23,21 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 	
 	private var _layoutCursor:Point;
 	
-	public function ConfigWindowContent()
+	public function WindowContent()
 	{
 		super();
 		
 		// hud data listener
-		_hudData = DistributedValue.Create(AddonInfo.Name + "_Data");
-		_hudData.SignalChanged.Connect(HUDDataChanged, this);
+		_hudSettings = DistributedValue.Create(AddonInfo.Name + "_HUD_Settings");
+		_hudSettings.SignalChanged.Connect(LoadValues, this);
 	}
 
 	// cleanup operations
 	public function Destroy():Void
 	{
 		// disconnnect from signals
-		_hudData.SignalChanged.Disconnect(HUDDataChanged, this);
+		_hudSettings.SignalChanged.Disconnect(LoadValues, this);
 	}
-	
-	// HUD settings have changed
-	function HUDDataChanged():Void
-	{
-		LoadValues();
-	}	
 	
 	private function configUI():Void
 	{
@@ -54,19 +48,6 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 		m_Content = createEmptyMovieClip("m_Content", getNextHighestDepth() );
 
 		// positioning section
-		AddHeading("Position");
-		_uiControls.lockBars = {
-			control:	AddCheckbox( "lockBars", "Lock bar position and scale" ),
-			event:		"click",
-			type:		"setting"
-		};
-		_uiControls.SetDefaultPosition = {
-			control:	AddButton("SetDefaultPosition", "Reset to default position"),
-			event:		"click",
-			type:		"command"
-		};
-
-		
 		// add options section
 		AddHeading("Options");
 		_uiControls.hideDefaultSwapButtons = {
@@ -81,81 +62,205 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 		};
 
 		
+		// dual select section
+		AddHeading("Dual-Select");
+		_uiControls.dualSelectWithButton = {
+			control:	AddCheckbox( "dualSelectWithButton", "...with Right-Click" ),
+			event:		"click",
+			type:		"setting"
+		};
+		_uiControls.dualSelectWithModifier = {
+			control:	AddCheckbox( "dualSelectWithModifier", "...with SHIFT-Click" ),
+			event:		"click",
+			type:		"setting"
+		};
+		_uiControls.dualSelectByDefault = {
+			control:	AddCheckbox( "dualSelectByDefault", "Dual-by-Default (inverts single/dual behaviour)" ),
+			event:		"click",
+			type:		"setting"
+		};
+		AddIndent();
+		_uiControls.dualSelectFromHotkey = {
+			control:	AddCheckbox( "dualSelectFromHotkey", "also when using default hotkeys [<variable name='hotkey:Combat_NextPrimaryAEGIS'/ > / <variable name='hotkey:Combat_NextSecondaryAEGIS'/ >]" ),
+			event:		"click",
+			type:		"setting"
+		};
+		AddIndent( -10);
+
+
+		// add position section
+		AddHeading("Position");
+		_uiControls.attachToPassiveBar = {
+			control:	AddCheckbox( "attachToPassiveBar", "Attach and lock HUD to PassiveBar" ),
+			event:		"click",
+			type:		"setting"
+		};
+		_uiControls.animateMovementsToDefaultPosition = {
+			control:	AddCheckbox( "animateMovementsToDefaultPosition", "Use animation during PassiveBar open/close" ),
+			event:		"click",
+			type:		"setting"
+		};
+		_uiControls.lockBars = {
+			control:	AddCheckbox( "lockBars", "Lock bar position and scale" ),
+			event:		"click",
+			type:		"setting"
+		};
+		_uiControls.SetDefaultPosition = {
+			control:	AddButton("MoveToDefaultPosition", "Reset to default position"),
+			event:		"click",
+			type:		"command"
+		};
+
+		
 		// add layout section
-		AddHeading("Bar Style");
+		AddHeading("Bar Layout");
 		_uiControls.barStyle = {
-			control:	AddDropdown( "barStyle", "Bar Style", ["Horizontal", "Vertical"] ),
+			control:	AddDropdown( "barStyle", "Bar Layout", ["Horizontal", "Vertical"] ),
 			event:		"change",
 			type:		"setting"
 		};
 
 		
-		// add visuals section
-		AddHeading("HUD Elements");
-		_uiControls.showWeapons = {
-			control:	AddCheckbox( "showWeapons", "Show weapon slots" ),
-			event:		"click",
-			type:		"setting"
-		};
-		_uiControls.primaryWeaponFirst = {
-			control:	AddCheckbox( "primaryWeaponFirst", "On Primary bar, show weapon first" ),
-			event:		"click",
-			type:		"setting"
-		};
-		_uiControls.secondaryWeaponFirst = {
-			control:	AddCheckbox( "secondaryWeaponFirst", "On Secondary bar, show weapon first" ),
-			event:		"click",
-			type:		"setting"
-		};
-		_uiControls.showWeaponHighlight = {
-			control:	AddCheckbox( "showWeaponHighlight", "Show slotted weapon highlight" ),
-			event:		"click",
-			type:		"setting"
-		};
+		// bar background style
+		AddHeading("Bar Backgrounds");
 		_uiControls.showBarBackground = {
-			control:	AddCheckbox( "showBarBackground", "Show bar background" ),
+			control:	AddCheckbox( "showBarBackground", "Show" ),
 			event:		"click",
 			type:		"setting"
 		};
-		//AddCheckbox( "m_ShowXPBars", "Show AEGIS XP progress on slots", g_HUD.showXPBars ).addEventListener("click", this, "ShowXPBarsClickHandler");
-		//AddCheckbox( "m_ShowTooltips", "Show Tooltips", g_HUD.showTooltips ).addEventListener("click", this, "ShowTooltipsClickHandler");
-
-
-		// neon highlighting section
-		AddColumn();
-		AddHeading("Neon Highlighting");
-		_uiControls.neonEnabled = {
-			control:	AddCheckbox( "neonEnabled", "Enable neon highlighting" ),
-			event:		"click",
-			type:		"setting"
-		};
-		AddIndent();
-		_uiControls.neonDisableDefaultActiveHighlight = {
-			control:	AddCheckbox( "neonDisableDefaultActiveHighlight", "Highlight active AEGIS with glow only" ),
-			event:		"click",
-			type:		"setting"
-		};
-		_uiControls.neonColouriseBarBackground = {
-			control:	AddCheckbox( "neonColouriseBarBackground", "Colourise bar background" ),
-			event:		"click",
-			type:		"setting"
-		};
-		_uiControls.neonGlowBarBackground = {
-			control:	AddCheckbox( "neonGlowBarBackground", "Glow bar background" ),
-			event:		"click",
-			type:		"setting"
-		};
-		_uiControls.neonColouriseWeaponIcon = {
-			control:	AddCheckbox( "neonColouriseWeapon", "Colourise weapon icon" ),
-			event:		"click",
-			type:		"setting"
-		};
-		_uiControls.neonWeaponGlow = {
-			control:	AddCheckbox( "neonWeaponGlow", "Weapon glow" ),
+		_uiControls.tintBarBackgroundByActiveAegis = {
+			control:	AddCheckbox( "tintBarBackgroundByActiveAegis", "Tint per active AEGIS type" ),
 			event:		"click",
 			type:		"setting"
 		};
 		
+		AddColumn();
+		
+		// add weapon slots section
+		AddHeading("Weapon Slots");
+		_uiControls.showWeapons = {
+			control:	AddCheckbox( "showWeapons", "Show" ),
+			event:		"click",
+			type:		"setting"
+		};
+		_uiControls.primaryWeaponFirst = {
+			control:	AddCheckbox( "primaryWeaponFirst", "On Primary bar, weapon placed first" ),
+			event:		"click",
+			type:		"setting"
+		};
+		_uiControls.secondaryWeaponFirst = {
+			control:	AddCheckbox( "secondaryWeaponFirst", "On Secondary bar, weapon placed first" ),
+			event:		"click",
+			type:		"setting"
+		};
+		_uiControls.showWeaponBackgroundBehaviour = {
+			control:	AddDropdown( "showWeaponBackgroundBehaviour", "Background Visibility", ["Never", "Always", "Only when slotted"] ),
+			event:		"change",
+			type:		"setting"
+		};
+		_uiControls.tintWeaponBackgroundByActiveAegis = {
+			control:	AddCheckbox( "tintWeaponBackgroundByActiveAegis", "Tint background per AEGIS type" ),
+			event:		"click",
+			type:		"setting"
+		};
+		_uiControls.tintWeaponIconByActiveAegis = {
+			control:	AddCheckbox( "tintWeaponIconByActiveAegis", "Tint icon per AEGIS type" ),
+			event:		"click",
+			type:		"setting"
+		};
+		
+		
+		// add XP section
+		AddHeading("AEGIS Slots");
+		_uiControls.showAegisBackgroundBehaviour = {
+			control:	AddDropdown( "showAegisBackgroundBehaviour", "Background Visibility", ["Never", "Always", "Only when slotted"] ),
+			event:		"change",
+			type:		"setting"
+		};		
+		_uiControls.tintAegisBackgroundByType = {
+			control:	AddCheckbox( "tintAegisBackgroundByType", "Tint background per AEGIS type" ),
+			event:		"click",
+			type:		"setting"
+		};
+		_uiControls.tintAegisIconByType = {
+			control:	AddCheckbox( "tintAegisIconByType", "Tint icon per AEGIS type" ),
+			event:		"click",
+			type:		"setting"
+		};
+		
+		_uiControls.showXP = {
+			control:	AddCheckbox( "showXP", "Show XP indicator" ),
+			event:		"click",
+			type:		"setting"
+		};
+		AddIndent();
+		_uiControls.xpUseTextDisplay = {
+			control:	AddCheckbox( "xpUseTextDisplay", "Display numbers instead of progress bar" ),
+			event:		"click",
+			type:		"setting"
+		};			
+		_uiControls.showXPProgressBackground = {
+			control:	AddCheckbox( "showXPProgressBackground", "Show background in progress bar" ),
+			event:		"click",
+			type:		"setting"
+		};
+		AddIndent(-10);
+
+		_uiControls.showTooltips = {
+			control:	AddCheckbox( "showTooltips", "Show Tooltips" ),
+			event:		"click",
+			type:		"setting"
+		};
+		AddIndent();
+		_uiControls.suppressTooltipsInCombat = {
+			control:	AddCheckbox( "suppressTooltipsInCombat", "Suppress in combat" ),
+			event:		"click",
+			type:		"setting"
+		};	
+		AddIndent(-10);
+
+		AddColumn();
+		AddHeading("Active AEGIS Slot");
+		_uiControls.showActiveAegisBackground = {
+			control:	AddCheckbox( "showActiveAegisBackground", "Show background" ),
+			event:		"click",
+			type:		"setting"
+		};
+		_uiControls.tintActiveAegisBackgroundBehaviour = {
+			control:	AddDropdown( "tintActiveAegisBackgroundBehaviour", "Tint", ["Never", "Standard", "Per Active AEGIS"] ),
+			event:		"change",
+			type:		"setting"
+		};	
+		
+
+		// neon highlighting section
+		AddHeading("NeonFX");
+		_uiControls.neonEnabled = {
+			control:	AddCheckbox( "neonEnabled", "Enable NeonFX per active AEGIS type" ),
+			event:		"click",
+			type:		"setting"
+		};
+		AddIndent();
+		_uiControls.neonGlowEntireBar = {
+			control:	AddCheckbox( "neonGlowEntireBar", "Entire Bar" ),
+			event:		"click",
+			type:		"setting"
+		};
+		_uiControls.neonGlowBarBackground = {
+			control:	AddCheckbox( "neonGlowBarBackground", "Bar background" ),
+			event:		"click",
+			type:		"setting"
+		};
+		_uiControls.neonGlowWeapon = {
+			control:	AddCheckbox( "neonGlowWeapon", "Weapon slot" ),
+			event:		"click",
+			type:		"setting"
+		};
+		_uiControls.neonGlowAegis = {
+			control:	AddCheckbox( "neonGlowAegis", "Active AEGIS" ),
+			event:		"click",
+			type:		"setting"
+		};
 		
 		SetSize( Math.round(Math.max(m_Content._width, 200)), Math.round(Math.max(m_Content._height, 200)) );
 		
@@ -207,7 +312,7 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 	private function LoadValues():Void
 	{
 		_uiInitialised = false;
-		var hudValues = _hudData.GetValue();
+		var hudValues:Archive = _hudSettings.GetValue();
 		
 		for ( var s:String in _uiControls )
 		{
