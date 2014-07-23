@@ -326,7 +326,7 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 			type:		"setting"
 		};
 		_uiControls.tintXPProgress = {
-			control:	AddTextInput( "tintXPProgress", "XP Bar Progress", "", 6, true, undefined, true ),
+			control:	AddTextInput( "tintXPProgress", "XP Progress", "", 6, true, undefined, true ),
 			event:		"textChange",
 			type:		"setting"
 		};

@@ -104,7 +104,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	private var _findPassiveBarThrashCount:Number = 0;
 	private var _findPassiveBarTimeoutID:Number;
 	private var _swapTimeoutID:Number;
-	private var _postSwapCatchupInterval:Number = 500;
+	private var _postSwapCatchupInterval:Number = 1000;
 	
 	// internal movieclips
 	private var m_Primary:MovieClip;
@@ -553,7 +553,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			var barMC:MovieClip = bar.mc;
 			
 			// establish bar tint value
-			var barTint = _tints[ _itemSlots[bar.activeAegisEquipLocation].aegisType ];
+			var barTint = _tints[ _itemSlots[bar.selectedAegisEquipLocation].aegisType ];
 
 			// show or hide background (must use alpha so it remains a hit target for mouse)
 			barMC.m_Background._alpha = _showBarBackground ? 100 : 0;
@@ -735,7 +735,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 				slotMC.filters = [];
 				
 				// handle active aegis higlighting
-				if ( slot.equip == bar.activeAegisEquipLocation ) {
+				if ( slot.equip == bar.selectedAegisEquipLocation ) {
 
 					// show aegis background
 					slotMC.m_Background._visible = _showActiveAegisBackground;
@@ -820,6 +820,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		if ( dualSelect ) {
 			SwapToAegisSlot( _itemSlots[equipLocation].dualSelectPartner );
 		}
+		
+		invalidate();
 	}
 
 	// post-swap callback that will catch up the selectedAegisEquipLocation for each side

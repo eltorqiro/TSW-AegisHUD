@@ -333,5 +333,5 @@ function HUDEnabledHandler():Void {
 }
 
 function ColorizeVTIOIcon():Void {
-	AddonUtils.Colorize( this["Icon"], g_hudEnabled.GetValue() ? 0xffffff : 0xff0000 );
+	AddonUtils.Colorize( this["Icon"], g_hudEnabled.GetValue() != undefined && g_hudEnabled.GetValue() ? 0xffffff : 0xff0000 );
 }
