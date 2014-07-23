@@ -57,11 +57,10 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 			type:		"option"
 		};
 		_uiControls.playfieldMemoryEnabled = {
-			control:	AddCheckbox( "playfieldMemoryEnabled", "Enable HUD visibility memory" ),
+			control:	AddCheckbox( "playfieldMemoryEnabled", "Enable HUD visibility memory in each playfield" ),
 			event:		"click",
 			type:		"option"
 		};
-
 		
 		// dual select section
 		AddHeading("Dual-Select");
@@ -581,6 +580,17 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 			_layoutCursor.y += o._height;
 			
 			return o;
+	}
+	
+	private function AddLabel(name:String, text:String):Void {
+
+		var l = m_Content.attachMovie( "ConfigLabel", "m_" + name + "_Label", m_Content.getNextHighestDepth() );
+		l.textField.autoSize = "left";
+		l.textField.text = text;
+		l._y = _layoutCursor.y;
+		l._x = _layoutCursor.x;
+		
+		_layoutCursor.y += l._height;
 	}
 	
 	private function AddColumn():Void
