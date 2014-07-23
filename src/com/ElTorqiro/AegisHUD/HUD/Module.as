@@ -119,15 +119,13 @@ function OffensiveTargetChangeHandler(targetID:ID32):Void {
 	
 	if ( !g_data.options.autoHide ) return;
 
-	UtilsBase.PrintChatText("changed to " + targetID + " -- " + target.GetID());
-	
 	// no current target?
 	if ( targetID.IsNull() ) {
 		// hud is already hidden? do nothing
 		
 		// else hud is visible
 		if ( !g_autoHideHidden ) {
-			if ( !g_character.IsInCombat() ) StartAutoHideTimer();
+			if ( !g_character.IsInCombat() && !g_autoHideHidden ) StartAutoHideTimeout(); 
 		}
 	}
 	
@@ -148,7 +146,7 @@ function OffensiveTargetChangeHandler(targetID:ID32):Void {
 			
 			// else hud is visible
 			if ( !g_autoHideHidden) {
-				if ( !g_character.IsInCombat() ) StartAutoHideTimeout();
+				if ( !g_character.IsInCombat() && !g_autoHideHidden ) StartAutoHideTimeout();
 			}
 		}
 
@@ -163,7 +161,7 @@ function OffensiveTargetChangeHandler(targetID:ID32):Void {
 			
 			// else hud is visible
 			else {
-				StopAutoHideTimeout()
+				StopAutoHideTimeout();
 			}
 		}
 	}
@@ -237,7 +235,6 @@ function StopAutoHideTimeout():Void {
 }
 
 function AutoHideHide():Void {
-
 	// clear any existing timeout
 	StopAutoHideTimeout();
 	
