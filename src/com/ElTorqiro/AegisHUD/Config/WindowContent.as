@@ -55,8 +55,8 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 			event:		"click",
 			type:		"option"
 		};
-		_uiControls.autoHidePerZone = {
-			control:	AddCheckbox( "autoHidePerZone", "Auto-hide HUD based on zone" ),
+		_uiControls.playfieldMemoryEnabled = {
+			control:	AddCheckbox( "playfieldMemoryEnabled", "HUD visibility memory enabled" ),
 			event:		"click",
 			type:		"option"
 		};
@@ -70,7 +70,7 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 			type:		"setting"
 		};
 		_uiControls.dualSelectWithModifier = {
-			control:	AddCheckbox( "dualSelectWithModifier", "...with SHIFT-Click" ),
+			control:	AddCheckbox( "dualSelectWithModifier", "...with Shift-Click" ),
 			event:		"click",
 			type:		"setting"
 		};
@@ -90,26 +90,29 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 
 		// add position section
 		AddHeading("Position");
-		_uiControls.attachToPassiveBar = {
-			control:	AddCheckbox( "attachToPassiveBar", "Attach and lock HUD to PassiveBar" ),
+		_uiControls.MoveToDefaultPosition = {
+			control:	AddButton("MoveToDefaultPosition", "Reset to default position"),
 			event:		"click",
-			type:		"setting"
-		};
-		_uiControls.animateMovementsToDefaultPosition = {
-			control:	AddCheckbox( "animateMovementsToDefaultPosition", "Use animation during PassiveBar open/close" ),
-			event:		"click",
-			type:		"setting"
+			type:		"command"
 		};
 		_uiControls.lockBars = {
 			control:	AddCheckbox( "lockBars", "Lock bar position and scale" ),
 			event:		"click",
 			type:		"setting"
 		};
-		_uiControls.MoveToDefaultPosition = {
-			control:	AddButton("MoveToDefaultPosition", "Reset to default position"),
+
+		_uiControls.attachToPassiveBar = {
+			control:	AddCheckbox( "attachToPassiveBar", "Attach and lock HUD to PassiveBar" ),
 			event:		"click",
-			type:		"command"
+			type:		"setting"
 		};
+		AddIndent();
+		_uiControls.animateMovementsToDefaultPosition = {
+			control:	AddCheckbox( "animateMovementsToDefaultPosition", "Animate HUD during PassiveBar open/close" ),
+			event:		"click",
+			type:		"setting"
+		};
+		AddIndent( -10);
 
 		
 		// add layout section
@@ -159,12 +162,12 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 			type:		"setting"
 		};
 		_uiControls.tintWeaponBackgroundByActiveAegis = {
-			control:	AddCheckbox( "tintWeaponBackgroundByActiveAegis", "Tint background per AEGIS type" ),
+			control:	AddCheckbox( "tintWeaponBackgroundByActiveAegis", "Tint background per active AEGIS type" ),
 			event:		"click",
 			type:		"setting"
 		};
 		_uiControls.tintWeaponIconByActiveAegis = {
-			control:	AddCheckbox( "tintWeaponIconByActiveAegis", "Tint icon per AEGIS type" ),
+			control:	AddCheckbox( "tintWeaponIconByActiveAegis", "Tint icon per active AEGIS type" ),
 			event:		"click",
 			type:		"setting"
 		};
@@ -194,16 +197,17 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 			type:		"setting"
 		};
 		AddIndent();
+		
+		_uiControls.xpIndicatorStyle = {
+			control:	AddDropdown( "xpIndicatorStyle", "Style", ["Progress Bar", "Numbers"] ),
+			event:		"change",
+			type:		"setting"
+		};	
 		_uiControls.showXPProgressBackground = {
-			control:	AddCheckbox( "showXPProgressBackground", "Show background in progress bar" ),
+			control:	AddCheckbox( "showXPProgressBackground", "Show background in Progress Bar" ),
 			event:		"click",
 			type:		"setting"
 		};
-		_uiControls.xpUseTextDisplay = {
-			control:	AddCheckbox( "xpUseTextDisplay", "Display numbers instead of progress bar" ),
-			event:		"click",
-			type:		"setting"
-		};			
 		AddIndent(-10);
 
 		_uiControls.showTooltips = {
@@ -243,7 +247,7 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 		};
 		AddIndent();
 		_uiControls.neonGlowEntireBar = {
-			control:	AddCheckbox( "neonGlowEntireBar", "Entire Bar" ),
+			control:	AddCheckbox( "neonGlowEntireBar", "Overall HUD" ),
 			event:		"click",
 			type:		"setting"
 		};
@@ -262,10 +266,18 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 			event:		"click",
 			type:		"setting"
 		};
-		AddIndent(-10);		
+		AddIndent(-10);
 		
 		// Tints section
-		AddHeading("Tints");
+		AddHeading("Tints", false);
+		AddIndent( -10);
+		_uiControls.SetDefaultTints = {
+			control:	AddButton("SetDefaultTints", "Reset to default tints"),
+			event:		"click",
+			type:		"command"
+		};
+		AddIndent();
+
 		_uiControls.tintAegisPsychic = {
 			control:	AddTextInput( "tintAegisPsychic", "Psychic", "", 6, true ),
 			event:		"textChange",
@@ -307,7 +319,7 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 			event:		"textChange",
 			type:		"setting"
 		};
-		
+
 		
 		SetSize( Math.round(Math.max(m_Content._width, 200)), Math.round(Math.max(m_Content._height, 200)) );
 		
@@ -479,6 +491,7 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 		if ( y != 0) y += 10;
 		
 		var o:MovieClip = m_Content.attachMovie( "ConfigGroupHeading", "m_Heading", m_Content.getNextHighestDepth() );
+		o.textField.autoSize = "left";
 		o.textField.text = text;
 //		o._y = y;
 
@@ -486,8 +499,8 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 
 		o._y = _layoutCursor.y;
 		o._x = _layoutCursor.x;
-
-		_layoutCursor.y += o._height;		
+		
+		_layoutCursor.y += o._height;
 	}
 	
 	private function AddSlider(name:String, label:String, minValue:Number, maxValue:Number):FCSlider

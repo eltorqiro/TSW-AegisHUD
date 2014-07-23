@@ -19,6 +19,7 @@ import mx.utils.Delegate;
 import com.ElTorqiro.AegisHUD.Enums.AegisBarLayoutStyles;
 import com.ElTorqiro.AegisHUD.Enums.SlotBackgroundBehaviour;
 import com.ElTorqiro.AegisHUD.Enums.ActiveAegisBackgroundTintBehaviour;
+import com.ElTorqiro.AegisHUD.Enums.XPIndicatorStyles;
 import flash.filters.GlowFilter;
 import gfx.motion.Tween;
 import mx.transitions.easing.Bounce;
@@ -58,7 +59,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	
 	private var _showXP:Boolean;
 	private var _showXPProgressBackground:Boolean;
-	private var _xpUseTextDisplay:Boolean;
+	private var _xpIndicatorStyle:Number;
 	private var _pollAegisXPInterval:Number; // seconds
 
 	private var _showTooltips:Boolean;
@@ -652,10 +653,9 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 				else {
 
 					// use text display
-					if ( _xpUseTextDisplay ) {
+					if ( _xpIndicatorStyle == XPIndicatorStyles.Numbers ) {
 						slotMC.m_XPBar._visible = false;
-						
-						slotMC.m_XPText._visible = _xpUseTextDisplay;
+						slotMC.m_XPText._visible = true;
 					}
 					
 					// use progress bar display
@@ -1436,10 +1436,10 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			invalidate();
 		}
 	}
-	public function get xpUseTextDisplay():Boolean { return _xpUseTextDisplay; }
-	public function set xpUseTextDisplay(value:Boolean):Void {
-		if ( _xpUseTextDisplay != value ) {
-			_xpUseTextDisplay = value;
+	public function get xpIndicatorStyle():Number { return _xpIndicatorStyle; }
+	public function set xpIndicatorStyle(value:Number):Void {
+		if ( _xpIndicatorStyle != value ) {
+			_xpIndicatorStyle = value;
 			if( showXP ) invalidate();
 		}
 	}
@@ -1449,7 +1449,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		if ( _showXPProgressBackground != value ) {
 			_showXPProgressBackground = value;
 			
-			if ( showXP && !xpUseTextDisplay ) invalidate();
+			if ( showXP && xpIndicatorStyle == XPIndicatorStyles.ProgressBar ) invalidate();
 		}
 	}
 	public function get pollAegisXPInterval():Number { return _pollAegisXPInterval; }
@@ -1513,7 +1513,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		
 		showXP: true,
 		showXPProgressBackground: true,
-		xpUseTextDisplay: true,
+		xpIndicatorStyle: 1,
 		pollAegisXPInterval: 30,
 
 		showTooltips: true,
@@ -1544,7 +1544,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		tintXPFull:				0x00FFA2,		/* // 0x4EE500 // 0x19FDFF */
 		
 		tintBarStandard:		0x000000
-	}
+	};
 	
 	public function get slotSize():Number { return _slotSize; }
 	public function set slotSize(value:Number):Void {

@@ -31,6 +31,9 @@ var g_configWindow:WinComp;
 // internal distributed value listeners
 var g_showConfig:DistributedValue;
 
+// hud visible DV
+var g_hudEnabled:DistributedValue;
+
 // Viper's Top Bar Information Overload (VTIO) integration
 var g_VTIOIsLoadedMonitor:DistributedValue;
 var g_isRegisteredWithVTIO:Boolean = false;
@@ -78,6 +81,11 @@ function onLoad()
 		CheckVTIOIsLoaded();
 	}
 
+	// hud enabled connector
+	g_hudEnabled = DistributedValue.Create(AddonInfo.Name + "_HUD_Enabled");
+	g_hudEnabled.SignalChanged.Connect(HUDEnabledHandler, this);
+	HUDEnabledHandler();
+	
 	// config window toggle listener
 	g_showConfig = DistributedValue.Create(AddonInfo.Name + "_ShowConfig");
 	g_showConfig.SignalChanged.Connect(ToggleConfigWindow, this);
@@ -96,6 +104,8 @@ function OnModuleDeactivated():Void
 
 function OnUnload():Void
 {
+	g_hudEnabled.SignalChanged.Disconnect(HUDEnabledHandler, this);
+	
 	g_VTIOIsLoadedMonitor.SignalChanged.Disconnect(CheckVTIOIsLoaded, this);
 	g_hudData.SignalChanged.Disconnect(HUDDataChanged, this);
 	
@@ -158,6 +168,11 @@ function CreateIcon():Void
 			DistributedValue.SetDValue(AddonInfo.Name + "_ShowConfig",	!DistributedValue.GetDValue(AddonInfo.Name + "_ShowConfig"));
 		}
 		
+		// right mouse click, toggle hud enabled/disabled
+		else if ( buttonID == 2 ) {
+			_root["eltorqiro_aegishud\\hud"].Do( "option.hudEnabled", !g_hudEnabled.GetValue() );
+		}
+		
 		// reset icon scale, only if VTIO not present
 		else if (!g_isRegisteredWithVTIO && buttonID == 2 && Key.isDown(Key.CONTROL)) {
 			ScaleIcon(100);
@@ -205,7 +220,7 @@ function CreateTooltipData():Void
 	g_iconTooltipData.AddAttribute("","<font face=\'_StandardFont\' size=\'14\' color=\'#00ccff\'><b>" + AddonInfo.Name + " v" + AddonInfo.Version + "</b></font>");
 	g_iconTooltipData.AddAttributeSplitter();
 	g_iconTooltipData.AddAttribute("","");
-	g_iconTooltipData.AddAttribute("", "<font face=\'_StandardFont\' size=\'11\' color=\'#BFBFBF\'><b>Left Click</b> Open/Close configuration window.</font>");
+	g_iconTooltipData.AddAttribute("", "<font face=\'_StandardFont\' size=\'11\' color=\'#BFBFBF\'><b>Left Click</b> Open/Close configuration window.\n<b>Right Click</b> Toggle HUD visibility.</font>");
 	
 	// show icon handling control instructions if VTIO has not hijacked the icon
 	if ( !g_isRegisteredWithVTIO )
@@ -300,4 +315,23 @@ function DestroyConfigWindow():Void
 		
 		g_configWindow.removeMovieClip();
 	}
+}
+
+
+function HUDEnabledHandler():Void {
+	g_icon.gotoAndStop( g_hudEnabled.GetValue() ? "enabled" : "disabled" );
+
+	/* VTIO doesn't use your original icon, it creates a dupe, so a different approach is needed if integrated with VTIO
+	 * proof: g_icon._alpha = 100; g_icon._visible = true; g_icon._y = 150; UtilsBase.PrintChatText("f:" + g_icon._currentframe);
+	*/
+	
+	// hack to wait for VTIO to have created the dupe icon after a full reload
+	// VTIO creates its dupe icon forcibly in your movieclip (so it can use your SWFs assets) as "Icon"
+	if ( this["Icon"] != undefined ) ColorizeVTIOIcon();
+	else _global.setTimeout( Delegate.create( this, ColorizeVTIOIcon), 500 );
+
+}
+
+function ColorizeVTIOIcon():Void {
+	AddonUtils.Colorize( this["Icon"], g_hudEnabled.GetValue() ? 0xffffff : 0xff0000 );
 }
