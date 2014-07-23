@@ -64,6 +64,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	private var _showXP:Boolean;
 	private var _showXPProgressBackground:Boolean;
 	private var _xpIndicatorStyle:Number;
+	private var _hideXPWhenFull:Boolean;
 	private var _fetchXPAntiSpamInterval:Number; // milliseconds
 
 	private var _showTooltips:Boolean;
@@ -635,7 +636,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			// tint weapon icon
 			var weaponIconTint:Number = _tintWeaponIconByActiveAegis ? barTint : _tints.none;
 			AddonUtils.Colorize( weaponSlotMC.m_Icon, weaponIconTint );
-			
+				
 			// neon glow weapon
 			if ( _neonEnabled && _neonGlowWeapon ) {
 				var weaponGlow = new GlowFilter(
@@ -652,7 +653,6 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 				weaponSlotMC.filters = [ weaponGlow ];
 			}
 			else weaponSlotMC.filters = [];
-			
 
 			// iterate through aegis slots
 			for ( var a:String in bar.slots ) {
@@ -678,23 +678,49 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 				AddonUtils.Colorize( slotMC.m_Icon, iconTint );
 				
 				// show xp display
-				if ( !_showXP || slot.item == undefined ) slotMC.m_XPBar._visible = slotMC.m_XPText._visible = false;
+				if ( !_showXP || slot.item == undefined ) {
+					slotMC.m_XPBar._visible = slotMC.m_XPTextProgress._visible = slotMC.m_XPTextFull._visible = false;
+				}
 				else {
 
 					// use text display
 					if ( _xpIndicatorStyle == XPIndicatorStyles.Numbers ) {
 						slotMC.m_XPBar._visible = false;
-						slotMC.m_XPText._visible = true;
+
+						if( slot.aegisXP >= 100 ) {
+							slotMC.m_XPTextProgress._visible = false;
+							slotMC.m_XPTextFull._visible = !_hideXPWhenFull;
+						}
+						else {
+							slotMC.m_XPTextProgress._visible = true;
+							slotMC.m_XPTextFull._visible = false;
+						}
+						
+						AddonUtils.Colorize( slotMC.m_XPTextFull, _tints.xpFull );
+						AddonUtils.Colorize( slotMC.m_XPTextProgress, _tints.xpProgress );
 					}
 					
 					// use progress bar display
 					else {
-						slotMC.m_XPText._visible = false;
+						slotMC.m_XPTextProgress._visible = false;
+						slotMC.m_XPTextFull._visible = false;
 						
 						AddonUtils.Colorize( slotMC.m_XPBar.m_Background, _tints.xpBackground );						
-						
-						slotMC.m_XPBar.m_Background._visible = _showXPProgressBackground;
+						AddonUtils.Colorize( slotMC.m_XPBar.m_Progress, _tints.xpProgress );
+						AddonUtils.Colorize( slotMC.m_XPBar.m_Full, _tints.xpFull );
+
 						slotMC.m_XPBar._visible = true;
+
+						if( slot.aegisXP >= 100 ) {
+							slotMC.m_XPBar.m_Progress._visible = false;
+							slotMC.m_XPBar.m_Background._visible = false;
+							slotMC.m_XPBar.m_Full._visible = !_hideXPWhenFull;
+						}
+						else {
+							slotMC.m_XPBar.m_Progress._visible = true;
+							slotMC.m_XPBar.m_Background._visible = _showXPProgressBackground;
+							slotMC.m_XPBar.m_Full._visible = false;
+						}
 					}
 				}
 
@@ -742,6 +768,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 					if ( slotMC.getDepth() < _itemSlots[slot.prev].mc.getDepth() ) slotMC.swapDepths( _itemSlots[slot.prev].mc );
 					if ( slotMC.getDepth() < _itemSlots[slot.next].mc.getDepth() ) slotMC.swapDepths( _itemSlots[slot.next].mc );
 				}
+				
 			}
 		}	
 	}
@@ -753,7 +780,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		_primary.activeAegisEquipLocation = _character.GetStat( _primary.activeAegisStat );
 		_secondary.activeAegisEquipLocation = _character.GetStat( _secondary.activeAegisStat );
 		
-		// if this when the selection catchup timer isn't running, update the selected as well
+		// if this happens when the selection catchup timer isn't running, update the selected as well
 		if ( _swapTimeoutID == undefined ) {
 			SyncSelectedWithActive();
 		}
@@ -817,8 +844,13 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	}
 	
 	private function SyncSelectedWithActive():Void {
+		
+		if ( _primary.selectedAegisEquipLocation != _primary.activeAegisEquipLocation || _secondary.selectedAegisEquipLocation != _secondary.activeAegisEquipLocation ) {
 			_primary.selectedAegisEquipLocation = _primary.activeAegisEquipLocation;
 			_secondary.selectedAegisEquipLocation = _secondary.activeAegisEquipLocation;
+			
+			invalidate();
+		}
 	}
 	
 	// handle mouse clicks that select an aegis
@@ -1106,6 +1138,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		// important clause in there for efficiency -- the only way to get a slotted item away from 100 is to unslot it
 		// which will clear the xp value, this when it gets reslotted after being upgraded it won't be on 100 anymore... :)
 		if ( !_showXP || slot == undefined || slot.type != "aegis" || slot.item == undefined || slot.aegisXP == 100) return;
+
+		var slotMC:MovieClip = slot.mc;
 		
 		// fetch tooltip for item
 		var tooltipData:TooltipData = TooltipDataProvider.GetInventoryItemTooltip( _inventory.GetInventoryID(), slot.equip );
@@ -1127,12 +1161,13 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		slot.aegisXP = xp == Number.NaN ? undefined : xp;
 
 		// text display being used
-		slot.mc.m_XPText.m_Text.text = xp == Number.NaN ? "?" : xp;
-		AddonUtils.Colorize( slot.mc.m_XPText, xp >= 100 ? _tints.xpFull : _tints.none );
+		slotMC.m_XPTextProgress.m_Text.text = slotMC.m_XPTextFull.m_Text.text = xp == Number.NaN ? "?" : xp;
 		
 		// progress bar being used
 		slot.mc.m_XPBar.m_Progress._xscale = xp == Number.NaN ? 150: xp;
-		AddonUtils.Colorize( slot.mc.m_XPBar.m_Progress, xp >= 100 ? _tints.xpFull : _tints.xpProgress );
+		
+		// when reaching 100, redraw to show the "Full" elements
+		if ( xp >= 100 ) invalidate()
 	}
 	
 	
@@ -1549,7 +1584,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			secondaryPosition: undefined,
 			
 			barStyle: 0,
-			neonGlowEntireBar: true,
+			neonGlowEntireBar: false,
 			lockBars: false,
 			attachToPassiveBar: false,
 			animateMovementsToDefaultPosition: true,
@@ -1565,17 +1600,18 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			showWeaponBackgroundBehaviour: 0,
 			tintWeaponBackgroundByActiveAegis: false,
 			tintWeaponIconByActiveAegis: false,
-			neonGlowWeapon: true,
+			neonGlowWeapon: false,
 			
 			showXP: true,
 			showXPProgressBackground: true,
 			xpIndicatorStyle: 1,
+			hideXPWhenFull: false,
 			fetchXPAntiSpamInterval: 1000,
 
 			showTooltips: true,
 			suppressTooltipsInCombat: true,
 
-			showAegisBackgroundBehaviour: 1,
+			showAegisBackgroundBehaviour: 0,
 			tintAegisBackgroundByType: false,
 			tintAegisIconByType: false,
 			showActiveAegisBackground: true,
@@ -1584,7 +1620,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			
 			neonEnabled: true,
 
-			dualSelectWithModifier: false,
+			dualSelectWithModifier: true,
 			dualSelectWithButton: true,
 			dualSelectByDefault: true,
 			dualSelectFromHotkey: true,
@@ -1596,8 +1632,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			tintAegisStandard:		0x006AFF,
 
 			tintXPBackground:		0xffffff,
-			tintXPProgress:			0xFF8800,		/* 0x00E5A3 */
-			tintXPFull:				0x00FFA2,		/* // 0x4EE500 // 0x19FDFF */
+			tintXPProgress:			0x00ff88,		/* 0x00E5A3 */
+			tintXPFull:				0xff6600,		/* // 0x4EE500 // 0x19FDFF */
 			
 			tintBarStandard:		0x000000
 		});
@@ -1696,5 +1732,15 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			invalidate();
 		}
 	}
-	
+
+	public function get hideXPWhenFull():Boolean { return _hideXPWhenFull; }
+	public function set hideXPWhenFull(value:Boolean):Void {
+		if ( _hideXPWhenFull != value ) {
+			_hideXPWhenFull = value;
+			
+			if ( showXP ) invalidate();
+		}
+		
+	}
+
 }

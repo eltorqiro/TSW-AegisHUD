@@ -8,6 +8,7 @@ import gfx.controls.DropdownMenu;
 import gfx.controls.Button;
 import gfx.controls.Slider;
 import gfx.controls.TextInput;
+import mx.data.encoders.Bool;
 import mx.utils.Delegate;
 import com.GameInterface.UtilsBase;
 import com.GameInterface.DistributedValue;
@@ -79,7 +80,7 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 			event:		"click",
 			type:		"setting"
 		};
-		AddIndent();
+		AddIndent(10);
 		_uiControls.dualSelectFromHotkey = {
 			control:	AddCheckbox( "dualSelectFromHotkey", "also when using default hotkeys [<variable name='hotkey:Combat_NextPrimaryAEGIS'/ > / <variable name='hotkey:Combat_NextSecondaryAEGIS'/ >]" ),
 			event:		"click",
@@ -106,7 +107,7 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 			event:		"click",
 			type:		"setting"
 		};
-		AddIndent();
+		AddIndent(10);
 		_uiControls.animateMovementsToDefaultPosition = {
 			control:	AddCheckbox( "animateMovementsToDefaultPosition", "Animate HUD during PassiveBar open/close" ),
 			event:		"click",
@@ -190,13 +191,15 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 			event:		"click",
 			type:		"setting"
 		};
+
+		AddVerticalSpace(10);
 		
 		_uiControls.showXP = {
 			control:	AddCheckbox( "showXP", "Show XP indicator" ),
 			event:		"click",
 			type:		"setting"
 		};
-		AddIndent();
+		AddIndent(10);
 		
 		_uiControls.xpIndicatorStyle = {
 			control:	AddDropdown( "xpIndicatorStyle", "Style", ["Progress Bar", "Numbers"] ),
@@ -208,14 +211,28 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 			event:		"click",
 			type:		"setting"
 		};
+		/*
+		_uiControls.textWhenFull = {
+			control:	AddTextInput( "textWhenFull", "Replace 100% with", "", 3, false, 60, false ),
+			event:		"textChange",
+			type:		"setting"
+		};
+		*/
+		_uiControls.hideXPWhenFull = {
+			control:	AddCheckbox( "hideXPWhenFull", "Hide when Full" ),
+			event:		"click",
+			type:		"setting"
+		};
 		AddIndent(-10);
 
+		AddVerticalSpace(10);
+		
 		_uiControls.showTooltips = {
 			control:	AddCheckbox( "showTooltips", "Show Tooltips" ),
 			event:		"click",
 			type:		"setting"
 		};
-		AddIndent();
+		AddIndent(10);
 		_uiControls.suppressTooltipsInCombat = {
 			control:	AddCheckbox( "suppressTooltipsInCombat", "Suppress in combat" ),
 			event:		"click",
@@ -245,7 +262,7 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 			event:		"click",
 			type:		"setting"
 		};
-		AddIndent();
+		AddIndent(10);
 		_uiControls.neonGlowEntireBar = {
 			control:	AddCheckbox( "neonGlowEntireBar", "Overall HUD" ),
 			event:		"click",
@@ -276,46 +293,46 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 			event:		"click",
 			type:		"command"
 		};
-		AddIndent();
+		AddIndent(10);
 
 		_uiControls.tintAegisPsychic = {
-			control:	AddTextInput( "tintAegisPsychic", "Psychic", "", 6, true ),
+			control:	AddTextInput( "tintAegisPsychic", "Psychic", "", 6, true, undefined, true ),
 			event:		"textChange",
 			type:		"setting"
 		};
 		_uiControls.tintAegisCybernetic = {
-			control:	AddTextInput( "tintAegisCybernetic", "Cybernetic", "", 6, true ),
+			control:	AddTextInput( "tintAegisCybernetic", "Cybernetic", "", 6, true, undefined, true ),
 			event:		"textChange",
 			type:		"setting"
 		};
 		_uiControls.tintAegisDemonic = {
-			control:	AddTextInput( "tintAegisDemonic", "Demonic", "", 6, true ),
+			control:	AddTextInput( "tintAegisDemonic", "Demonic", "", 6, true, undefined, true ),
 			event:		"textChange",
 			type:		"setting"
 		};
 		_uiControls.tintAegisEmpty = {
-			control:	AddTextInput( "tintAegisEmpty", "Empty Slot", "", 6, true ),
+			control:	AddTextInput( "tintAegisEmpty", "Empty Slot", "", 6, true, undefined, true ),
 			event:		"textChange",
 			type:		"setting"
 		};
 		_uiControls.tintAegisStandard = {
-			control:	AddTextInput( "tintAegisStandard", "Default Active Highlight", "", 6, true ),
+			control:	AddTextInput( "tintAegisStandard", "Default Active Highlight", "", 6, true, undefined, true ),
 			event:		"textChange",
 			type:		"setting"
 		};
 
 		_uiControls.tintXPBackground = {
-			control:	AddTextInput( "tintXPBackground", "XP Bar Background", "", 6, true ),
+			control:	AddTextInput( "tintXPBackground", "XP Bar Background", "", 6, true, undefined, true ),
 			event:		"textChange",
 			type:		"setting"
 		};
 		_uiControls.tintXPProgress = {
-			control:	AddTextInput( "tintXPProgress", "XP Bar Progress", "", 6, true ),
+			control:	AddTextInput( "tintXPProgress", "XP Bar Progress", "", 6, true, undefined, true ),
 			event:		"textChange",
 			type:		"setting"
 		};
 		_uiControls.tintXPFull = {
-			control:	AddTextInput( "tintXPFull", "XP Full", "", 6, true ),
+			control:	AddTextInput( "tintXPFull", "XP Full", "", 6, true, undefined, true ),
 			event:		"textChange",
 			type:		"setting"
 		};
@@ -532,7 +549,7 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 		return o;
 	}
 	
-	private function AddTextInput(name:String, label:String, defaultValue:String, maxChars:Number, isHexColor:Boolean):TextInput {
+	private function AddTextInput(name:String, label:String, defaultValue:String, maxChars:Number, isHexColor:Boolean, width:Number, alignRight:Boolean):TextInput {
 		
 			var l = m_Content.attachMovie( "ConfigLabel", "m_" + name + "_Label", m_Content.getNextHighestDepth() );
 			l.textField.autoSize = "left";
@@ -551,11 +568,16 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 				o.maxChars = 6;
 			}
 			
+			if ( width != undefined ) o._width = width;
+			
 //			o.disableFocus = true;
 			
 			o._y = _layoutCursor.y;
-			o._x = _layoutCursor.x + 3 + 130;	// hardcoded because textinput is currently only used for one thing -- clean up in future
+			o._x = _layoutCursor.x + 3;	// hardcoded because textinput is currently only used for one thing -- clean up in future
 
+			if ( alignRight ) o._x += 130;
+			else o._x += l._width;
+			
 			_layoutCursor.y += o._height;
 			
 			return o;
@@ -567,11 +589,13 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 		_layoutCursor.y = 0;
 	}
 	
-	private function AddIndent(indent:Number):Void
+	private function AddIndent(indentX:Number):Void
 	{
-		if ( indent == undefined) indent = 10;
-		
-		_layoutCursor.x += indent;
+		if ( indentX != undefined ) _layoutCursor.x += indentX;
+	}
+	
+	private function AddVerticalSpace(size:Number):Void {
+		if ( size != undefined ) _layoutCursor.y += size;
 	}
 	
     //Remove Focus
