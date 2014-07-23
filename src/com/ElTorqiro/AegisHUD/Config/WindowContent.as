@@ -56,7 +56,7 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 			type:		"option"
 		};
 		_uiControls.playfieldMemoryEnabled = {
-			control:	AddCheckbox( "playfieldMemoryEnabled", "HUD visibility memory enabled" ),
+			control:	AddCheckbox( "playfieldMemoryEnabled", "Enable HUD visibility memory" ),
 			event:		"click",
 			type:		"option"
 		};
@@ -271,8 +271,8 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 		// Tints section
 		AddHeading("Tints", false);
 		AddIndent( -10);
-		_uiControls.SetDefaultTints = {
-			control:	AddButton("SetDefaultTints", "Reset to default tints"),
+		_uiControls.ApplyDefaultTints = {
+			control:	AddButton("ApplyDefaultTints", "Reset to default tints"),
 			event:		"click",
 			type:		"command"
 		};
@@ -366,6 +366,10 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 		
 		// execute against HUD module
 		_hud.Do( _uiControls[e.target.controlName].type + '.' + e.target.controlName, ( eventValue == undefined ? true : eventValue ) );
+		
+		// some commands change settings (like apply default tints)
+		// so as a hacky workaround, reload settings after firing a command
+		if( _uiControls[e.target.controlName].type == "command" ) LoadValues();
 	}
 	
 

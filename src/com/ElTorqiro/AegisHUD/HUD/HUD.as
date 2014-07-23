@@ -31,6 +31,10 @@ import com.ElTorqiro.AegisHUD.AddonInfo;
  */
 class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
+	// aegis xp token ids			(107 = one of the demonics (the 10% chance to do 30 damage one), with icon id 8447954
+	public static var e_AegisTokenID_Min:Number = 103;
+	public static var e_AegisTokenID_Max:Number = 108;
+	
 	private var _slotSize:Number;
 	private var _barPadding:Number;
 	private var _slotSpacing:Number;
@@ -60,7 +64,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	private var _showXP:Boolean;
 	private var _showXPProgressBackground:Boolean;
 	private var _xpIndicatorStyle:Number;
-	private var _pollAegisXPInterval:Number; // seconds
+	private var _fetchXPAntiSpamInterval:Number; // milliseconds
 
 	private var _showTooltips:Boolean;
 	private var _suppressTooltipsInCombat:Boolean;
@@ -94,7 +98,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
     private var _tooltip:TooltipInterface;
 	private var _tooltipTimeoutID:Number;
 	private var _tooltipSlot:Object;
-	private var _pollAegisXPTimeoutID:Number;
+	private var _fetchXPAntiSpamTimeoutID:Number;
+	private var _lastXPFetchTime:Number = 0;
 	private var _findPassiveBarThrashCount:Number = 0;
 	private var _findPassiveBarTimeoutID:Number;
 	private var _swapTimeoutID:Number;
@@ -185,6 +190,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		_inventory.SignalItemChanged.Disconnect( SlotItemChanged, this);
 		_inventory.SignalItemStatChanged.Disconnect( SlotItemStatChanged, this);
 
+		_character.SignalTokenAmountChanged.Disconnect( SlotTokenAmountChanged, this );
+		
 		_swapAegisRPC.SignalChanged.Disconnect( SwapAegisRPCHandler, this );
 		
 		_character = undefined;
@@ -221,7 +228,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		_itemSlots[pWeapon] = { side: _primary, type: "weapon", equip: pWeapon, mc: _primary.mc.m_Weapon };
 		_primary.activeAegisStat = pActiveAegisStat;
 		_primary.activeAegisEquipLocation = null;
-		_primary.selectedAegisEquipLocation = _character.GetStat( pActiveAegisStat );;
+		_primary.selectedAegisEquipLocation = _character.GetStat( pActiveAegisStat );
 		_primary.weaponSlot = _itemSlots[pWeapon]; 
 		_primary.slots   = [ _itemSlots[pWeapon], _itemSlots[pAegis1], _itemSlots[pAegis2], _itemSlots[pAegis3] ];
 		
@@ -260,6 +267,9 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 		// update active aegis values
 		UpdateActiveAegis();
+
+		// fetch initial aegis xp values
+		UpdateAegisXP();
 		
 		// wire up signal listeners
 		_character.SignalStatChanged.Connect( SlotStatChanged, this);
@@ -270,6 +280,9 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		_inventory.SignalItemChanged.Connect( SlotItemChanged, this);
 		_inventory.SignalItemStatChanged.Connect( SlotItemStatChanged, this);
 
+		// aegis xp listener
+		_character.SignalTokenAmountChanged.Connect( SlotTokenAmountChanged, this );
+		
 		// attach to passivebar if needed
 		AttachToPassiveBar( _attachToPassiveBar );
 		
@@ -282,9 +295,6 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		this.addEventListener("dragEnd", this, "DragEndHandler");
 		
 		this.addEventListener("scale", this, "ScaleHandler");
-		
-		// start the Aegis XP polling
-		UpdateAegisXP();
 	}
 
 	// layout bar internally
@@ -444,6 +454,25 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	}
 	
 
+	// restore default tints
+	public function ApplyDefaultTints():Void {
+		
+		var defaults:Object = HUD.defaultSettingsPack;
+		
+		tintAegisPsychic = defaults.tintAegisPsychic;
+		tintAegisCybernetic = defaults.tintAegisCybernetic;
+		tintAegisDemonic = defaults.tintAegisDemonic;
+		tintAegisEmpty = defaults.tintAegisEmpty;
+		tintAegisStandard = defaults.tintAegisStandard;
+
+		tintXPBackground = defaults.tintXPBackground;
+		tintXPProgress = defaults.tintXPProgress;
+		tintXPFull = defaults.tintXPFull;
+		
+		tintBarStandard = defaults.tintBarStandard;
+	}
+	
+
 	// load slot icons and presence
 	private function LoadEquipment():Void
 	{
@@ -494,7 +523,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 					slot.aegisType = "psychic";
 				}
 				
-				// if XP is being shown, fetch just this item's XP, the rest can wait for the update interval
+				// if XP is being shown, fetch just this item's XP, the rest can wait for their own events
 				UpdateAegisSlotXP(slot);
 			}
 			
@@ -625,7 +654,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			else weaponSlotMC.filters = [];
 			
 
-			// iterate each aegis slot
+			// iterate through aegis slots
 			for ( var a:String in bar.slots ) {
 				var slot = bar.slots[a];
 				
@@ -688,7 +717,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 					// tint aegis background
 					switch( _tintActiveAegisBackgroundBehaviour ) {
 						
-						case ActiveAegisBackgroundTintBehaviour.NEVER: 		break;
+						case ActiveAegisBackgroundTintBehaviour.NEVER: 		AddonUtils.Colorize( slotMC.m_Background, _tints.none ); break;
 						case ActiveAegisBackgroundTintBehaviour.STANDARD: 	AddonUtils.Colorize( slotMC.m_Background, _tints.standard ); break;
 						case ActiveAegisBackgroundTintBehaviour.AEGIS_TYPE:	AddonUtils.Colorize( slotMC.m_Background, slotTint ); break;
 					}
@@ -836,11 +865,6 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
         if ( _tooltipSlot.item != undefined ) {
             var tooltipData:TooltipData = TooltipDataProvider.GetInventoryItemTooltip( _inventory.GetInventoryID(), _tooltipSlot.equip );			
-			
-			//tooltipData.m_Descriptions.push(m_TooltipText);
-            //tooltipData.m_Padding = 4;
-            //tooltipData.m_MaxWidth = m_MaxWidth;
-			
 			_tooltip = TooltipManager.GetInstance().ShowTooltip( _tooltipSlot.mc, TooltipInterface.e_OrientationVertical, 0, tooltipData );
 		}
     }
@@ -1037,32 +1061,49 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	}
 
 	
-	// poll periodically for aegis XP for each slotted controller, using tooltip data as the source of the values
+	// fetch aegis XP for each slotted controller, using tooltip data as the source of the values
 	private function UpdateAegisXP():Void {
 		
-		// cancel any existing poll wait underway
-		if ( _pollAegisXPTimeoutID != undefined) {
-			_global.clearTimeout( _pollAegisXPTimeoutID );
-			_pollAegisXPTimeoutID = undefined;
-		}		
+		// do nothing if XP isn't being shown
+		if ( !_showXP ) {
+			if ( _fetchXPAntiSpamTimeoutID != undefined) _global.clearTimeout( _fetchXPAntiSpamTimeoutID );
+			_fetchXPAntiSpamTimeoutID = undefined;
+			
+			return;
+		}
 		
-		// do nothing else if XP isn't being shown
-		if ( !_showXP ) return;
+		// calculate interval values
+		var now:Number = Number(new Date());
+		var timeSinceFetch:Number = now - _lastXPFetchTime;
+
+		// if within the spam interval since last successful fetch, start the timer or just wait for an existing one to finish
+		if ( timeSinceFetch < _fetchXPAntiSpamInterval ) {
+			if ( _fetchXPAntiSpamTimeoutID == undefined) {
+				_fetchXPAntiSpamTimeoutID = _global.setTimeout( Delegate.create(this, UpdateAegisXP), _fetchXPAntiSpamInterval ); // Math.max(_fetchXPAntiSpamInterval - timeSinceFetch, 100) );
+			}
+			return;
+		}
+		
+		// otherwise cancel any outstanding timer
+		else if ( _fetchXPAntiSpamTimeoutID != undefined) _global.clearTimeout( _fetchXPAntiSpamTimeoutID );
+
+		_fetchXPAntiSpamTimeoutID = undefined;
+
+		// update last run time
+		_lastXPFetchTime = now;
 		
 		// for each aegis controller, get the tooltip data and extract the XP value
 		for ( var s:String in _itemSlots ) {
 			UpdateAegisSlotXP( _itemSlots[s] );
 		}
-		
-		// set up a new poll wait
-		_pollAegisXPTimeoutID = _global.setTimeout( Delegate.create(this, UpdateAegisXP), _pollAegisXPInterval * 1000 );
+
 	}
 	
 	// update aegis xp for a single item
 	private function UpdateAegisSlotXP(slot:Object):Void {
 		
 		// do nothing if there is nothing sensible to act on
-		// important clause at the end there for efficiency -- the only way to get a slotted item away from 100 is to unslot it
+		// important clause in there for efficiency -- the only way to get a slotted item away from 100 is to unslot it
 		// which will clear the xp value, this when it gets reslotted after being upgraded it won't be on 100 anymore... :)
 		if ( !_showXP || slot == undefined || slot.type != "aegis" || slot.item == undefined || slot.aegisXP == 100) return;
 		
@@ -1150,7 +1191,12 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		SlotItemChanged(inventoryID, itemPos);
 	}
 	
-
+	// aegis xp listener
+	private function SlotTokenAmountChanged( tokenID:Number, newValue:Number, oldNumber:Number ) {
+		if ( tokenID >= e_AegisTokenID_Min && tokenID <= e_AegisTokenID_Max ) UpdateAegisXP();
+	}
+	
+	
 	// separating this from AttachToPassiveBar to ensure only one of them runs at once, given how quickly it could be called in succession at startup
 	private function FindPassiveBarToAttach(attach:Boolean):Void {
 		if ( _root.passivebar.m_Bar.onTweenComplete == undefined ) {
@@ -1266,6 +1312,9 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	public function set showXP(value:Boolean) {
 		if( _showXP != value ) {
 			_showXP = value;
+			
+			if (_showXP) UpdateAegisXP();
+			
 			invalidate();
 		}
 	}
@@ -1452,12 +1501,11 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			if ( showXP && xpIndicatorStyle == XPIndicatorStyles.ProgressBar ) invalidate();
 		}
 	}
-	public function get pollAegisXPInterval():Number { return _pollAegisXPInterval; }
-	public function set pollAegisXPInterval(value:Number):Void 
+	public function get fetchXPAntiSpamInterval():Number { return _fetchXPAntiSpamInterval; }
+	public function set fetchXPAntiSpamInterval(value:Number):Void 
 	{
-		if ( _pollAegisXPInterval != value) {
-			_pollAegisXPInterval = value;
-			UpdateAegisXP();
+		if ( _fetchXPAntiSpamInterval != value) {
+			_fetchXPAntiSpamInterval = value;
 		}
 	}
 
@@ -1480,71 +1528,80 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		}
 	}
 
-	// readonly
-	public static var defaultSettingsPack:Object = {
-		slotSize: 30,
-		barPadding: 5,
-		slotSpacing: 4,
-		hudScale: 100,
-		maxHUDScale: 150,
-		minHUDScale: 50,
-		
-		primaryPosition: undefined,
-		secondaryPosition: undefined,
-		
-		barStyle: 0,
-		neonGlowEntireBar: true,
-		lockBars: false,
-		attachToPassiveBar: false,
-		animateMovementsToDefaultPosition: true,
-		
-		showBarBackground: true,
-		tintBarBackgroundByActiveAegis: true,
-		neonGlowBarBackground: true,
 
-		showWeapons: true,
-		primaryWeaponFirst: false,
-		secondaryWeaponFirst: true,
+	/**
+	 * I tried to use a static var here, but then whenever anything used it, it would create a reference to the property and was updating the values!!
+	 * 
+	 * readonly
+	 */
+	public static function get defaultSettingsPack():Object {
 		
-		showWeaponBackgroundBehaviour: 0,
-		tintWeaponBackgroundByActiveAegis: false,
-		tintWeaponIconByActiveAegis: false,
-		neonGlowWeapon: true,
+		return new Object( {
 		
-		showXP: true,
-		showXPProgressBackground: true,
-		xpIndicatorStyle: 1,
-		pollAegisXPInterval: 30,
+			slotSize: 30,
+			barPadding: 5,
+			slotSpacing: 4,
+			hudScale: 100,
+			maxHUDScale: 150,
+			minHUDScale: 50,
+			
+			primaryPosition: undefined,
+			secondaryPosition: undefined,
+			
+			barStyle: 0,
+			neonGlowEntireBar: true,
+			lockBars: false,
+			attachToPassiveBar: false,
+			animateMovementsToDefaultPosition: true,
+			
+			showBarBackground: true,
+			tintBarBackgroundByActiveAegis: true,
+			neonGlowBarBackground: true,
 
-		showTooltips: true,
-		suppressTooltipsInCombat: true,
+			showWeapons: true,
+			primaryWeaponFirst: false,
+			secondaryWeaponFirst: true,
+			
+			showWeaponBackgroundBehaviour: 0,
+			tintWeaponBackgroundByActiveAegis: false,
+			tintWeaponIconByActiveAegis: false,
+			neonGlowWeapon: true,
+			
+			showXP: true,
+			showXPProgressBackground: true,
+			xpIndicatorStyle: 1,
+			fetchXPAntiSpamInterval: 1000,
 
-		showAegisBackgroundBehaviour: 1,
-		tintAegisBackgroundByType: false,
-		tintAegisIconByType: false,
-		showActiveAegisBackground: true,
-		tintActiveAegisBackgroundBehaviour: 0,
-		neonGlowAegis: true,
-		
-		neonEnabled: true,
+			showTooltips: true,
+			suppressTooltipsInCombat: true,
 
-		dualSelectWithModifier: false,
-		dualSelectWithButton: true,
-		dualSelectByDefault: true,
-		dualSelectFromHotkey: true,
-		
-		tintAegisPsychic:		0xbf00ff,
-		tintAegisCybernetic:	0x0099ff,
-		tintAegisDemonic:		0xdd0000,
-		tintAegisEmpty:			0x999999,
-		tintAegisStandard:		0x006AFF,
+			showAegisBackgroundBehaviour: 1,
+			tintAegisBackgroundByType: false,
+			tintAegisIconByType: false,
+			showActiveAegisBackground: true,
+			tintActiveAegisBackgroundBehaviour: 0,
+			neonGlowAegis: true,
+			
+			neonEnabled: true,
 
-		tintXPBackground:		0xffffff,
-		tintXPProgress:			0xFF8800,		/* 0x00E5A3 */
-		tintXPFull:				0x00FFA2,		/* // 0x4EE500 // 0x19FDFF */
-		
-		tintBarStandard:		0x000000
-	};
+			dualSelectWithModifier: false,
+			dualSelectWithButton: true,
+			dualSelectByDefault: true,
+			dualSelectFromHotkey: true,
+			
+			tintAegisPsychic:		0xbf00ff,
+			tintAegisCybernetic:	0x0099ff,
+			tintAegisDemonic:		0xdd0000,
+			tintAegisEmpty:			0x999999,
+			tintAegisStandard:		0x006AFF,
+
+			tintXPBackground:		0xffffff,
+			tintXPProgress:			0xFF8800,		/* 0x00E5A3 */
+			tintXPFull:				0x00FFA2,		/* // 0x4EE500 // 0x19FDFF */
+			
+			tintBarStandard:		0x000000
+		});
+	}
 	
 	public function get slotSize():Number { return _slotSize; }
 	public function set slotSize(value:Number):Void {

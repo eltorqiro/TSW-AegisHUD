@@ -99,18 +99,6 @@ function OnModuleActivated():Void {
 
 	// hide default swap buttons if specified
 	hideDefaultSwapButtons( g_data.options.hideDefaultSwapButtons );
-	
-	//Character.GetClientCharacter().SignalOffensiveTargetChanged;
-	g_character = Character.GetClientCharacter();
-	g_character.SignalTokenAmountChanged.Connect(test, this );
-
-	AddonUtils.FindGlobalEnum("token"); //103 - 107
-	UtilsBase.PrintChatText("tokens: " + g_character.GetTokens(107) );
-}
-
-function test(obj, obj2, obj3, obj4):Void {
-	UtilsBase.PrintChatText("token: " + obj + ", " + obj2 + ", " + obj3 + ", " + obj4);
-	
 }
 
 // module deactivated (i.e. its distributed value set to 0)
@@ -167,8 +155,7 @@ function SaveData():Void {
 		saveData.AddEntry( "blacklist", s );
 	}
 	DistributedValue.SetDValue(AddonInfo.Name + "_HUD_PlayfieldMemory", saveData);
-	
-	AddonUtils.VarDump( g_playfieldMemoryBlacklist );
+
 }
 
 // restore settings from DValue (initially populated by TSW)
@@ -224,7 +211,12 @@ function Do(name:String, value) {
 		
 		// options are handled here in the module
 		case "option":
-			g_data.options[key] = value;
+			for (var s:String in g_data.options) {
+				if ( s == key ) {
+					g_data.options[key] = value;
+					break;
+				}
+			}
 			if( this[key] instanceof Function ) this[key]( value );
 		break;
 	}
@@ -234,7 +226,7 @@ function Do(name:String, value) {
 
 // load auto hide playfields from persistence
 function LoadPlayfieldMemory():Void {
-
+	
 	var loadData:Archive = DistributedValue.GetDValue(AddonInfo.Name + "_HUD_PlayfieldMemory");
 	var storedPlayfields:Array = loadData.FindEntryArray( "blacklist" );
 
@@ -371,4 +363,5 @@ function hideDefaultSwapButtons(hide:Boolean):Void {
 		// do a load to restore buttons naturally if they need to be visible
 		_root.passivebar.LoadAegisButtons();
 	}
+	
 }
