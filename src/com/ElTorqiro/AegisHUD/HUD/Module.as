@@ -65,7 +65,7 @@ function onLoad():Void {
 			hideDefaultSwapButtons: true,
 			hudEnabled: true,
 			playfieldMemoryEnabled: true,
-			autoHide: true,
+			autoHide: false,
 			autoHideTimeout: 5
 		}
 	};

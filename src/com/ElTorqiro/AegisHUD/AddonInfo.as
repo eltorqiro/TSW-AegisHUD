@@ -8,7 +8,7 @@ class com.ElTorqiro.AegisHUD.AddonInfo
 	private function AddonInfo() { }
 	
 	public static var Name:String = "ElTorqiro_AegisHUD";
-	public static var Version:String = "NEXT";
+	public static var Version:String = "2.0 beta";
 	public static var Author:String = "ElTorqiro";
 	
 }
