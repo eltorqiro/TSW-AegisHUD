@@ -268,7 +268,7 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 			type:		"setting"
 		};
 		_uiControls.neonGlowBarBackground = {
-			control:	AddCheckbox( "neonGlowBarBackground", "Bar background" ),
+			control:	AddCheckbox( "neonGlowBarBackground", "Bar background (overrides Bar Tint)" ),
 			event:		"click",
 			type:		"setting"
 		};

@@ -88,6 +88,19 @@ function OnModuleActivated():Void {
 	LoadData();
 	LoadPlayfieldMemory();
 
+	
+	
+	
+	
+	/********************************************* remove me */
+	UtilsBase.PrintChatText(" autohide set to false ");
+	g_data.options.autoHide = false;
+	
+	
+	
+	
+	
+	
 	// check autohide playfield
 	CheckPlayfieldMemory();
 	DistributedValue.SetDValue( AddonInfo.Name + "_HUD_Enabled", g_data.options.hudEnabled );	

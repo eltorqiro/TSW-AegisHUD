@@ -142,6 +142,10 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 	// swap AEGIS RPC DV used as part of hotkey hijacking
 	private var _swapAegisRPC:DistributedValue;
+
+	// game scaling mechanism settings
+    private var _guiResolutionScale:DistributedValue; 
+    private var _guiHUDScale:DistributedValue;	
 	
 	// parameters passed in through initObj of attachMovie( ..., initObj)
 	private var settings:Object;
@@ -170,6 +174,55 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		// wire up hotkey hijacking listener
 		_swapAegisRPC = DistributedValue.Create( AddonInfo.Name + "_Swap" );
 		_swapAegisRPC.SignalChanged.Connect( SwapAegisRPCHandler, this );
+		
+		// wire up scale related listeners
+		_guiResolutionScale = DistributedValue.Create("GUIResolutionScale");
+		_guiResolutionScale.SignalChanged.Connect( Layout, this );
+		_guiHUDScale = DistributedValue.Create("GUIScaleHUD")
+		_guiHUDScale.SignalChanged.Connect( Layout, this );
+
+	}
+	
+	
+	function ToggleInCombatIndicator():Void {
+
+		// always remove any old indicators
+		if ( this['m_Primary_Combat'] != undefined ) {
+			this['m_Primary_Combat'].removeMovieClip();
+			this['m_Primary_CombatMask'].removeMovieClip();
+
+			this['m_Secondary_Combat'].removeMovieClip();
+			this['m_Secondary_CombatMask'].removeMovieClip();
+		}
+
+		// create new indicators if not in combat
+		if( !_character.IsInCombat() ) {
+
+			var tint:Number = 0xffcc00;
+			var combatGlow:GlowFilter = new GlowFilter(
+				tint, 	/* glow_color */
+				0.8, 		/* glow_alpha */
+				8, 			/* glow_blurX */
+				8, 			/* glow_blurY */
+				2,			/* glow_strength */
+				3, 			/* glow_quality */
+				false, 		/* glow_inner */
+				false 		/* glow_knockout */
+			);
+
+			for ( var s:String in _sides ) {
+				var barMC = _sides[s].mc;
+				
+				var inCombat:MovieClip = this.attachMovie("com.ElTorqiro.AegisHUD.HUD.CombatIndicator", barMC._name + "_Combat", this.getNextHighestDepth());
+				inCombat._width = barMC._width - (barPadding * 2);
+				inCombat._x = barMC._x + 5;
+				inCombat._height = 5;
+				inCombat._y = barMC._y - inCombat._height - 4;
+
+				AddonUtils.Colorize( inCombat, tint );
+				inCombat.filters = [ combatGlow ];
+			}
+		}
 	}
 	
 	public function onUnload():Void
@@ -194,6 +247,9 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		_character.SignalTokenAmountChanged.Disconnect( SlotTokenAmountChanged, this );
 		
 		_swapAegisRPC.SignalChanged.Disconnect( SwapAegisRPCHandler, this );
+
+		_guiResolutionScale.SignalChanged.Disconnect( Layout, this );
+		_guiHUDScale.SignalChanged.Disconnect( Layout, this );
 		
 		_character = undefined;
 		_inventory = undefined;
@@ -260,8 +316,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		// layout bar internals
 		LayoutBars();
 		
-		// position HUD elements
-		PositionHUD();
+		// position & scale the bars
+		Layout();
 		
 		// initial load of equipment into slots
 		LoadEquipment();
@@ -356,37 +412,12 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		}
 	}
 	
-	// position HUD elements on the screen
-	private function PositionHUD():Void
-	{
-		// apply scale
-		//m_Primary._xscale = m_Primary._yscale = _hudScale;
-		//m_Secondary._xscale = m_Secondary._yscale = _hudScale;
-		
-		if ( _primaryPosition )
-		{
-			// Despite Point.x being a number, the +0 below is a quick way to ensure the ._x accepts the Point.x property.
-			// If not doing this, then the number prints out as "xxx", but seems to get sent to the _x property as "xxx.0000000000"
-			// which the _x setter fails to interpret for some reason and does not set.
-			m_Primary._x = _primaryPosition.x + 0;
-			m_Primary._y = _primaryPosition.y + 0;
-			
-			m_Secondary._x = _secondaryPosition.x + 0;
-			m_Secondary._y = _secondaryPosition.y + 0;
-		}
-		
-		// set default positions to simulate the default buttons
-		else
-		{
-			MoveToDefaultPosition();
-		}
-	}
-
 	/**
 	 * layout bars in same location as default passivebar swap buttons
 	 */
 	public function MoveToDefaultPosition(userTriggered:Boolean):Void
 	{
+		// if passivebar is available, default position is directly above that
 		if ( _root.passivebar.m_Bar != undefined ) {
 
 			var pb = _root.passivebar;
@@ -429,29 +460,61 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			
 		}
 		
+		// if no passivebar available, approximate a decent position at bottom of screen
 		else {
 			// align to stage method
-		//	m_Primary._x = Math.round( (Stage["visibleRect"].width / 2) - m_Primary._width - 3 );
-		//	m_Secondary._x = Math.round( m_Primary._x + m_Primary._width + 6 );
-		//	m_Primary._y = m_Secondary._y = Math.round( Stage["visibleRect"].height - 75 - m_Primary._height - 3 );
+
+			m_Primary._x =  ((Stage["visibleRect"].width / 2) - m_Primary._width - 3 );
+			m_Secondary._x = ( m_Primary._x + m_Primary._width + 6 );
+			m_Primary._y = m_Secondary._y = ( Stage["visibleRect"].height - 75 - m_Primary._height - 3 );
+		}
+
+	}
+	
+	// sets the real scale & position of the AegisHUD, integrating with the game's resolution & HUD scaling
+	private function Layout():Void {
+
+		// this is based on the trio: GUI resolution, GUI hud scale, this hud scale
+		var guiResolutionScale:Number = _guiResolutionScale.GetValue();
+		var guiHUDScale:Number = _guiHUDScale.GetValue();
+		
+		// some sanity checks in case somehow the game isn't providing these
+		if ( guiResolutionScale == undefined ) guiResolutionScale = 1;
+		if ( guiHUDScale == undefined ) guiHUDScale = 100;
+
+		// calculate the real final scale
+		var realScale:Number = guiResolutionScale * ( guiHUDScale * _hudScale / 100 );
+		
+		m_Primary._xscale = m_Primary._yscale = realScale;
+		m_Secondary._xscale = m_Secondary._yscale = realScale;
+		
+		// if attached to passivebar, reset position
+		if ( _attachToPassiveBar ) {
+			MoveToDefaultPosition();
 		}
 		
-		// TODO: reliable way to lock to default swap buttons position, even during passivebar open/close
-		/*
-		if ( _root.passivebar )
-		{
-			// align to passivebar method
-			var middle:Object = { x: _root.passivebar.m_Bar.m_Background };
+		else {
+
+			if ( _primaryPosition )
+			{
+				// Despite Point.x being a number, the +0 below is a quick way to ensure the ._x accepts the Point.x property.
+				// If not doing this, then the number prints out as "xxx", but seems to get sent to the _x property as "xxx.0000000000"
+				// which the _x setter fails to interpret for some reason and does not set.
+				m_Primary._x = _primaryPosition.x + 0;
+				m_Primary._y = _primaryPosition.y + 0;
+				
+				m_Secondary._x = _secondaryPosition.x + 0;
+				m_Secondary._y = _secondaryPosition.y + 0;
+			}
 			
-			m_Primary._x = Math.round( _root.passivebar._x + _root.passivebar.m_Bar.m_Background._x + (_root.passivebar.m_Bar.m_Background._width / 2) - m_Primary._width - 3 );
-			m_Secondary._x = Math.round( m_Primary._x + m_Primary._width + 6 );
-			m_Primary._y = m_Secondary._y = Math.round( _root.passivebar._y - m_Primary._height - 3 );
+			// set default positions to simulate the default buttons
+			else
+			{
+				MoveToDefaultPosition();
+			}
 		}
 		
-		else
-		{
-		}
-		*/
+		ToggleInCombatIndicator();
 	}
 	
 
@@ -1360,29 +1423,29 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	public function set showTooltips(value:Boolean) { _showTooltips = value; }
 	
 	public function get primaryPosition():Point { return new Point(m_Primary._x, m_Primary._y); }
-	public function set primaryPosition(value:Point) { _primaryPosition = value; }
+	public function set primaryPosition(value:Point) { 
+		_primaryPosition = value;
+		Layout();
+	}
 
 	public function get secondaryPosition():Point { return new Point(m_Secondary._x, m_Secondary._y); }
-	public function set secondaryPosition(value:Point) { _secondaryPosition = value; }
+	public function set secondaryPosition(value:Point) {
+		_secondaryPosition = value;
+		Layout();
+	}
 
 	// overall hud scale
 	public function get hudScale():Number { return _hudScale; }
-	public function set hudScale(scale:Number) {
-		if ( _hudScale == scale || lockBars ) return;
+	public function set hudScale(value:Number) {
+		if ( _hudScale == value ) return;
 
-		if ( scale < minHUDScale ) _hudScale = minHUDScale;
-		else if ( scale > maxHUDScale ) _hudScale = maxHUDScale;
-		else if ( scale == Number.NaN ) _hudScale = 100;
-		else _hudScale = scale;
+		if ( value < minHUDScale ) _hudScale = minHUDScale;
+		else if ( value > maxHUDScale ) _hudScale = maxHUDScale;
+		else if ( value == Number.NaN ) _hudScale = 100;
+		else _hudScale = value;
 		
-		// apply scale to bars
-		m_Primary._xscale = m_Primary._yscale = _hudScale;
-		m_Secondary._xscale = m_Secondary._yscale = _hudScale;
-		
-		// if attached to passivebar, reset position
-		if ( _attachToPassiveBar ) {
-			MoveToDefaultPosition();
-		}
+		// apply actual scale to bars
+		Layout();
 	}
 	
 
