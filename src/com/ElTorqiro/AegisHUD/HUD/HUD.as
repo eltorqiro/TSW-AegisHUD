@@ -5,9 +5,7 @@ import com.GameInterface.UtilsBase;
 import flash.geom.Point;
 import gfx.core.UIComponent;
 import com.GameInterface.Lore;
-import mx.data.encoders.Bool;
 import com.GameInterface.Input;
-import gfx.ui.InputDetails;
 import gfx.managers.InputDelegate;
 import flash.geom.ColorTransform;
 import com.ElTorqiro.AddonUtils.AddonUtils;
@@ -171,7 +169,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		ApplySettingsPack( settings );
 		delete settings;
 		
-		// wire up hotkey hijacking listener
+		// wire up callback listener for hotkey swap RPC
 		_swapAegisRPC = DistributedValue.Create( AddonInfo.Name + "_Swap" );
 		_swapAegisRPC.SignalChanged.Connect( SwapAegisRPCHandler, this );
 		
@@ -181,48 +179,6 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		_guiHUDScale = DistributedValue.Create("GUIScaleHUD")
 		_guiHUDScale.SignalChanged.Connect( Layout, this );
 
-	}
-	
-	
-	function ToggleInCombatIndicator():Void {
-
-		// always remove any old indicators
-		if ( this['m_Primary_Combat'] != undefined ) {
-			this['m_Primary_Combat'].removeMovieClip();
-			this['m_Primary_CombatMask'].removeMovieClip();
-
-			this['m_Secondary_Combat'].removeMovieClip();
-			this['m_Secondary_CombatMask'].removeMovieClip();
-		}
-
-		// create new indicators if not in combat
-		if( !_character.IsInCombat() ) {
-
-			var tint:Number = 0xffcc00;
-			var combatGlow:GlowFilter = new GlowFilter(
-				tint, 	/* glow_color */
-				0.8, 		/* glow_alpha */
-				8, 			/* glow_blurX */
-				8, 			/* glow_blurY */
-				2,			/* glow_strength */
-				3, 			/* glow_quality */
-				false, 		/* glow_inner */
-				false 		/* glow_knockout */
-			);
-
-			for ( var s:String in _sides ) {
-				var barMC = _sides[s].mc;
-				
-				var inCombat:MovieClip = this.attachMovie("com.ElTorqiro.AegisHUD.HUD.CombatIndicator", barMC._name + "_Combat", this.getNextHighestDepth());
-				inCombat._width = barMC._width - (barPadding * 2);
-				inCombat._x = barMC._x + 5;
-				inCombat._height = 5;
-				inCombat._y = barMC._y - inCombat._height - 4;
-
-				AddonUtils.Colorize( inCombat, tint );
-				inCombat.filters = [ combatGlow ];
-			}
-		}
 	}
 	
 	public function onUnload():Void
@@ -513,8 +469,6 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 				MoveToDefaultPosition();
 			}
 		}
-		
-		ToggleInCombatIndicator();
 	}
 	
 

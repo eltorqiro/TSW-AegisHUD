@@ -96,6 +96,7 @@ function OnModuleActivated():Void {
 	UtilsBase.PrintChatText(" autohide set to false ");
 	g_data.options.autoHide = false;
 	
+	this.attachMovie("com.ElTorqiro.AegisHUD.HUD.CombatIndicator", "m_Combat", this.getNextHighestDepth());
 	
 	
 	
