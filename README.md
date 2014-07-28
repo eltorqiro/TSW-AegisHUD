@@ -13,8 +13,6 @@ User Configuration
 ------------------
 The mod provides an interactive on-screen icon which can be used to bring up a comprehensive configuration panel.  Hover the mouse over the icon for instructions.  If you have Viper's Topbar Information Overload (VTIO) installed, the icon will be available in a VTIO slot.
    
-Configuration setting help can be found at http://tsw.the009.net/
-   
 You can also toggle the configuration window with the option ElTorqiro_AegisHUD_ShowConfig, which can be set via a chat command as follows:
 /setoption ElTorqiro_AegisHUD_ShowConfig 1
 (1 = open, 0 = closed)
