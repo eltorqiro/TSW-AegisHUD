@@ -42,7 +42,7 @@ class com.ElTorqiro.AegisHUD.HUD.CombatIndicator extends UIComponent {
 		_character = Character.GetClientCharacter();
 
 		_character.SignalToggleCombat.Connect( ToggleCombatIndicator, this );
-		_isThreatened = _character.IsInCombat();
+		_isThreatened = _character.IsThreatened();
 		
 		// wire up scale related listeners
 		_guiResolutionScale = DistributedValue.Create("GUIResolutionScale");
@@ -53,11 +53,7 @@ class com.ElTorqiro.AegisHUD.HUD.CombatIndicator extends UIComponent {
 	
 	
 	function ToggleCombatIndicator(isThreatened):Void {
-		
 		_isThreatened = isThreatened;
-		
-		UtilsBase.PrintChatText('<font color="#999999">togglecombatindicator: ' + isThreatened + ', ' + _character.IsInCombat() + ', ' + _character.IsThreatened() + '</font>');
-	
 		invalidate();
 	}
 	
@@ -95,8 +91,6 @@ class com.ElTorqiro.AegisHUD.HUD.CombatIndicator extends UIComponent {
 	private function draw():Void {
 		// hide if not in combat
 		if ( !_isThreatened ) {
-			UtilsBase.PrintChatText('<font color="#ff0000">combat off</font>');
-			
 			this._visible = false;
 			return;
 		}
@@ -105,11 +99,8 @@ class com.ElTorqiro.AegisHUD.HUD.CombatIndicator extends UIComponent {
 		// find the hud
 		var hud:MovieClip = _parent.m_HUD;
 
-		UtilsBase.PrintChatText('<font color="#00ff00">combat on</font>');
-		
 		// if hud present
 		if( hud != undefined ) {
-			UtilsBase.PrintChatText('<font color="#0099ff">' + hud._name + '</font>');
 			var hudBars:Object = { primary: hud.m_Primary, secondary: hud.m_Secondary };
 			for ( var s:String in hudBars ) {
 				var barMC = hudBars[s];
@@ -121,9 +112,6 @@ class com.ElTorqiro.AegisHUD.HUD.CombatIndicator extends UIComponent {
 				inCombat._height = 5;
 				inCombat._y = barMC._y - inCombat._height - 4;
 
-//				AddonUtils.Colorize( inCombat, tint );
-//				inCombat.filters = [ combatGlow ];
-				
 				inCombat._visible = true;
 			}
 			
@@ -153,17 +141,6 @@ class com.ElTorqiro.AegisHUD.HUD.CombatIndicator extends UIComponent {
 			m_Secondary._x = secondaryDefaultPosition.x;
 			m_Secondary._y = secondaryDefaultPosition.y;
 						
-/*			
-			var inCombat:MovieClip = m_Primary;
-			m_Secondary._visible = false;
-			
-			inCombat._x = barPosition.x + 5;
-			inCombat._height = 5;
-			inCombat._y = barPosition.y - inCombat._height - 4;
-			inCombat._width = pb._width - 5;
-*/		
-			
-
 		}
 		
 		this._visible = true;

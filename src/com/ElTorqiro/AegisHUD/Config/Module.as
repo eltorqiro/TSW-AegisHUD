@@ -51,7 +51,7 @@ var g_settings:Object;
  * OnLoad
  * 
  * This has GMF_DONT_UNLOAD in Modules.xml so TSW module manager will not unload it during teleports etc.
- * Thus, all the global variables will persist, like settings and icon etc, only needing to be refreshed during onLoad() and saved during unLoad().
+ * Thus, all the global variables will persist, like settings and icon etc, only needing to be refreshed during onLoad() and saved during onUnload().
  */
 function onLoad()
 {
@@ -320,7 +320,7 @@ function DestroyConfigWindow():Void
 
 function HUDEnabledHandler():Void {
 	g_icon.gotoAndStop( g_hudEnabled.GetValue() ? "enabled" : "disabled" );
-
+	
 	/* VTIO doesn't use your original icon, it creates a dupe, so a different approach is needed if integrated with VTIO
 	 * proof: g_icon._alpha = 100; g_icon._visible = true; g_icon._y = 150; UtilsBase.PrintChatText("f:" + g_icon._currentframe);
 	*/
@@ -333,5 +333,5 @@ function HUDEnabledHandler():Void {
 }
 
 function ColorizeVTIOIcon():Void {
-	AddonUtils.Colorize( this["Icon"], g_hudEnabled.GetValue() != undefined && g_hudEnabled.GetValue() ? 0xffffff : 0xff0000 );
+	if ( g_hudEnabled.GetValue() != undefined ) this["Icon"].gotoAndStop( g_hudEnabled.GetValue() ? "enabled" : "disabled"  );
 }

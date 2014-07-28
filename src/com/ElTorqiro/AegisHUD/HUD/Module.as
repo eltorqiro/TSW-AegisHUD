@@ -48,11 +48,6 @@ var AEGIS_SLOT_ACHIEVEMENT:Number = 6817;	// The Lore number that unlocks the AE
 // internal state variables
 var g_findPassivebarThrashCount:Number = 0;
 
-// for checking offensive target change
-var g_character:Character;
-var g_autoHideTimeoutID:Number;
-var g_autoHideHidden:Boolean;
-
 
 //Init
 function onLoad():Void {
@@ -65,10 +60,11 @@ function onLoad():Void {
 			hideDefaultSwapButtons: true,
 			hudEnabled: true,
 			playfieldMemoryEnabled: true,
-			autoHide: false,
-			autoHideTimeout: 5
+			combatIndicator: false
 		}
 	};
+	
+	DistributedValue.Create( AddonInfo.Name + "_HUD_Enabled" );
 }
 
 
@@ -88,23 +84,8 @@ function OnModuleActivated():Void {
 	LoadData();
 	LoadPlayfieldMemory();
 
-	
-	
-	
-	
-	/********************************************* remove me */
-	UtilsBase.PrintChatText(" autohide set to false ");
-	g_data.options.autoHide = false;
-	
-	this.attachMovie("com.ElTorqiro.AegisHUD.HUD.CombatIndicator", "m_Combat", this.getNextHighestDepth());
-	
-	
-	
-	
-	
 	// check autohide playfield
 	CheckPlayfieldMemory();
-	DistributedValue.SetDValue( AddonInfo.Name + "_HUD_Enabled", g_data.options.hudEnabled );	
 
 	// handle the TSW user config option for showing/hiding AEGIS HUD UI
 	g_showAegisSwapUI = DistributedValue.Create( "ShowAegisSwapUI" );
@@ -113,175 +94,15 @@ function OnModuleActivated():Void {
 	// wire up handler if the toon has not unlocked the AEGIS system, but might do so during the session
 	if ( Lore.IsLocked(AEGIS_SLOT_ACHIEVEMENT) )  Lore.SignalTagAdded.Connect(SlotTagAdded, this);
 
-	// instantiate HUD
-	ShowHUD();
+	// fire option setters
+	for ( var s:String in g_data.options ) {
+		if( this[s] instanceof Function ) this[s]( g_data.options[s] );
+	}
+	
+	//ShowHUD();
 
 	// hide default swap buttons if specified
-	hideDefaultSwapButtons( g_data.options.hideDefaultSwapButtons );
-	
-	// wire up the watchers for the auto-hide feature
-	g_character = Character.GetClientCharacter();
-	g_character.SignalOffensiveTargetChanged.Connect( OffensiveTargetChangeHandler, this );
-	g_character.SignalToggleCombat.Connect( CombatToggledHandler, this );
-	
-	
-	// if autohide is on, immediately try to fade out
-	if ( g_data.options.autoHide ) AutoHideHide();
-}
-
-function OffensiveTargetChangeHandler(targetID:ID32):Void {
-	
-	if ( !g_data.options.autoHide ) return;
-
-	// no current target?
-	if ( targetID.IsNull() ) {
-		// hud is already hidden? do nothing
-		
-		// else hud is visible
-		if ( !g_autoHideHidden ) {
-			if ( !g_character.IsInCombat() && !g_autoHideHidden ) StartAutoHideTimeout(); 
-		}
-	}
-	
-	// there is a target
-	else {
-		
-		// does player have a target?
-		var target:Character = Character.GetCharacter( targetID );
-		
-		// and does it have shields?	
-		var psychicShield:Number = target.GetStat(_global.Enums.Stat.e_CurrentPinkShield, 2);
-		var cyberShield:Number = target.GetStat(_global.Enums.Stat.e_CurrentBlueShield, 2);
-		var demonicShield:Number = target.GetStat(_global.Enums.Stat.e_CurrentRedShield, 2);
-
-		// no shield
-		if ( !(psychicShield || cyberShield || demonicShield) ) {
-			// hud is already hidden? do nothing
-			
-			// else hud is visible
-			if ( !g_autoHideHidden) {
-				if ( !g_character.IsInCombat() && !g_autoHideHidden ) StartAutoHideTimeout();
-			}
-		}
-
-		// has shield
-		else {
-			// if hud hidden
-			if ( g_autoHideHidden ) {
-				// bring up hud
-				Do( "option.hudEnabled", true );
-				g_autoHideHidden = false;				
-			}
-			
-			// else hud is visible
-			else {
-				StopAutoHideTimeout();
-			}
-		}
-	}
-	
-}
-
-function CombatToggledHandler(isInCombat):Void {
-
-	// do nothing if autohide not enabled
-	if ( !g_data.options.autoHide ) return;
-	
-	// left combat
-	if( !isInCombat ) {
-		// if hud is visible
-		if ( !g_autoHideHidden ) {
-			// no target selected now
-			if ( g_character.GetOffensiveTarget().IsNull() ) {
-				StartAutoHideTimeout();
-			}
-		}
-	}
-	
-	// entered combat
-	else {
-		// if hud is visible
-		if ( !g_autoHideHidden ) {
-			// no target selected now
-			if ( g_character.GetOffensiveTarget().IsNull() ) {
-				StopAutoHideTimeout();
-			}
-		}
-	}
-	
-}
-
-// setter response for the autohide
-function autoHide(enabled:Boolean):Void {
-	
-	// enabling
-	if ( enabled ) {
-		// start autohide timer
-		StartAutoHideTimeout();
-		g_autoHideHidden = false;
-	}
-	
-	// disabling
-	else {
-		// stop timer
-		StopAutoHideTimeout();
-		
-		// enable window if it is hidden
-		if ( g_autoHideHidden ) {
-			Do( "option.hudEnabled", true );
-			g_autoHideHidden = false;			
-		}
-		
-	}
-	
-}
-
-function StartAutoHideTimeout():Void {
-	StopAutoHideTimeout();
-	g_autoHideTimeoutID = _global.setTimeout( Delegate.create( this, AutoHideHide), g_data.options.autoHideTimeout * 1000 );
-}
-
-function StopAutoHideTimeout():Void {
-	if ( g_autoHideTimeoutID != undefined ) {
-		_global.clearTimeout( g_autoHideTimeoutID );
-		g_autoHideTimeoutID = undefined;
-	}
-}
-
-function AutoHideHide():Void {
-	// clear any existing timeout
-	StopAutoHideTimeout();
-	
-	// final sanity check to make sure there is no target with shields selected
-	if ( OffensiveTargetHasShields() ) return;
-	
-	// hide the hud
-	Do( "option.hudEnabled", false );
-	g_autoHideHidden = true;
-}
-
-function OffensiveTargetHasShields():Boolean {
-
-	var targetID:ID32 = g_character.GetOffensiveTarget();
-	
-	// has a target
-	if( !targetID.IsNull() ) {
-
-		// does player have a target?
-		var target:Character = Character.GetCharacter( targetID );
-		
-		// and does it have shields?	
-		var psychicShield:Number = target.GetStat(_global.Enums.Stat.e_CurrentPinkShield, 2);
-		var cyberShield:Number = target.GetStat(_global.Enums.Stat.e_CurrentBlueShield, 2);
-		var demonicShield:Number = target.GetStat(_global.Enums.Stat.e_CurrentRedShield, 2);
-
-		// no shield
-		if ( psychicShield || cyberShield || demonicShield ) {
-			return true;
-		}
-	}
-
-	return false;
+	//hideDefaultSwapButtons( g_data.options.hideDefaultSwapButtons );
 }
 
 
@@ -297,12 +118,6 @@ function OnModuleDeactivated():Void {
 	// clean up game related listeners
 	Lore.SignalTagAdded.Disconnect(SlotTagAdded, this);
 	g_showAegisSwapUI.SignalChanged.Disconnect( ShowAegisSwapUIChanged, this );
-	g_character.SignalOffensiveTargetChanged.Disconnect( OffensiveTargetChangeHandler, this );
-	g_character.SignalToggleCombat.Disconnect( CombatToggledHandler, this );
-	
-	// stop autohide timer
-	StopAutoHideTimeout();
-	g_autoHideHidden = false;
 	
 	// close HUD
 	ShowHUD( false );
@@ -438,7 +253,6 @@ function SetPlayfieldMemory(show:Boolean):Void {
 	// only change setting if memory system is enabled
 	if ( !g_data.options.playfieldMemoryEnabled ) return;
 	
-	var currentPlayfield:Number = Character.GetClientCharacter().GetPlayfieldID();
 	if ( !show ) {
 		g_playfieldMemoryBlacklist[ Character.GetClientCharacter().GetPlayfieldID() ] = true;
 	}
@@ -498,6 +312,7 @@ function UpdateSettingsFromHUD():Void {
 function hudEnabled(enabled:Boolean):Void {	
 	SetPlayfieldMemory( enabled );
 	ShowHUD();
+	
 	DistributedValue.SetDValue( AddonInfo.Name + "_HUD_Enabled", enabled );
 }
 
@@ -551,4 +366,16 @@ function hideDefaultSwapButtons(hide:Boolean):Void {
 		_root.passivebar.LoadAegisButtons();
 	}
 	
+}
+
+function combatIndicator(show:Boolean):Void {
+
+	if( show ) {
+		this.attachMovie("com.ElTorqiro.AegisHUD.HUD.CombatIndicator", "m_Combat", this.getNextHighestDepth());
+	}
+	
+	else {
+		this.m_Combat.removeMovieClip();
+	}
+
 }

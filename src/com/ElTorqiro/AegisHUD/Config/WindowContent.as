@@ -48,6 +48,14 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 
 		m_Content = createEmptyMovieClip("m_Content", getNextHighestDepth() );
 
+		
+		AddLabel("helpLink", 'Click Here for Help').onPress = function() {
+			DistributedValue.SetDValue("web_browser", false);			
+			DistributedValue.SetDValue("WebBrowserStartURL", "http://torq.the009.net/tsw/AegisHUD/");
+			DistributedValue.SetDValue("web_browser", true);
+		};
+		
+		
 		// positioning section
 		// add options section
 		AddHeading("Options");
@@ -61,6 +69,12 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 			event:		"click",
 			type:		"option"
 		};
+		_uiControls.combatIndicator = {
+			control:	AddCheckbox( "combatIndicator", "Enable in-combat indicator" ),
+			event:		"click",
+			type:		"option"
+		};
+
 		
 		// dual select section
 		AddHeading("Dual-Select");
@@ -582,7 +596,7 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 			return o;
 	}
 	
-	private function AddLabel(name:String, text:String):Void {
+	private function AddLabel(name:String, text:String):MovieClip {
 
 		var l = m_Content.attachMovie( "ConfigLabel", "m_" + name + "_Label", m_Content.getNextHighestDepth() );
 		l.textField.autoSize = "left";
@@ -591,6 +605,8 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 		l._x = _layoutCursor.x;
 		
 		_layoutCursor.y += l._height;
+		
+		return l;
 	}
 	
 	private function AddColumn():Void

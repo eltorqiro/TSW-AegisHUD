@@ -1,6 +1,23 @@
-NEXT -- NEXT
+2.1.0 -- 2014-07-28
+
+ ! if upgrading from a pre 2.x series (e.g. 1.6.0 beta), you must uninstall completely and re-install
+
+ + added extensive visual customisation options
+ + added hide/show toggle (right-click on config icon)
+ + added hide/show memory per playfield
+ + added in-combat indicator option
+ + enabled override of default in-game hotkeys, to route the to the AegisHUD
+ + added dual-select option, including with in-game hotkeys
+ + added Aegis XP ("research %") meter on each controller button
+ + added tooltips option, including option to suppress tooltips in combat
 
  * HUD is now positioned behind the passivebar
+ * attach to passivebar option now integrates directly with passivebar
+
+
+2.0.0 beta -- 2014-07-23
+
+ ! experimental pre-release for 2.x series
 
 
 1.6.0 beta -- 2014-07-11
