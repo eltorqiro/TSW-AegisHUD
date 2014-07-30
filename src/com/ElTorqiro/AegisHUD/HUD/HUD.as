@@ -33,6 +33,16 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	public static var e_AegisTokenID_Min:Number = 103;
 	public static var e_AegisTokenID_Max:Number = 108;
 	
+	// maps aegis controller instance ids to respective token enum
+	public static var aegisXPTokenMap:Object = {
+		id8447949: 103,
+		id8447950: 105,
+		id8447951: 104,
+		id8447952: 106,
+		id8447953: 108,
+		id8447954: 107
+	};
+	
 	private var _slotSize:Number;
 	private var _barPadding:Number;
 	private var _slotSpacing:Number;
@@ -178,7 +188,6 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		_guiResolutionScale.SignalChanged.Connect( Layout, this );
 		_guiHUDScale = DistributedValue.Create("GUIScaleHUD")
 		_guiHUDScale.SignalChanged.Connect( Layout, this );
-
 	}
 	
 	public function onUnload():Void
@@ -515,7 +524,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			slot.aegisType = "empty";
 			slot.aegisXP = undefined;
 		}
-		
+
 		// if an item is slotted, show it
 		if ( item != undefined)
 		{
@@ -915,7 +924,13 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		if ( !_showTooltips || _dragging || (!_suppressTooltipsInCombat && _character.IsInCombat()) ) return;
 
         if ( _tooltipSlot.item != undefined ) {
-            var tooltipData:TooltipData = TooltipDataProvider.GetInventoryItemTooltip( _inventory.GetInventoryID(), _tooltipSlot.equip );			
+            var tooltipData:TooltipData = TooltipDataProvider.GetInventoryItemTooltip( _inventory.GetInventoryID(), _tooltipSlot.equip );
+			
+			// add raw xp value
+			//tooltipData.AddAttributeSplitter();
+			var tokenID:Number = aegisXPTokenMap['id' + _tooltipSlot.item.m_Icon.GetInstance()];
+			tooltipData.AddDescription( 'XP: <font color="#3AD9FF">' + _character.GetTokens(tokenID) + '</font>, iconID ' + _tooltipSlot.item.m_Icon.GetInstance() );
+			
 			_tooltip = TooltipManager.GetInstance().ShowTooltip( _tooltipSlot.mc, TooltipInterface.e_OrientationVertical, 0, tooltipData );
 		}
     }
@@ -1165,16 +1180,20 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 		// break out xp value
 		var xpString:String = tooltipData.m_Descriptions[2];
-		xpString = xpString.substring( xpString.indexOf(":") + 2, xpString.indexOf("%") );
 
-		// strip the remaining HTML formatting
-		var istart;
-		while ((istart = xpString.indexOf("<")) != -1)
-		{
-			xpString = xpString.split(xpString.substr(istart, xpString.indexOf(">")-istart+1)).join("");
+		// get the first occurence of %
+		var endPos:Number = xpString.indexOf('%');
+		for ( var startPos:Number = endPos; startPos >= 0; startPos-- ) {
+			
+			var char:String = xpString.charAt(startPos);
+			
+			// not a number sequence
+			if ( char == ' ' || char == '>' ) {
+				break;
+			}
 		}
 
-		var xp:Number = Math.floor( Number(xpString) );
+		var xp:Number = Math.floor( Number(xpString.substring(++startPos, endPos)) );
 
 		// put xp value into slot and publish into component
 		slot.aegisXP = xp == Number.NaN ? undefined : xp;
@@ -1183,7 +1202,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		slotMC.m_XPTextProgress.m_Text.text = slotMC.m_XPTextFull.m_Text.text = xp == Number.NaN ? "?" : xp;
 		
 		// progress bar being used
-		slot.mc.m_XPBar.m_Progress._xscale = xp == Number.NaN ? 150: xp;
+		slot.mc.m_XPBar.m_Progress._xscale = xp == Number.NaN ? 0: xp;
 		
 		// when reaching 100, redraw to show the "Full" elements
 		if ( xp >= 100 ) invalidate()

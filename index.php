@@ -25,20 +25,43 @@ $html = Markdown::defaultTransform($text);
 
     <style type="text/css">
       html {
-        font-family: helvetica, sans-serif;
-        font-size: 12px;
-        background: #ffffff;
       }
 
+	  body {
+		font: 0.875em/1.3 "Segoe UI","Lucida Grande",Verdana,Arial,Helvetica,sans-serif;
+		color: #000;
+		background: none repeat scroll 0% 0% #f8f8f8;
+	  }
+	  
       h1 {
-	font-size: 16px; font-weight: bold; color: #0099ff;
-        margin-top: 30px;
+		font-weight: bold;
+		margin-top: 30px;
+		color: #F90;
+		margin-bottom: 5px;
+		font-size: 2em;
+		text-shadow: 0 3px 3px #d8d8d8;		
       }
 
       h2 {
-        font-size: 14px; font-weight: bold; color: #006699;
-        margin-top: 30px;
+		font-weight: bold;
+		color: #3AD9FF;
+		margin-top: 30px;
+		margin-bottom: 0px;
+		font-size: 1.2em;
+		text-shadow: 0 2px 2px #d8d8d8;
       }
+	  
+		p {
+			margin-top: 0px;
+		}
+		
+		ul {
+			margin-top: 5px;
+		}
+		
+		li {
+			margin-bottom: 3px;
+		}		
     </style>
     <body>
 		<?php
