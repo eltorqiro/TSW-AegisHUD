@@ -1,3 +1,10 @@
+2.2.0 -- 2014-08-02
+
+ + added raw xp value to controller tooltips
+ 
+ * French client xp and psychic controller detection fixed
+ * improved efficiency at initial opening of HUD (30x better)
+
 2.1.0 -- 2014-07-28
 
  ! if upgrading from a pre 2.x series (e.g. 1.6.0 beta), you must uninstall completely and re-install

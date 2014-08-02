@@ -37,8 +37,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	public static var aegisXPTokenMap:Object = {
 		id8447949: 103,
 		id8447950: 105,
-		id8447951: 104,
-		id8447952: 106,
+		id8447952: 104,
+		id8447951: 106,
 		id8447953: 108,
 		id8447954: 107
 	};
@@ -113,6 +113,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	private var _findPassiveBarTimeoutID:Number;
 	private var _swapTimeoutID:Number;
 	private var _postSwapCatchupInterval:Number = 1000;
+	private var _suspendVisualUpdates:Boolean = false;
 	
 	// internal movieclips
 	private var m_Primary:MovieClip;
@@ -173,10 +174,12 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		_iconLoader.addListener(this);
 		
 		// apply default settings pack
+		_suspendVisualUpdates = true;
 		ApplySettingsPack( HUD.defaultSettingsPack );
 		
 		// apply on top any settings passed in during init
 		ApplySettingsPack( settings );
+		_suspendVisualUpdates = false;
 		delete settings;
 		
 		// wire up callback listener for hotkey swap RPC
@@ -190,8 +193,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		_guiHUDScale.SignalChanged.Connect( Layout, this );
 	}
 	
-	public function onUnload():Void
-	{
+	public function onUnload():Void {
 		super.onUnload();
 
 		// close any open tooltip
@@ -320,8 +322,10 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	}
 
 	// layout bar internally
-	private function LayoutBars():Void
-	{
+	private function LayoutBars():Void {
+
+		if ( _suspendVisualUpdates ) return;		
+		
 		for ( var s:String in _sides )
 		{
 			var bar = _sides[s].mc;
@@ -380,8 +384,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	/**
 	 * layout bars in same location as default passivebar swap buttons
 	 */
-	public function MoveToDefaultPosition(userTriggered:Boolean):Void
-	{
+	public function MoveToDefaultPosition(userTriggered:Boolean):Void {
+
 		// if passivebar is available, default position is directly above that
 		if ( _root.passivebar.m_Bar != undefined ) {
 
@@ -438,6 +442,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	
 	// sets the real scale & position of the AegisHUD, integrating with the game's resolution & HUD scaling
 	private function Layout():Void {
+		
+		if ( _suspendVisualUpdates ) return;		
 
 		// this is based on the trio: GUI resolution, GUI hud scale, this hud scale
 		var guiResolutionScale:Number = _guiResolutionScale.GetValue();
@@ -486,6 +492,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		
 		var defaults:Object = HUD.defaultSettingsPack;
 		
+		_suspendVisualUpdates = true;
+		
 		tintAegisPsychic = defaults.tintAegisPsychic;
 		tintAegisCybernetic = defaults.tintAegisCybernetic;
 		tintAegisDemonic = defaults.tintAegisDemonic;
@@ -497,6 +505,9 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		tintXPFull = defaults.tintXPFull;
 		
 		tintBarStandard = defaults.tintBarStandard;
+		
+		_suspendVisualUpdates = false;
+		invalidate();
 	}
 	
 
@@ -572,6 +583,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	// highlight active aegis slot
 	private function draw():Void 
 	{
+		if ( _suspendVisualUpdates ) return;
+		
 		// do for both aegis sides
 		for ( var s:String in _sides )
 		{
@@ -929,7 +942,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			// add raw xp value
 			//tooltipData.AddAttributeSplitter();
 			var tokenID:Number = aegisXPTokenMap['id' + _tooltipSlot.item.m_Icon.GetInstance()];
-			tooltipData.AddDescription( 'XP: <font color="#3AD9FF">' + _character.GetTokens(tokenID) + '</font>, iconID ' + _tooltipSlot.item.m_Icon.GetInstance() );
+			tooltipData.AddDescription( 'XP: <font color="#3AD9FF">' + _character.GetTokens(tokenID) + '</font>' );
 			
 			_tooltip = TooltipManager.GetInstance().ShowTooltip( _tooltipSlot.mc, TooltipInterface.e_OrientationVertical, 0, tooltipData );
 		}
