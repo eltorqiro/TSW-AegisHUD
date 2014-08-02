@@ -546,7 +546,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 					slot.aegisType = "demonic";
 				}
 
-				else if ( item.m_Name.indexOf("Psy") >= 0 ) {
+				else if ( item.m_Name.indexOf("sy") >= 0 ) {
 					slot.aegisType = "psychic";
 				}
 				
