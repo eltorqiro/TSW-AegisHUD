@@ -13,7 +13,7 @@ import mx.utils.Delegate;
 import com.GameInterface.UtilsBase;
 import com.GameInterface.DistributedValue;
 import com.ElTorqiro.AegisHUD.AddonInfo;
-import com.ElTorqiro.AddonUtils.AddonUtils;
+import com.ElTorqiro.AegisHUD.AddonUtils.AddonUtils;
 
 class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowComponentContent
 {

@@ -1,3 +1,15 @@
+2.3.0 -- 2014-08-04
+
+ * cut number of redraws when swapping AEGIS by half
+ * fixed tooltip race condition that would cause tooltip events to become unresponsive
+ * fixed flicker / blurred xp numbers when switching AEGIS, plus xp numbers should generally be clearer
+ * swapped 4th and 6th Aegis token mapping for raw XP values in tooltips
+ * improved efficiency of tooltip loading
+ * fixed single-swapping Secondary AEGIS 1 or 2 sometimes causing entire GUI to disappear for a moment
+
+ * brought AddonUtils package into AegisHUD namespace (code topic)
+
+ 
 2.2.0 -- 2014-08-02
 
  + added raw xp value to controller tooltips

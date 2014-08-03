@@ -21,7 +21,7 @@ import com.GameInterface.Lore
 
 import com.GameInterface.Input;
 
-import com.ElTorqiro.AddonUtils.AddonUtils;
+import com.ElTorqiro.AegisHUD.AddonUtils.AddonUtils;
 import com.ElTorqiro.AegisHUD.HUD.HUD;
 import com.ElTorqiro.AegisHUD.HUD.HotkeyHijacker;
 import com.ElTorqiro.AegisHUD.Enums.*;

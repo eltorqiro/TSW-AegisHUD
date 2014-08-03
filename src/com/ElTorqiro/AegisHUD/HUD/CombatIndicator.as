@@ -1,7 +1,7 @@
 import com.GameInterface.DistributedValue;
 import com.GameInterface.Game.Character;
 import gfx.core.UIComponent;
-import com.ElTorqiro.AddonUtils.AddonUtils;
+import com.ElTorqiro.AegisHUD.AddonUtils.AddonUtils;
 import com.GameInterface.InventoryItem;
 import com.Utils.ID32;
 import mx.utils.Delegate;

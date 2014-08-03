@@ -8,7 +8,7 @@ import com.GameInterface.Lore;
 import com.GameInterface.Input;
 import gfx.managers.InputDelegate;
 import flash.geom.ColorTransform;
-import com.ElTorqiro.AddonUtils.AddonUtils;
+import com.ElTorqiro.AegisHUD.AddonUtils.AddonUtils;
 import com.GameInterface.InventoryItem;
 import com.Utils.ID32;
 import com.Utils.LDBFormat;
@@ -22,6 +22,7 @@ import flash.filters.GlowFilter;
 import gfx.motion.Tween;
 import mx.transitions.easing.Bounce;
 import com.ElTorqiro.AegisHUD.AddonInfo;
+import mx.managers.DepthManager;
 
 /**
  * 
@@ -37,8 +38,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	public static var aegisXPTokenMap:Object = {
 		id8447949: 103,
 		id8447950: 105,
-		id8447952: 104,
-		id8447951: 106,
+		id8447951: 104,
+		id8447952: 106,
 		id8447953: 108,
 		id8447954: 107
 	};
@@ -105,8 +106,6 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	private var _inventory:Inventory;
 	private var _iconLoader:MovieClipLoader;
     private var _tooltip:TooltipInterface;
-	private var _tooltipTimeoutID:Number;
-	private var _tooltipSlot:Object;
 	private var _fetchXPAntiSpamTimeoutID:Number;
 	private var _lastXPFetchTime:Number = 0;
 	private var _findPassiveBarThrashCount:Number = 0;
@@ -584,7 +583,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	private function draw():Void 
 	{
 		if ( _suspendVisualUpdates ) return;
-		
+
 		// do for both aegis sides
 		for ( var s:String in _sides )
 		{
@@ -603,16 +602,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			
 			// neon glow entire bar
 			if ( _neonEnabled && _neonGlowEntireBar ) {
-				var entireGlow:GlowFilter = new GlowFilter(
-					barTint, 	/* glow_color */
-					0.8, 		/* glow_alpha */
-					10, 		/* glow_blurX */
-					10, 		/* glow_blurY */
-					2,			/* glow_strength */
-					3, 			/* glow_quality */
-					false, 		/* glow_inner */
-					false 		/* glow_knockout */
-				);
+				var entireGlow:GlowFilter = new GlowFilter( barTint, 0.8, 10, 10, 2, 3, false, false );
 				
 				barMC.filters = [ entireGlow ];
 			}
@@ -635,16 +625,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 				barMC.m_Background.m_White._visible = false;
 				barMC.m_Background.m_Black._visible = true;
 				
-				var barGlow:GlowFilter = new GlowFilter(
-					barTint, 	/* glow_color */
-					0.8, 		/* glow_alpha */
-					10, 		/* glow_blurX */
-					10, 		/* glow_blurY */
-					2,			/* glow_strength */
-					3, 			/* glow_quality */
-					false, 		/* glow_inner */
-					false 		/* glow_knockout */
-				);
+				var barGlow:GlowFilter = new GlowFilter( barTint, 0.8, 10, 10, 2, 3, false, false );
 				
 				barMC.m_Background.filters = [ barGlow ];
 			}
@@ -653,7 +634,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			// handle weapon slot
 			var weaponSlot = bar.weaponSlot;
 			var weaponSlotMC = weaponSlot.mc;
-
+			
 			// show or hide weapon icon
 			if ( weaponSlot.item == undefined ) {
 				weaponSlotMC.m_Watermark._visible = true;
@@ -678,17 +659,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 				
 			// neon glow weapon
 			if ( _neonEnabled && _neonGlowWeapon ) {
-				var weaponGlow = new GlowFilter(
-					barTint, 	/* glow_color */
-					1, 			/* glow_alpha */
-					10, 		/* glow_blurX */
-					10, 		/* glow_blurY */
-					3,			/* glow_strength */
-					3, 			/* glow_quality */
-					false, 		/* glow_inner */
-					false 		/* glow_knockout */
-				);
-				
+				var weaponGlow = new GlowFilter( barTint, 1, 10, 10, 3, 3, false, false );
 				weaponSlotMC.filters = [ weaponGlow ];
 			}
 			else weaponSlotMC.filters = [];
@@ -735,8 +706,12 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 							slotMC.m_XPTextFull._visible = false;
 						}
 						
-						AddonUtils.Colorize( slotMC.m_XPTextFull, _tints.xpFull );
-						AddonUtils.Colorize( slotMC.m_XPTextProgress, _tints.xpProgress );
+						var textFormat:TextFormat = new TextFormat();
+						textFormat.color = _tints.xpFull;
+						slotMC.m_XPTextFull.m_Text.setTextFormat( textFormat );
+
+						textFormat.color = _tints.xpProgress;
+						slotMC.m_XPTextProgress.m_Text.setTextFormat( textFormat );
 					}
 					
 					// use progress bar display
@@ -772,13 +747,13 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 				// take neon glow off slot before the active check
 				slotMC.filters = [];
-				
+
 				// handle active aegis higlighting
 				if ( slot.equip == bar.selectedAegisEquipLocation ) {
 
 					// show aegis background
 					slotMC.m_Background._visible = _showActiveAegisBackground;
-					
+
 					// tint aegis background
 					switch( _tintActiveAegisBackgroundBehaviour ) {
 						
@@ -789,23 +764,19 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 					
 					// neon glow aegis
 					if ( _neonEnabled && _neonGlowAegis ) {
-						var aegisGlow = new GlowFilter(
-							slotTint, 	/* glow_color */
-							1, 			/* glow_alpha */
-							10, 		/* glow_blurX */
-							10, 		/* glow_blurY */
-							3,			/* glow_strength */
-							3, 			/* glow_quality */
-							false, 		/* glow_inner */
-							false 		/* glow_knockout */
-						);
+						var aegisGlow = new GlowFilter( slotTint, 1, 10, 10, 3, 3, false, false );
 						
 						slotMC.filters = [ aegisGlow ];
 					}
-
+					
 					// bring active aegis to front
-					if ( slotMC.getDepth() < _itemSlots[slot.prev].mc.getDepth() ) slotMC.swapDepths( _itemSlots[slot.prev].mc );
-					if ( slotMC.getDepth() < _itemSlots[slot.next].mc.getDepth() ) slotMC.swapDepths( _itemSlots[slot.next].mc );
+					// the check for weapon slots is to avoid an issue with swapDepths that for some reason causes the entire GUI to disappear
+					/*
+					if( weaponSlotMC._visible ) {
+						if ( slotMC.getDepth() < _itemSlots[slot.prev].mc.getDepth() ) slotMC.swapDepths( _itemSlots[slot.prev].mc );
+						if ( slotMC.getDepth() < _itemSlots[slot.next].mc.getDepth() ) slotMC.swapDepths( _itemSlots[slot.next].mc );
+					}
+					*/
 				}
 				
 			}
@@ -902,54 +873,33 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	// handle mouse rolling over an aegis
 	private function AegisRollOverHandler(event:Object):Void {
 		// prepare tooltip data
-		if ( event.itemSlot.item != undefined ) {
-			_tooltipSlot = event.itemSlot;
-			StartTooltipTimeout();
-		}
+		OpenTooltip( event.itemSlot );
 	}
 
 	private function AegisRollOutHandler(event:Object):Void {
-		StopTooltipTimeout();
 		CloseTooltip();
 	}
 	
-	private function StartTooltipTimeout():Void {
-		if (_tooltipTimeoutID != undefined) return
-
-		var delay:Number = DistributedValue.GetDValue("HoverInfoShowDelay");
-
-		if( delay <= 0 ) OpenTooltip();
-		else _tooltipTimeoutID = _global.setTimeout( Delegate.create( this, OpenTooltip ), delay * 1000 );
-	}
-
-	private function StopTooltipTimeout():Void {
-		if ( _tooltipTimeoutID != undefined) {
-			_global.clearTimeout( _tooltipTimeoutID );
-			_tooltipTimeoutID = undefined;
-		}
-	}
-    
-    private function OpenTooltip():Void {
+    private function OpenTooltip( tooltipSlot:Object ):Void {
 		// close any existing tooltip
 		CloseTooltip();
 		
 		// don't show anything if setting disabled OR if the hud elements are currently being dragged
 		if ( !_showTooltips || _dragging || (!_suppressTooltipsInCombat && _character.IsInCombat()) ) return;
 
-        if ( _tooltipSlot.item != undefined ) {
-            var tooltipData:TooltipData = TooltipDataProvider.GetInventoryItemTooltip( _inventory.GetInventoryID(), _tooltipSlot.equip );
+        if ( tooltipSlot.item != undefined ) {
+            var tooltipData:TooltipData = TooltipDataProvider.GetInventoryItemTooltip( _inventory.GetInventoryID(), tooltipSlot.equip );
 			
 			// add raw xp value
 			//tooltipData.AddAttributeSplitter();
-			var tokenID:Number = aegisXPTokenMap['id' + _tooltipSlot.item.m_Icon.GetInstance()];
+			var tokenID:Number = aegisXPTokenMap['id' + tooltipSlot.item.m_Icon.GetInstance()];
 			tooltipData.AddDescription( 'XP: <font color="#3AD9FF">' + _character.GetTokens(tokenID) + '</font>' );
 			
-			_tooltip = TooltipManager.GetInstance().ShowTooltip( _tooltipSlot.mc, TooltipInterface.e_OrientationVertical, 0, tooltipData );
+			_tooltip = TooltipManager.GetInstance().ShowTooltip( tooltipSlot.mc, TooltipInterface.e_OrientationVertical, -1, tooltipData );
 		}
     }
     
     private function CloseTooltip():Void {
-		StopTooltipTimeout();
         if (_tooltip != undefined) {
             _tooltip.Close();
 			_tooltip = undefined;
@@ -1232,21 +1182,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		// only proceed if stat is to do with aegis selector
 		if ( !(statID == _primary.activeAegisStat || statID == _secondary.activeAegisStat) ) return;
 		UpdateActiveAegis();	
-		// TODO: play with the hotkeys to better manage this, there is a race condition and infinite loop of events happening otherwise
-		/*
-		if ( _dualSelectByDefault && _dualSelectFromHotkey ) {
-
-			if ( statID == _primary.activeAegisStat ) {
-				SwapToAegisSlot( _primary.activeAegisEquipLocation, true );
-			}
-			
-			else {
-				SwapToAegisSlot( _secondary.activeAegisEquipLocation, true );
-			}
-		}
-		*/
-		//UpdateActiveAegis();		
-		invalidate();
+		
+		//invalidate();	// removed in 2.3.0, cuts redraws in half, but does this pass sanity check under heavy load?
 	}
 
 	//Slot Item Added

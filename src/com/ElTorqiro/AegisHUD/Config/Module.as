@@ -21,7 +21,7 @@ import com.GameInterface.Tooltip.TooltipDataProvider;
 import com.GameInterface.Lore
 import com.GameInterface.Tooltip.TooltipManager;
 
-import com.ElTorqiro.AddonUtils.AddonUtils;
+import com.ElTorqiro.AegisHUD.AddonUtils.AddonUtils;
 import com.ElTorqiro.AegisHUD.AddonInfo;
 
 
