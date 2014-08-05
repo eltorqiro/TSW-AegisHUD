@@ -30,17 +30,18 @@ import mx.managers.DepthManager;
  */
 class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
-	// aegis xp token ids			(107 = one of the demonics (the 10% chance to do 30 damage one), with icon id 8447954
-	public static var e_AegisTokenID_Min:Number = 103;
-	public static var e_AegisTokenID_Max:Number = 108;
-	
+	// aegis xp token ids
+	public static var e_AegisXPTokenID_Min:Number = 103;
+	public static var e_AegisXPTokenID_Max:Number = 108;
+
 	// maps aegis controller instance ids to respective token enum
+	// numbers confirmed courtesy darxide's check on his alt, thanks!
 	public static var aegisXPTokenMap:Object = {
-		id8447949: 103,
+		id8447953: 103,
 		id8447950: 105,
-		id8447951: 104,
-		id8447952: 106,
-		id8447953: 108,
+		id8447951: 106,
+		id8447952: 104,
+		id8447949: 108,
 		id8447954: 107
 	};
 	
@@ -105,7 +106,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	private var _character:Character;
 	private var _inventory:Inventory;
 	private var _iconLoader:MovieClipLoader;
-    private var _tooltip:TooltipInterface;
+	private var _tooltip:TooltipInterface;
 	private var _fetchXPAntiSpamTimeoutID:Number;
 	private var _lastXPFetchTime:Number = 0;
 	private var _findPassiveBarThrashCount:Number = 0;
@@ -556,7 +557,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 					slot.aegisType = "demonic";
 				}
 
-				else if ( item.m_Name.indexOf("sy") >= 0 ) {
+				else if ( item.m_Name.indexOf("sy") >= 0 || item.m_Name.indexOf('Medial') >= 0 ) {
 					slot.aegisType = "psychic";
 				}
 				
@@ -1146,6 +1147,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 		// get the first occurence of %
 		var endPos:Number = xpString.indexOf('%');
+		if ( LDBFormat.GetCurrentLanguageCode() == 'de' ) endPos--;	// german client has a space between number and %
 		for ( var startPos:Number = endPos; startPos >= 0; startPos-- ) {
 			
 			var char:String = xpString.charAt(startPos);
@@ -1216,7 +1218,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	
 	// aegis xp listener
 	private function SlotTokenAmountChanged( tokenID:Number, newValue:Number, oldNumber:Number ) {
-		if ( tokenID >= e_AegisTokenID_Min && tokenID <= e_AegisTokenID_Max ) UpdateAegisXP();
+		if ( tokenID >= e_AegisXPTokenID_Min && tokenID <= e_AegisXPTokenID_Max ) UpdateAegisXP();
 	}
 	
 	
