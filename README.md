@@ -22,6 +22,7 @@ Known Issues and Gotchas
 ------------------------
 * It is possible to create impractical combinations of settings, such as disabling the AEGIS controller background completely and not enabling tint or glow effects to indicate which one you have selected.  The HUD will not stop you doing this, as most settings are completely independant.
 * The combat indicator bars will not move with the HUD bars while they are on the screen.  Each time the combat indicator comes up, it will bind to either the current location of the HUD bars or the passive ability bar, whichever it finds first.
+* When using bulk XP cannisters, sometimes the XP gain trigger event is not fired by the game API.  Re-equipping the affected controller will correct this.
    
    
 Installation

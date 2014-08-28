@@ -710,9 +710,11 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 						var textFormat:TextFormat = new TextFormat();
 						textFormat.color = _tints.xpFull;
 						slotMC.m_XPTextFull.m_Text.setTextFormat( textFormat );
+						slotMC.m_XPTextFull.m_Text.setNewTextFormat( textFormat );
 
 						textFormat.color = _tints.xpProgress;
 						slotMC.m_XPTextProgress.m_Text.setTextFormat( textFormat );
+						slotMC.m_XPTextProgress.m_Text.setNewTextFormat( textFormat );
 					}
 					
 					// use progress bar display
@@ -740,8 +742,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 				}
 
 				// show aegis background
-				slotMC.m_Background._visible = _showAegisBackgroundBehaviour == SlotBackgroundBehaviour.ALWAYS
-					|| ( _showAegisBackgroundBehaviour == SlotBackgroundBehaviour.WHEN_SLOTTED && slot.item != undefined );
+				slotMC.m_Background._alpha = _showAegisBackgroundBehaviour == SlotBackgroundBehaviour.ALWAYS
+					|| ( _showAegisBackgroundBehaviour == SlotBackgroundBehaviour.WHEN_SLOTTED && slot.item != undefined ) ? 100 : 0;
 				
 				// tint aegis background
 				AddonUtils.Colorize( slotMC.m_Background, _tintAegisBackgroundByType ? slotTint : _tints.none );
@@ -753,7 +755,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 				if ( slot.equip == bar.selectedAegisEquipLocation ) {
 
 					// show aegis background
-					slotMC.m_Background._visible = _showActiveAegisBackground;
+					slotMC.m_Background._alpha = _showActiveAegisBackground ? 100 : 0;
 
 					// tint aegis background
 					switch( _tintActiveAegisBackgroundBehaviour ) {
