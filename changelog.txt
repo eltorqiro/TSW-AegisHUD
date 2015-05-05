@@ -1,4 +1,4 @@
-NEXT -- 
+3.0.0 beta -- 2015-05-05
 
  ! major redesign for this version, settings are not compatible and will revert to defaults on first load
  ! playfield visibility memory will not be lost when settings revert
