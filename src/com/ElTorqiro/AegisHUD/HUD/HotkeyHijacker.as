@@ -24,10 +24,14 @@ class com.ElTorqiro.AegisHUD.HUD.HotkeyHijacker {
 	 *	// 135 = secondary backward
 	 * 
 	 * Hotkey names can be got from: AppData\Local\Funcom\TSW\Prefs\<login name>\hotkeys.xml
-	 * Hotkey values are from _global.Enums.InputCommand -- although the Enum hasn't been updated in a while there are still new keys
+	 * Hotkey values are from _global.Enums.InputCommand -- although the Enum hasn't been updated in a while, there are still new keys
 	*/
-	public static function HotkeyPrimaryAegisNext():Void { DistributedValue.SetDValue( AddonInfo.Name + "_Swap", "primary.next." + new Date() ); }
-	public static function HotkeyPrimaryAegisPrev():Void { DistributedValue.SetDValue( AddonInfo.Name + "_Swap", "primary.prev." + new Date() ); }
-	public static function HotkeySecondaryAegisNext():Void { DistributedValue.SetDValue( AddonInfo.Name + "_Swap", "secondary.next." + new Date() ); }
-	public static function HotkeySecondaryAegisPrev():Void { DistributedValue.SetDValue( AddonInfo.Name + "_Swap", "secondary.prev." + new Date() ); }	
+	public static function HotkeyPrimaryAegisNext():Void { SwapDisruptor("primary.next"); }
+	public static function HotkeyPrimaryAegisPrev():Void { SwapDisruptor("primary.prev"); }
+	public static function HotkeySecondaryAegisNext():Void { SwapDisruptor("secondary.next"); }
+	public static function HotkeySecondaryAegisPrev():Void { SwapDisruptor("secondary.prev"); }
+	
+	public static function SwapDisruptor(to:String) : Void {
+		DistributedValue.SetDValue( AddonInfo.ID + "_Swap", to + "." + new Date() );
+	}
 }

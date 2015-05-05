@@ -1,3 +1,29 @@
+NEXT -- 
+
+ ! major redesign for this version, settings are not compatible and will revert to defaults on first load
+ ! playfield visibility memory will not be lost when settings revert
+
+ + added AEGIS Shield bar
+ + added AutoSwap feature for Disruptors and Shields (toggle with shift-right click on AegisHUD icon)
+ + added custom AEGIS-type icons for shield and damage types (can be disabled)
+ + added tooltips to controls in the config window
+ + added link to AegisHUD forum thread in config window
+ 
+ - removed combat status indicator (will be provided in separate mod)
+ 
+ * available configuration options have changed; some removed, some new
+ * the playfield memory for visibility (and now autoswap) will now always remember
+
+ * significant cosmetic changes; default look is different but can be changed to be somewhat similar to classic style
+ * updated look of config panel
+
+ * fixed tooltips becoming disabled after CTRL-clicking any button
+ * regular weapons now show their tooltip if tooltips are enabled
+ * AEGIS item tooltips now include the item ID
+ 
+ * fixed not being able to click AEGIS items while CTRL was held down, even if bars were set to locked
+ 
+
 2.3.2 -- 2014-08-28
 
  * fixed xp number colour changing to white when gaining xp

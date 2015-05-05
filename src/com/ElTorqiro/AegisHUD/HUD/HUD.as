@@ -6,23 +6,19 @@ import flash.geom.Point;
 import gfx.core.UIComponent;
 import com.GameInterface.Lore;
 import com.GameInterface.Input;
-import gfx.managers.InputDelegate;
-import flash.geom.ColorTransform;
-import com.ElTorqiro.AegisHUD.AddonUtils.AddonUtils;
 import com.GameInterface.InventoryItem;
 import com.Utils.ID32;
 import com.Utils.LDBFormat;
 import com.GameInterface.Tooltip.*;
 import mx.utils.Delegate;
-import com.ElTorqiro.AegisHUD.Enums.AegisBarLayoutStyles;
-import com.ElTorqiro.AegisHUD.Enums.SlotBackgroundBehaviour;
-import com.ElTorqiro.AegisHUD.Enums.ActiveAegisBackgroundTintBehaviour;
-import com.ElTorqiro.AegisHUD.Enums.XPIndicatorStyles;
 import flash.filters.GlowFilter;
 import gfx.motion.Tween;
 import mx.transitions.easing.Bounce;
+
 import com.ElTorqiro.AegisHUD.AddonInfo;
-import mx.managers.DepthManager;
+import com.ElTorqiro.AegisHUD.HUD.HotkeyHijacker;
+import com.ElTorqiro.AegisHUD.AddonUtils.AddonUtils;
+import com.ElTorqiro.AegisHUD.HUD.SettingsPacks;
 
 /**
  * 
@@ -30,20 +26,41 @@ import mx.managers.DepthManager;
  */
 class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
-	// aegis xp token ids
-	public static var e_AegisXPTokenID_Min:Number = 103;
-	public static var e_AegisXPTokenID_Max:Number = 108;
+	// item type enum shortcuts
+	public static var e_ItemTypeWeapon:Number = _global.Enums.ItemType.e_ItemType_Weapon;
+	public static var e_ItemTypeAegisShield:Number = _global.Enums.ItemType.e_ItemType_AegisShield;		
+	public static var e_ItemTypeAegisWeapon:Number = _global.Enums.ItemType.e_ItemType_AegisWeapon;
 
-	// maps aegis controller instance ids to respective token enum
-	// numbers confirmed courtesy darxide's check on his alt, thanks!
-	public static var aegisXPTokenMap:Object = {
-		id8447953: 103,
-		id8447950: 105,
-		id8447951: 106,
-		id8447952: 104,
-		id8447949: 108,
-		id8447954: 107
-	};
+	// aegis type enum shortcuts
+	public static var e_AegisTypePink:Number = _global.Enums.AegisTypes.e_AegisPink;
+	public static var e_AegisTypeBlue:Number = _global.Enums.AegisTypes.e_AegisBlue;
+	public static var e_AegisTypeRed:Number = _global.Enums.AegisTypes.e_AegisRed;
+
+	// equipment position enum shortcuts
+	public static var e_PrimaryWeaponPosition:Number = _global.Enums.ItemEquipLocation.e_Wear_First_WeaponSlot;
+	public static var e_PrimaryAegis1Position:Number = _global.Enums.ItemEquipLocation.e_Aegis_Weapon_1;
+	public static var e_PrimaryAegis2Position:Number = _global.Enums.ItemEquipLocation.e_Aegis_Weapon_1_2;
+	public static var e_PrimaryAegis3Position:Number = _global.Enums.ItemEquipLocation.e_Aegis_Weapon_1_3;
+
+	public static var e_SecondaryWeaponPosition:Number = _global.Enums.ItemEquipLocation.e_Wear_Second_WeaponSlot;
+	public static var e_SecondaryAegis1Position:Number = _global.Enums.ItemEquipLocation.e_Aegis_Weapon_2;
+	public static var e_SecondaryAegis2Position:Number = _global.Enums.ItemEquipLocation.e_Aegis_Weapon_2_2;
+	public static var e_SecondaryAegis3Position:Number = _global.Enums.ItemEquipLocation.e_Aegis_Weapon_2_3;
+
+	public static var e_AegisShieldPosition:Number = _global.Enums.ItemEquipLocation.e_Aegis_Head;
+	
+	// selected aegis disruptor position shortcuts
+	public static var e_PrimaryActiveAegisStat:Number = _global.Enums.Stat.e_FirstActiveAegis;
+	public static var e_SecondaryActiveAegisStat:Number = _global.Enums.Stat.e_SecondActiveAegis;
+
+	// aegis unlock achivement id
+	public static var e_AegisUnlockAchievement:Number = 6817;	// The Lore number that unlocks the AEGIS system
+																// 6817 is pulled straight from Funcom's PassiveBar
+	
+	public static var e_HotkeyDown:Number = _global.Enums.Hotkey.eHotkeyDown;
+
+	
+	private var _active:Boolean;
 	
 	private var _slotSize:Number;
 	private var _barPadding:Number;
@@ -52,39 +69,40 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	public  var maxHUDScale:Number;
 	public  var minHUDScale:Number;
 	
-	private var _barStyle:Number;
+	private var _hideDefaultSwapUI:Boolean;
+	
 	private var _neonGlowEntireBar:Boolean;
 	private var _lockBars:Boolean;
 	private var _attachToPassiveBar:Boolean;
 	private var _animateMovementsToDefaultPosition:Boolean;
 	
 	private var _showBarBackground:Boolean;
+	private var _barBackgroundThin:Boolean;
 	private var _tintBarBackgroundByActiveAegis:Boolean;
 	private var _neonGlowBarBackground:Boolean;
 
 	private var _showWeapons:Boolean;
-	private var _primaryWeaponFirst:Boolean;
-	private var _secondaryWeaponFirst:Boolean;
+	private var _showShield:Boolean;
+	private var _primaryItemFirst:Boolean;
+	private var _secondaryItemFirst:Boolean;
+	private var _shieldItemFirst:Boolean;
+
+	private var _aegisTypeIcons:Boolean;
 	
-	private var _showWeaponBackgroundBehaviour:Number;	// SlotBackgroundBehaviour
-	private var _tintWeaponBackgroundByActiveAegis:Boolean;
 	private var _tintWeaponIconByActiveAegis:Boolean;
 	private var _neonGlowWeapon:Boolean;
 	
 	private var _showXP:Boolean;
-	private var _showXPProgressBackground:Boolean;
-	private var _xpIndicatorStyle:Number;
 	private var _hideXPWhenFull:Boolean;
-	private var _fetchXPAntiSpamInterval:Number; // milliseconds
+	private var _fetchXPAntiSpamInterval:Number = 1000; // milliseconds
 
 	private var _showTooltips:Boolean;
 	private var _suppressTooltipsInCombat:Boolean;
 
-	private var _showAegisBackgroundBehaviour:Number;	// SlotBackgroundBehaviour
-	private var _tintAegisBackgroundByType:Boolean;
 	private var _tintAegisIconByType:Boolean;
 	private var _showActiveAegisBackground:Boolean;
-	private var _tintActiveAegisBackgroundBehaviour:Number;	// ActiveAegisBackgroundTintBehaviour
+	private var _tintActiveAegisBackground:Boolean;
+	private var _neonGlowActiveAegisBackground:Boolean;
 	private var _neonGlowAegis:Boolean;
 	
 	private var _neonEnabled:Boolean;
@@ -96,15 +114,19 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	
 	private var _tints:Object = { none: 0xffffff };
 	
+	private var _autoSwap:Boolean;
+	
+	public var playfieldMemoryEnabled:Boolean;
 	
 	// position restoration for windows
 	private var _primaryPosition:Point;
 	private var _secondaryPosition:Point;
-	
+	private var _shieldPosition:Point;
 
 	// utility objects
 	private var _character:Character;
-	private var _inventory:Inventory;
+	private var _equipped:Inventory;
+	private var _backpack:Inventory;
 	private var _iconLoader:MovieClipLoader;
 	private var _tooltip:TooltipInterface;
 	private var _fetchXPAntiSpamTimeoutID:Number;
@@ -113,19 +135,19 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	private var _findPassiveBarTimeoutID:Number;
 	private var _swapTimeoutID:Number;
 	private var _postSwapCatchupInterval:Number = 1000;
-	private var _suspendVisualUpdates:Boolean = false;
+	private var _suspendVisualUpdates:Boolean;
 	
 	// internal movieclips
 	private var m_Primary:MovieClip;
 	private var m_Secondary:MovieClip;
-	private var m_Background:MovieClip;
-	private var m_DragProxy:MovieClip;	// not in flash, instantiated dynamically during drag events
+	private var m_Shield:MovieClip;
+	private var m_DragProxy:MovieClip;	// not on stage, instantiated dynamically during drag events
 
 	// internal shortcuts
-	private var _primary:Object = {};
-	private var _secondary:Object = {};
-	private var _sides:Object = { primary: _primary, secondary: _secondary };
-	private var _itemSlots:Object = { };
+	private var _primary:Object = { };
+	private var _secondary:Object = { };
+	private var _shield:Object = { };
+	private var _bars:Object = { };
 	
 	// internal states
 	private var _dragging:Boolean = false;
@@ -150,135 +172,105 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	public var singleSelectButton:Number = 0;
 
 	// swap AEGIS RPC DV used as part of hotkey hijacking
-	private var _swapAegisRPC:DistributedValue;
+	private var _swapDisruptorRPC:DistributedValue;
 
 	// game scaling mechanism settings
-    private var _guiResolutionScale:DistributedValue; 
-    private var _guiHUDScale:DistributedValue;	
+    private var _guiResolutionScale:DistributedValue;
+    private var _guiHUDScale:DistributedValue;
+	
+	// TSW user setting that shows/hides the swap UI
+	private var _showAegisSwapUI:DistributedValue;
 	
 	// parameters passed in through initObj of attachMovie( ..., initObj)
 	private var settings:Object;
 
+	// slot reference shortcuts
+	private var _slots:Array = [];
+	private var _slotFromPosition:Object = { };
+	private var _slotFromAegisID:Object = { };
+	private var _staticPositions:Object = { };
+	private var _staticShields:Object = { };
+
+	// aegis item properties
+	private var _aegisItemProps:Object = { };
+	
+	// autoswap related
+	private var _lastSetTarget:Character;
+	private var _lastSetTargetShieldType:Number;
+	private var _lastSetTargetDisruptorType:Number;
+
+	// broadcast for enabled/disabled value for HUD
+	private var _hudState:DistributedValue;
+	
 	
 	/**
 	 * constructor
 	 */
 	public function HUD() {
-		super();
-
+		
+		// start up hidden, Activate will take care of visibility later
+		visible = false;
+		
 		_character = Character.GetClientCharacter();
-		_inventory = new Inventory( new ID32(_global.Enums.InvType.e_Type_GC_WeaponContainer, Character.GetClientCharID().GetInstance()) );
+		_equipped = new Inventory( new ID32(_global.Enums.InvType.e_Type_GC_WeaponContainer, Character.GetClientCharID().GetInstance()) );
+		_backpack = new Inventory( new ID32(_global.Enums.InvType.e_Type_GC_BackpackContainer, Character.GetClientCharID().GetInstance()) );
 
 		// other objects that need creating
 		_iconLoader = new MovieClipLoader();
 		_iconLoader.addListener(this);
 		
-		// apply default settings pack
-		_suspendVisualUpdates = true;
-		ApplySettingsPack( HUD.defaultSettingsPack );
-		
-		// apply on top any settings passed in during init
-		ApplySettingsPack( settings );
-		_suspendVisualUpdates = false;
-		delete settings;
-		
-		// wire up callback listener for hotkey swap RPC
-		_swapAegisRPC = DistributedValue.Create( AddonInfo.Name + "_Swap" );
-		_swapAegisRPC.SignalChanged.Connect( SwapAegisRPCHandler, this );
-		
-		// wire up scale related listeners
+		// initialise distributed values
+		_hudState = DistributedValue.Create( AddonInfo.ID + "_HUD_Enabled" );
+		_swapDisruptorRPC = DistributedValue.Create( AddonInfo.ID + "_Swap" );
 		_guiResolutionScale = DistributedValue.Create("GUIResolutionScale");
-		_guiResolutionScale.SignalChanged.Connect( Layout, this );
 		_guiHUDScale = DistributedValue.Create("GUIScaleHUD")
-		_guiHUDScale.SignalChanged.Connect( Layout, this );
+		_showAegisSwapUI = DistributedValue.Create( "ShowAegisSwapUI" );
+		
+		// hijack hotkeys
+		Input.RegisterHotkey( HotkeyHijacker.e_Hotkey_PrimaryAegisNext, "com.ElTorqiro.AegisHUD.HUD.HotkeyHijacker.HotkeyPrimaryAegisNext", e_HotkeyDown, 0 );
+		Input.RegisterHotkey( HotkeyHijacker.e_Hotkey_PrimaryAegisPrev, "com.ElTorqiro.AegisHUD.HUD.HotkeyHijacker.HotkeyPrimaryAegisPrev", e_HotkeyDown, 0 );
+		Input.RegisterHotkey( HotkeyHijacker.e_Hotkey_SecondaryAegisNext, "com.ElTorqiro.AegisHUD.HUD.HotkeyHijacker.HotkeySecondaryAegisNext", e_HotkeyDown, 0 );
+		Input.RegisterHotkey( HotkeyHijacker.e_Hotkey_SecondaryAegisPrev, "com.ElTorqiro.AegisHUD.HUD.HotkeyHijacker.HotkeySecondaryAegisPrev", e_HotkeyDown, 0 );
 	}
-	
+
 	public function onUnload():Void {
 		super.onUnload();
 
-		// close any open tooltip
-		CloseTooltip();
-
-		// undo passivebar attachment
-		AttachToPassiveBar( false );
-
+		Deactivate();
+		
+		// restore default swap UI
+		hideDefaultSwapButtons( false );
+		
+		// release hijacked hotkeys
+		Input.RegisterHotkey( HotkeyHijacker.e_Hotkey_PrimaryAegisNext, "", e_HotkeyDown, 0 );
+		Input.RegisterHotkey( HotkeyHijacker.e_Hotkey_PrimaryAegisPrev, "", e_HotkeyDown, 0 );
+		Input.RegisterHotkey( HotkeyHijacker.e_Hotkey_SecondaryAegisNext, "", e_HotkeyDown, 0 );
+		Input.RegisterHotkey( HotkeyHijacker.e_Hotkey_SecondaryAegisPrev, "", e_HotkeyDown, 0 );
+		
 		// unwire signal listeners
-		_character.SignalStatChanged.Disconnect( SlotStatChanged, this);
-	    _inventory.SignalItemAdded.Disconnect( SlotItemAdded, this);
-		_inventory.SignalItemAdded.Disconnect( SlotItemLoaded, this);
-		_inventory.SignalItemMoved.Disconnect( SlotItemMoved, this);
-		_inventory.SignalItemRemoved.Disconnect( SlotItemRemoved, this);
-		_inventory.SignalItemChanged.Disconnect( SlotItemChanged, this);
-		_inventory.SignalItemStatChanged.Disconnect( SlotItemStatChanged, this);
-
-		_character.SignalTokenAmountChanged.Disconnect( SlotTokenAmountChanged, this );
-		
-		_swapAegisRPC.SignalChanged.Disconnect( SwapAegisRPCHandler, this );
-
-		_guiResolutionScale.SignalChanged.Disconnect( Layout, this );
-		_guiHUDScale.SignalChanged.Disconnect( Layout, this );
-		
-		_character = undefined;
-		_inventory = undefined;
-		
-		// remove event listeners
-		this.removeAllEventListeners();
+		Lore.SignalTagAdded.Disconnect(SlotTagAdded, this);
+		_showAegisSwapUI.SignalChanged.Disconnect( Activate, this );
 	}
 	
-	public function configUI():Void {
-		super.configUI();
+	public function Activate() : Void {
 		
-		// define item slots
-		var pWeapon = _global.Enums.ItemEquipLocation.e_Wear_First_WeaponSlot;
-		var pAegis1 = _global.Enums.ItemEquipLocation.e_Aegis_Weapon_1;
-		var pAegis2 = _global.Enums.ItemEquipLocation.e_Aegis_Weapon_1_2;
-		var pAegis3 = _global.Enums.ItemEquipLocation.e_Aegis_Weapon_1_3;
-		var pActiveAegisStat = _global.Enums.Stat.e_FirstActiveAegis;
-
-		var sWeapon = _global.Enums.ItemEquipLocation.e_Wear_Second_WeaponSlot;
-		var sAegis1 = _global.Enums.ItemEquipLocation.e_Aegis_Weapon_2;
-		var sAegis2 = _global.Enums.ItemEquipLocation.e_Aegis_Weapon_2_2;
-		var sAegis3 = _global.Enums.ItemEquipLocation.e_Aegis_Weapon_2_3;
-		var sActiveAegisStat = _global.Enums.Stat.e_SecondActiveAegis;
-
-		_primary.mc = m_Primary;
-		_secondary.mc = m_Secondary;
+		if ( _suspendVisualUpdates ) return;
 		
-		_itemSlots = { };
+		// don't re-activate if already visible
+		if ( visible ) return;
 		
-		_itemSlots[pAegis1] = { side: _primary, type: "aegis", equip: pAegis1, mc: _primary.mc.m_Aegis1, next: pAegis2, prev: pAegis3, dualSelectPartner: sAegis1 };
-		_itemSlots[pAegis2] = { side: _primary, type: "aegis", equip: pAegis2, mc: _primary.mc.m_Aegis2, next: pAegis3, prev: pAegis1, dualSelectPartner: sAegis2 };
-		_itemSlots[pAegis3] = { side: _primary, type: "aegis", equip: pAegis3, mc: _primary.mc.m_Aegis3, next: pAegis1, prev: pAegis2, dualSelectPartner: sAegis3 };
-		_itemSlots[pWeapon] = { side: _primary, type: "weapon", equip: pWeapon, mc: _primary.mc.m_Weapon };
-		_primary.activeAegisStat = pActiveAegisStat;
-		_primary.activeAegisEquipLocation = null;
-		_primary.selectedAegisEquipLocation = _character.GetStat( pActiveAegisStat );
-		_primary.weaponSlot = _itemSlots[pWeapon]; 
-		_primary.slots   = [ _itemSlots[pWeapon], _itemSlots[pAegis1], _itemSlots[pAegis2], _itemSlots[pAegis3] ];
-		
-		_itemSlots[sAegis1] = { side: _secondary, type: "aegis", equip: sAegis1, mc: _secondary.mc.m_Aegis1, next: sAegis2, prev: sAegis3, dualSelectPartner: pAegis1 };
-		_itemSlots[sAegis2] = { side: _secondary, type: "aegis", equip: sAegis2, mc: _secondary.mc.m_Aegis2, next: sAegis3, prev: sAegis1, dualSelectPartner: pAegis2 };
-		_itemSlots[sAegis3] = { side: _secondary, type: "aegis", equip: sAegis3, mc: _secondary.mc.m_Aegis3, next: sAegis1, prev: sAegis2, dualSelectPartner: pAegis3 };
-		_itemSlots[sWeapon] = { side: _secondary, type: "weapon", equip: sWeapon, mc: _secondary.mc.m_Weapon };
-		_secondary.activeAegisStat = sActiveAegisStat;
-		_secondary.activeAegisEquipLocation = null;
-		_secondary.selectedAegisEquipLocation = _character.GetStat( sActiveAegisStat );
-		_secondary.weaponSlot = _itemSlots[sWeapon];
-		_secondary.slots = [ _itemSlots[sWeapon], _itemSlots[sAegis1], _itemSlots[sAegis2], _itemSlots[sAegis3] ];
-
-		// wire up button mouse handlers
-		for ( var s:String in _itemSlots ) {
-			if ( _itemSlots[s].type == "aegis" ) {
-				SetupButtonHandlers( _itemSlots[s].mc );
-			}
+		// don't activate if aegis system not available
+		if ( !_active || !_showAegisSwapUI.GetValue() || Lore.IsLocked(e_AegisUnlockAchievement) ) {
+			Deactivate();
+			return;
 		}
+
+		// wire up listener for disruptor swap RPC (as sent by hotkeys)
+		_swapDisruptorRPC.SignalChanged.Connect( SwapDisruptorRPCHandler, this );
 		
-		// wire up background mouse handlers
-		SetupGlobalMouseHandlers( m_Primary.m_Background );
-		SetupGlobalMouseHandlers( m_Secondary.m_Background );
-		SetupGlobalMouseHandlers( m_Primary.m_Weapon );
-		SetupGlobalMouseHandlers( m_Secondary.m_Weapon );
-		SetupGlobalMouseHandlers( m_Background );
+		// wire up scale related listeners
+		_guiResolutionScale.SignalChanged.Connect( Layout, this );
+		_guiHUDScale.SignalChanged.Connect( Layout, this );
 		
 		// layout bar internals
 		LayoutBars();
@@ -287,7 +279,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		Layout();
 		
 		// initial load of equipment into slots
-		LoadEquipment();
+		RefreshItems();
 
 		// update active aegis values
 		UpdateActiveAegis();
@@ -295,15 +287,12 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		// fetch initial aegis xp values
 		UpdateAegisXP();
 		
-		// wire up signal listeners
+		// selected disruptor listener
 		_character.SignalStatChanged.Connect( SlotStatChanged, this);
-	    _inventory.SignalItemAdded.Connect( SlotItemAdded, this);
-		_inventory.SignalItemAdded.Connect( SlotItemLoaded, this);
-		_inventory.SignalItemMoved.Connect( SlotItemMoved, this);
-		_inventory.SignalItemRemoved.Connect( SlotItemRemoved, this);
-		_inventory.SignalItemChanged.Connect( SlotItemChanged, this);
-		_inventory.SignalItemStatChanged.Connect( SlotItemStatChanged, this);
-
+		
+		// inventory item update listeners
+		setupInventorySignals( true );
+		
 		// aegis xp listener
 		_character.SignalTokenAmountChanged.Connect( SlotTokenAmountChanged, this );
 		
@@ -319,60 +308,433 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		this.addEventListener("dragEnd", this, "DragEndHandler");
 		
 		this.addEventListener("scale", this, "ScaleHandler");
+
+		// show UI
+		visible = true;
+		_hudState.SetValue(true);
+		
+		// manage autoswap
+		manageAutoSwap();
+	}
+	
+	public function Deactivate() : Void {
+		// hide UI
+		visible = false;
+		_hudState.SetValue(false);
+		
+		// disconnect disruptor RPC listener
+		_swapDisruptorRPC.SignalChanged.Disconnect( SwapDisruptorRPCHandler, this );
+		
+		// disconnect ui signal listeners
+		_guiResolutionScale.SignalChanged.Disconnect( Layout, this );
+		_guiHUDScale.SignalChanged.Disconnect( Layout, this );
+		
+		// close any open tooltip
+		CloseTooltip();
+
+		// undo passivebar attachment
+		AttachToPassiveBar( false );
+
+		// unwire aegis related listeners
+		_character.SignalStatChanged.Disconnect( SlotStatChanged, this);
+		_character.SignalTokenAmountChanged.Disconnect( SlotTokenAmountChanged, this );
+
+		// tear down inventory listeners
+		setupInventorySignals( false );
+		
+		// tear down autoswap
+		manageAutoSwap();
+		
+		// remove event listeners
+		this.removeAllEventListeners();
 	}
 
+	private function setupInventorySignals( connect:Boolean ) : Void {
+		var fn:String = connect ? "Connect" : "Disconnect";
+		
+		var inventorySignals:Array = [
+			"SignalItemAdded",
+			"SignalItemLoaded",
+			"SignalItemMoved",
+			"SignalItemRemoved",
+			"SignalItemChanged"
+		];
+		
+		var inventories:Array = [ _equipped, _backpack ];
+		for ( var s:String in inventories ) {
+			for ( var i:String in inventorySignals ) {
+				inventories[s][ inventorySignals[i] ][fn]( inventoryUpdateHandler, this );
+			}
+		}
+	}
+	
+	// hide or show default buttons
+	public function hideDefaultSwapButtons( hide:Boolean ) : Void {
+		
+		var pb:MovieClip = _root.passivebar;
+		
+		// wait for the passivebar to be loaded, as it actually gets unloaded during teleports etc, not just deactivated
+		if ( pb.LoadAegisButtons == undefined ) {
+			// if the thrash count is exceeded, reset count and do nothing
+			if (_findPassiveBarThrashCount++ == 10)  _findPassiveBarThrashCount = 0;
+			// otherwise try again
+			else _global.setTimeout( Delegate.create(this, hideDefaultSwapButtons), 300, hide );
+			
+			return;
+		}
+		// if we reached this far, reset thrash count
+		_findPassiveBarThrashCount = 0;
+
+		// hide buttons
+		if ( hide ) {
+			if ( pb.LoadPrimaryAegisButton_AegisHUD_Saved == undefined ) {
+				pb.LoadPrimaryAegisButton_AegisHUD_Saved = pb.LoadPrimaryAegisButton;
+				// break the link
+				pb.LoadPrimaryAegisButton = undefined;
+				pb.LoadPrimaryAegisButton = function() { };
+
+				pb.LoadSecondaryAegisButton_AegisHUD_Saved = pb.LoadSecondaryAegisButton;
+				// break the link
+				pb.LoadSecondaryAegisButton = undefined;
+				pb.LoadSecondaryAegisButton = function() { };
+				
+				// remove any existing movieclips
+				pb.m_PrimaryAegisSwap.unloadMovie();
+				pb.m_PrimaryAegisSwap.removeMovieClip();
+				
+				pb.m_SecondaryAegisSwap.unloadMovie();
+				pb.m_SecondaryAegisSwap.removeMovieClip();
+			}
+		}
+
+		// restore default buttons if they have been previously disabled
+		else if ( pb.LoadPrimaryAegisButton_AegisHUD_Saved != undefined ) {
+			pb.LoadPrimaryAegisButton = pb.LoadPrimaryAegisButton_AegisHUD_Saved;
+			pb.LoadPrimaryAegisButton_AegisHUD_Saved = undefined;
+
+			pb.LoadSecondaryAegisButton = pb.LoadSecondaryAegisButton_AegisHUD_Saved;
+			pb.LoadSecondaryAegisButton_AegisHUD_Saved = undefined;
+			
+			// do a load to restore buttons naturally if they need to be visible
+			pb.LoadAegisButtons();
+		}	
+	}
+	
+	
+	private function configUI() : Void {
+		super.configUI();
+
+		// primary weapon bar
+		_primary = {
+			mc: m_Primary,
+			activeAegisStat: e_PrimaryActiveAegisStat,
+			slots: {
+				item: { type: "weapon", inventory: _equipped, position: e_PrimaryWeaponPosition, mc: m_Primary.m_Item },
+				aegis1: { type: "disruptor", inventory: _equipped, position: e_PrimaryAegis1Position, mc: m_Primary.m_Aegis1, next: e_PrimaryAegis2Position, prev: e_PrimaryAegis3Position, pair: e_SecondaryAegis1Position },
+				aegis2: { type: "disruptor", inventory: _equipped, position: e_PrimaryAegis2Position, mc: m_Primary.m_Aegis2, next: e_PrimaryAegis3Position, prev: e_PrimaryAegis1Position, pair: e_SecondaryAegis2Position },
+				aegis3: { type: "disruptor", inventory: _equipped, position: e_PrimaryAegis3Position, mc: m_Primary.m_Aegis3, next: e_PrimaryAegis1Position, prev: e_PrimaryAegis2Position, pair: e_SecondaryAegis3Position }
+			}
+		};
+		
+		// secondary weapon bar
+		_secondary = {
+			mc: m_Secondary,
+			activeAegisStat: e_SecondaryActiveAegisStat,
+			slots: {
+				item: { type: "weapon", inventory: _equipped, position: e_SecondaryWeaponPosition, mc: m_Secondary.m_Item },
+				aegis1: { type: "disruptor", inventory: _equipped, position: e_SecondaryAegis1Position, mc: m_Secondary.m_Aegis1, next: e_SecondaryAegis2Position, prev: e_SecondaryAegis3Position, pair: e_PrimaryAegis1Position },
+				aegis2: { type: "disruptor", inventory: _equipped, position: e_SecondaryAegis2Position, mc: m_Secondary.m_Aegis2, next: e_SecondaryAegis3Position, prev: e_SecondaryAegis1Position, pair: e_PrimaryAegis2Position },
+				aegis3: { type: "disruptor", inventory: _equipped, position: e_SecondaryAegis3Position, mc: m_Secondary.m_Aegis3, next: e_SecondaryAegis1Position, prev: e_SecondaryAegis2Position, pair: e_PrimaryAegis3Position }
+			}
+		};
+		
+		// shield bar
+		_shield = {
+			mc: m_Shield,
+			slots: {
+				item: { mc: m_Shield.m_Item, locked: true },
+				aegis1: { type: "shield", mc: m_Shield.m_Aegis1, aegisID: 111 },
+				aegis2: { type: "shield", mc: m_Shield.m_Aegis2, aegisID: 113 },
+				aegis3: { type: "shield", mc: m_Shield.m_Aegis3, aegisID: 114 }
+			}
+		};
+
+		_bars = { primary: _primary, secondary: _secondary, shield: _shield };
+
+		for ( var s:String in _bars ) {
+			
+			SetupGlobalMouseHandlers( _bars[s].mc.m_Background );
+			
+			_bars[s].selectedAegisSlot = null;
+			_bars[s].activeAegisSlot = undefined;
+			
+			for( var i:String in _bars[s].slots ) {
+				
+				var slot:Object = _bars[s].slots[i];
+
+				_slots.push( slot );
+				
+				slot.bar = _bars[s];
+
+				if( slot.position ) {
+					_staticPositions[ slot.inventory.GetInventoryID().GetType() + "_" + slot.position ] = slot;
+				}
+				
+				if ( slot.type == "shield" ) {
+					_staticShields[ slot.aegisID ] = slot;
+				}
+				
+				if ( slot.type == "disruptor" || slot.type == "shield" || slot.type == "weapon" ) {
+					slot.slottable = true;
+				}
+				
+				if ( slot.type == "disruptor" || slot.type == "shield" ) {
+					slot.selectable = true;
+				}
+				
+				// attach UI handlers
+				SetupButtonHandlers( slot.mc );
+			}
+		}
+		
+		var keyPart:String = _equipped.GetInventoryID().GetType() + "_";
+		for ( var s:String in _staticPositions ) {
+			var slot:Object = _staticPositions[s];
+			
+			if ( slot.type == "disruptor" ) {
+				slot.next = _staticPositions[ keyPart + slot.next ];
+				slot.prev = _staticPositions[ keyPart + slot.prev ];
+				slot.pair = _staticPositions[ keyPart + slot.pair ];
+			}
+		}
+		
+		// aegis item properties
+		_aegisItemProps[103] = { id: 103, itemType: e_ItemTypeAegisWeapon, aegisType: e_AegisTypePink, tint: "psychic", icon: "disruptor-psychic" };
+		_aegisItemProps[104] = { id: 104, itemType: e_ItemTypeAegisWeapon, aegisType: e_AegisTypePink, tint: "psychic", icon: "disruptor-psychic" };
+		_aegisItemProps[105] = { id: 105, itemType: e_ItemTypeAegisWeapon, aegisType: e_AegisTypeBlue, tint: "cyber", icon: "disruptor-cyber" };
+		_aegisItemProps[106] = { id: 106, itemType: e_ItemTypeAegisWeapon, aegisType: e_AegisTypeBlue, tint: "cyber", icon: "disruptor-cyber" };
+		_aegisItemProps[107] = { id: 107, itemType: e_ItemTypeAegisWeapon, aegisType: e_AegisTypeRed, tint: "demonic", icon: "disruptor-demonic" };
+		_aegisItemProps[108] = { id: 108, itemType: e_ItemTypeAegisWeapon, aegisType: e_AegisTypeRed, tint: "demonic", icon: "disruptor-demonic" };
+
+		_aegisItemProps[111] = { id: 111, itemType: e_ItemTypeAegisShield, aegisType: e_AegisTypePink, tint: "psychic", icon: "shield-psychic" };
+		_aegisItemProps[113] = { id: 113, itemType: e_ItemTypeAegisShield, aegisType: e_AegisTypeBlue, tint: "cyber", icon: "shield-cyber" };
+		_aegisItemProps[114] = { id: 114, itemType: e_ItemTypeAegisShield, aegisType: e_AegisTypeRed, tint: "demonic", icon: "shield-demonic" };
+
+		// if the toon doesn't have the AEGIS system unlocked already, listen in case it unlocks during session
+		if ( Lore.IsLocked(e_AegisUnlockAchievement) )  Lore.SignalTagAdded.Connect(SlotTagAdded, this);
+		
+		// handle the TSW user config option for showing/hiding AEGIS HUD UI
+		_showAegisSwapUI.SignalChanged.Connect( Activate, this);
+		
+		// apply initial settings based on defaults
+		var initSettings:Object = SettingsPacks.defaultSettings;
+
+		// mix in passed in settings with default settings
+		// but only apply if settings are compatible with the current settings version
+		// otherwise everything should be left as defaults to force a settings reset
+		if ( settings.settingsVersion >= initSettings.settingsVersion ) {
+			for ( var s:String in settings ) {
+				initSettings[s] = settings[s];
+			}
+		}
+		
+		ApplySettingsPack( initSettings );
+		delete settings;
+		
+		Activate();
+	}
+
+	// handler for situation where AEGIS system becomes unlocked during play session
+	private function SlotTagAdded( tag:Number ) : Void {
+		if ( tag == e_AegisUnlockAchievement ) {
+			Lore.SignalTagAdded.Disconnect( SlotTagAdded, this );
+			Activate();
+		}
+	}
+
+	
+	/**
+	 * 
+	 * autoswap related functions
+	 * 
+	 */
+
+	private function manageAutoSwap() : Void {
+
+		// only swap if visible and setting is enabled
+		if ( visible && _autoSwap ) {
+			_character.SignalOffensiveTargetChanged.Connect( offensiveTargetChangedHandler, this );
+			_character.SignalToggleCombat.Connect( autoSwapAll, this );
+
+			attachCurrentTarget();
+		}
+
+		else {
+			_character.SignalOffensiveTargetChanged.Disconnect( offensiveTargetChangedHandler, this );
+			_character.SignalToggleCombat.Disconnect( autoSwapAll, this );
+			
+			detachLastTarget();
+		}
+	}
+
+	private function offensiveTargetChangedHandler(target:ID32) : Void {
+		detachLastTarget();
+		attachCurrentTarget();
+	}
+
+	private function attachCurrentTarget() : Void {
+		// attach to current target
+		_lastSetTarget = Character.GetCharacter( _character.GetOffensiveTarget() );
+		_lastSetTarget.SignalStatChanged.Connect( targetStatChangedHandler, this );
+		
+		autoSwapAll();
+	}
+	
+	private function detachLastTarget() : Void {
+		// detach from previous target
+		_lastSetTarget.SignalStatChanged.Disconnect( targetStatChangedHandler, this );
+		_lastSetTarget = undefined;
+	}
+	
+	// handler for target shield or disruptor type changing (for autoswap purposes)
+	private function targetStatChangedHandler(stat:Number, value:Number) : Void {
+		
+		switch( stat ) {
+			case _global.Enums.Stat.e_CurrentPinkShield:
+			case _global.Enums.Stat.e_CurrentBlueShield:
+			case _global.Enums.Stat.e_CurrentRedShield:
+				autoSwapDisruptors();
+			break;
+			
+			case _global.Enums.Stat.e_ColorCodedDamageType:
+				autoSwapShield();
+			break;
+		}
+		
+	}
+
+	private function autoSwapAll() : Void {
+		autoSwapDisruptors();
+		autoSwapShield();
+	}
+	
+	private function autoSwapDisruptors() : Void {
+		
+		if ( !_autoSwap ) return;
+		
+		// get current target
+		var target:Character = Character.GetCharacter(_character.GetOffensiveTarget());
+
+		// the order is important here, as the shields are always overlaid in this sequence
+		var shieldPriority:Array = [
+			{ stat: _global.Enums.Stat.e_CurrentPinkShield, aegisType: e_AegisTypePink },
+			{ stat: _global.Enums.Stat.e_CurrentBlueShield, aegisType: e_AegisTypeBlue },
+			{ stat: _global.Enums.Stat.e_CurrentRedShield,  aegisType: e_AegisTypeRed }
+		];
+		
+		var targetShieldType:Number;
+		
+		for ( var i:Number = 0; i < shieldPriority.length; i++ ) {
+			if ( target.GetStat( shieldPriority[i].stat, 2 ) > 0 ) {
+				targetShieldType = shieldPriority[i].aegisType;
+				break;
+			}
+		}
+
+		if( targetShieldType) {
+		
+			var weaponBars:Array = [ _primary, _secondary ];
+			for ( var s:String in weaponBars ) {
+				
+				var bar:Object = weaponBars[s];
+				
+				// find first aegis on bar that matches the target aegis shield type
+				for ( var i:String in bar.slots ) {
+					var slot:Object = bar.slots[i];
+					
+					// if disruptor type matches target shield type, switch to it, explicitly with no dual-select
+					if ( _aegisItemProps[slot.item.m_AegisItemType].aegisType == targetShieldType ) {
+						SwapToAegisSlot( slot, false );
+						break;
+					}
+				}
+			}
+		}
+		
+	}
+
+	private function autoSwapShield() : Void {
+
+		if ( !_autoSwap ) return;
+		
+		// get current target
+		var target:Character = Character.GetCharacter(_character.GetOffensiveTarget());
+		
+		// discover the aegis damage type the target deals out
+		var targetDisruptorType:Number = target.GetStat(_global.Enums.Stat.e_ColorCodedDamageType, 2);
+		
+		if ( targetDisruptorType ) {
+			
+			// swap shield
+			for ( var s:String in _shield.slots ) {
+				var slot:Object = _shield.slots[s];
+				
+				if ( _aegisItemProps[slot.item.m_AegisItemType].aegisType == targetDisruptorType ) {
+					SwapToAegisSlot( slot );
+					break;
+				}
+			}
+		}
+	}
+	
+	
 	// layout bar internally
 	private function LayoutBars():Void {
 
 		if ( _suspendVisualUpdates ) return;		
 		
-		for ( var s:String in _sides )
-		{
-			var bar = _sides[s].mc;
+		for ( var s:String in _bars ) {
+			var bar = _bars[s].mc;
 			
-			// place all elements in top left
-			for (var prop in bar)
-			{
-				if (bar[prop] instanceof MovieClip)
-				{
-					bar[prop]._x = bar[prop]._y = _barPadding;
+			// item slot visibility
+			if ( (bar != m_Shield && _showWeapons) || (bar == m_Shield && _showShield) ) {
+				bar.m_Item._visible = true;
+				
+				// item slot position
+				if ( this["_" + s + "ItemFirst"] ) {
+					bar.m_Item._x = _barPadding;
+					bar.m_Aegis1._x = bar.m_Item._x + bar.m_Item._width + _slotSpacing;
+					var lastButton:MovieClip = bar.m_Aegis3;
+				}
+				
+				else {
+					bar.m_Aegis1._x = _barPadding;
+					bar.m_Item._x = bar.m_Aegis1._x + (bar.m_Aegis1._width * 3) + _slotSpacing;
+					var lastButton:MovieClip = bar.m_Item;
 				}
 			}
 			
-			// resize buttons
-			bar.m_Aegis1._width = bar.m_Aegis1._height = _slotSize;
-			bar.m_Aegis2._width = bar.m_Aegis2._height = _slotSize;
-			bar.m_Aegis3._width = bar.m_Aegis3._height = _slotSize;
-			bar.m_Weapon._width = bar.m_Weapon._height = _slotSize;
-			
-			// horizontal and vertical can be done with combined code
-			// other more custom styles would need to be handled with a switch later in the function
-			if ( _barStyle == AegisBarLayoutStyles.VERTICAL || _barStyle == AegisBarLayoutStyles.HORIZONTAL )
-			{
-				// layout direction property
-				var propStart:String = _barStyle == AegisBarLayoutStyles.HORIZONTAL ? "_x" : "_y";
-				var propSpan:String = _barStyle == AegisBarLayoutStyles.HORIZONTAL ? "_width" : "_height";
-
-				// move weapon first if necessary
-				if ( this["_" + s + "WeaponFirst"] && _showWeapons )  bar.m_Aegis1[propStart] = bar.m_Weapon[propStart] + bar.m_Weapon[propSpan] + (_slotSpacing * 3);
-				
-				bar.m_Aegis2[propStart] = bar.m_Aegis1[propStart] + bar.m_Aegis1[propSpan] + _slotSpacing;
-				bar.m_Aegis3[propStart] = bar.m_Aegis2[propStart] + bar.m_Aegis2[propSpan] + _slotSpacing;
-
-				// move weapon last if necessary
-				if ( !this["_" + s + "WeaponFirst"] && _showWeapons )  bar.m_Weapon[propStart] = bar.m_Aegis3[propStart] + bar.m_Aegis3[propSpan] + (_slotSpacing * 3);
-				
-				// weapon slot visibility
-				bar.m_Weapon._visible = _showWeapons;
+			else {
+				bar.m_Item._visible = false;
+				bar.m_Aegis1._x = _barPadding;
+				var lastButton:MovieClip = bar.m_Aegis3;
 			}
-			
-			var firstButton:MovieClip = this["_" + s + "WeaponFirst"] ? (_showWeapons ? bar.m_Weapon : bar.m_Aegis1) : bar.m_Aegis1;
-			var lastButton:MovieClip = this["_" + s + "WeaponFirst"] ? bar.m_Aegis3 : (_showWeapons ? bar.m_Weapon : bar.m_Aegis3);
+
+			bar.m_Aegis2._x = bar.m_Aegis1._x + bar.m_Aegis1._width;
+			bar.m_Aegis3._x = bar.m_Aegis2._x + bar.m_Aegis2._width;
 			
 			// position and resize background to wrap buttons
-			bar.m_Background._x = bar.m_Background._y = 0;
 			bar.m_Background._width = lastButton._x + lastButton._width + (_barPadding);
-			bar.m_Background._height = lastButton._y + lastButton._height + (_barPadding);
+			
+			if ( _barBackgroundThin ) {
+				bar.m_Background._y = 9;
+				bar.m_Background._height = 6;
+			}
+			
+			else {
+				bar.m_Background._y = 0 - _barPadding;
+				bar.m_Background._height = _slotSize + (_barPadding * 2);
+			}
 		}
 		
 		// if hud is attached to passivebar, reset to default swap button position
@@ -398,8 +760,9 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			pb.localToGlobal( globalPassiveBarPos );
 			this.globalToLocal( globalPassiveBarPos );
 
-			var primaryDefaultPosition = new Point( globalPassiveBarPos.x - m_Primary._width - 2, globalPassiveBarPos.y - m_Primary._height - 3 );
-			var secondaryDefaultPosition = new Point( globalPassiveBarPos.x + 2, globalPassiveBarPos.y - m_Secondary._height - 3 );
+			var primaryDefaultPosition = new Point( globalPassiveBarPos.x - m_Primary._width - 3 - 9 - m_Shield._width / 2, globalPassiveBarPos.y - m_Primary._height - 3 );
+			var secondaryDefaultPosition = new Point( primaryDefaultPosition.x + m_Primary._width + 6, primaryDefaultPosition.y );
+			var shieldDefaultPosition = new Point( secondaryDefaultPosition.x + m_Secondary._width + 18, primaryDefaultPosition.y );
 			
 			// userTriggered parameter needed to prevent the annoying pop-in when first loading into an area
 			// when the bars are initially positioned
@@ -419,12 +782,21 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 					Bounce.easeOut
 				);
 				
+				m_Shield.tweenTo(1, {
+						_x: shieldDefaultPosition.x,
+						_y: shieldDefaultPosition.y
+					},
+					Bounce.easeOut
+				);
+				
 			}
 			else {
 				m_Primary._x = primaryDefaultPosition.x;
 				m_Primary._y = primaryDefaultPosition.y;
 				m_Secondary._x = secondaryDefaultPosition.x;
 				m_Secondary._y = secondaryDefaultPosition.y;
+				m_Shield._x = shieldDefaultPosition.x;
+				m_Shield._y = shieldDefaultPosition.y;
 			}
 			
 		}
@@ -436,6 +808,9 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			m_Primary._x =  ((Stage["visibleRect"].width / 2) - m_Primary._width - 3 );
 			m_Secondary._x = ( m_Primary._x + m_Primary._width + 6 );
 			m_Primary._y = m_Secondary._y = ( Stage["visibleRect"].height - 75 - m_Primary._height - 3 );
+			
+			m_Shield._x = ((Stage["visibleRect"].width / 2) - (m_Shield._width / 2) );
+			m_Shield._y = m_Primary._y - m_Shield._height - 4;
 		}
 
 	}
@@ -458,6 +833,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		
 		m_Primary._xscale = m_Primary._yscale = realScale;
 		m_Secondary._xscale = m_Secondary._yscale = realScale;
+		m_Shield._xscale = m_Shield._yscale = realScale;
 		
 		// if attached to passivebar, reset position
 		if ( _attachToPassiveBar ) {
@@ -476,6 +852,9 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 				
 				m_Secondary._x = _secondaryPosition.x + 0;
 				m_Secondary._y = _secondaryPosition.y + 0;
+				
+				m_Shield._x = _shieldPosition.x + 0;
+				m_Shield._y = _shieldPosition.y + 0;
 			}
 			
 			// set default positions to simulate the default buttons
@@ -490,7 +869,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	// restore default tints
 	public function ApplyDefaultTints():Void {
 		
-		var defaults:Object = HUD.defaultSettingsPack;
+		var defaults:Object = SettingsPacks.defaultSettings;
 		
 		_suspendVisualUpdates = true;
 		
@@ -500,7 +879,6 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		tintAegisEmpty = defaults.tintAegisEmpty;
 		tintAegisStandard = defaults.tintAegisStandard;
 
-		tintXPBackground = defaults.tintXPBackground;
 		tintXPProgress = defaults.tintXPProgress;
 		tintXPFull = defaults.tintXPFull;
 		
@@ -510,288 +888,346 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		invalidate();
 	}
 	
+	// restore all settings to default
+	public function ApplyDefaultSettings() : Void {
+		ApplySettingsPack( SettingsPacks.defaultSettings );
+		LayoutBars();
+		Layout();
+	}
+	
+	
+	// refresh shield item locations
+	private function RefreshShieldPositions() : Void {
 
-	// load slot icons and presence
-	private function LoadEquipment():Void
-	{
-		for (var i:String in _itemSlots)
-		{
-			LoadItem(i);
+		var item:InventoryItem;
+		var foundCount:Number = 0;
+		
+		// determine maximum number of shields to look for, can reduce hits on inventory significantly
+		var maxShieldCount:Number = 0;
+		for ( var s:String in _staticShields ) {
+			maxShieldCount++;
+		}
+		
+		// identify equipped shield
+		item = _equipped.GetItemAt( e_AegisShieldPosition );
+		
+		if ( item.m_ItemType == e_ItemTypeAegisShield ) {
+			inventoryUpdateHandler( _equipped.GetInventoryID(), e_AegisShieldPosition );
+			foundCount = 1;
+		}
+
+		// find shields in backpack
+		// stop once the most possible number of shields has been found
+		for ( var i:Number = _backpack.GetMaxItems() - 1; foundCount <= maxShieldCount && i >= 0; i-- ) {
+			foundCount += Number(inventoryUpdateHandler( _backpack.GetInventoryID(), i ));
+		}
+	}
+	
+	// refresh all slot items
+	private function RefreshItems() : Void {
+		
+		RefreshShieldPositions();
+
+		for ( var s:String in _staticPositions ) {
+			var slot:Object = _staticPositions[s];
+			inventoryUpdateHandler( slot.inventory.GetInventoryID(), slot.position );
 		}
 	}
 
-	// load a single slot
-	private function LoadItem(equipLocation:Number):Void
-	{
-		var slot = _itemSlots[equipLocation];
-		if (slot == undefined) return;	// only do something if there is something to do
-
-		var slotMC:MovieClip = slot.mc;
-		var item:InventoryItem = _inventory.GetItemAt( equipLocation );
-		if ( item.m_Name == undefined || item.m_Name == "" ) item = undefined;
+	private function inventoryUpdateHandler(inventoryID:ID32, position:Number) : Boolean {
 		
-		slot.item = item;
-		if ( slot.type == "aegis") {
-			slot.aegisType = "empty";
-			slot.aegisXP = undefined;
-		}
+		var inventory:Inventory = inventoryID.GetType() == _equipped.GetInventoryID().GetType() ? _equipped : _backpack;
+		var item:InventoryItem = inventory.GetItemAt( position );
 
-		// if an item is slotted, show it
-		if ( item != undefined)
-		{
-			// load icon into button
-			var iconRef:ID32 = item.m_Icon;
-			if (iconRef != undefined && iconRef.GetType() != 0 && iconRef.GetInstance() != 0)
-			{
-				var iconString:String = com.Utils.Format.Printf( "rdb:%.0f:%.0f", iconRef.GetType(), iconRef.GetInstance() );			
-				_iconLoader.loadClip( iconString, slotMC.m_Icon );
-			}
-
-			// establish aegis type
-			if( slot.type == "aegis" ) {
-				if ( item.m_Name.indexOf("yb") >= 0 ) {
-					slot.aegisType = "cyber";
-				}
-				
-				else if ( item.m_Name.indexOf("mon") >= 0 ) {
-					slot.aegisType = "demonic";
-				}
-
-				else if ( item.m_Name.indexOf("sy") >= 0 || item.m_Name.indexOf('Medial') >= 0 ) {
-					slot.aegisType = "psychic";
-				}
-				
-				// if XP is being shown, fetch just this item's XP, the rest can wait for their own events
-				UpdateAegisSlotXP(slot);
+		var key:String = inventoryID.GetType() + "_" + position;
+		var slot:Object = _slotFromPosition[key];
+		
+		var handled:Boolean = false;
+		
+		// if the position keys back to a shield slot and the item going into it is not a shield (including empty)
+		// or the slot is on the watchlist and is empty
+		// clear the links and update the slot with empty item
+		if ( (slot.type == "shield" && item.m_ItemType != e_ItemTypeAegisShield) || (item == undefined && _staticPositions[key]) ) {
+			
+			// if the slot used to have an aegis item in it, remove the link
+			if ( slot.item.m_AegisItemType ) {
+				delete _slotFromAegisID[ slot.item.m_AegisItemType ];
 			}
 			
+			// remove the position link
+			delete _slotFromPosition[key];
+			
+			// remove the item from the slot
+			slot.item = undefined;
+			
+			handled = true;
+		}
+
+		// otherwise, if it is on the watchlist, update the links and update the slot with the item
+		else if ( (slot = _staticShields[item.m_AegisItemType]) || (slot = _staticPositions[key]) ) {
+
+			// update the slot item
+			if ( slot != undefined ) {
+				slot.item = item;
+				slot.inventory = inventory;
+				slot.position = position;
+
+				loadIcon( slot );
+			}
+			
+			// if it is an aegis item, add a link
+			if ( item.m_AegisItemType ) {
+				_slotFromAegisID[ item.m_AegisItemType ] = slot;
+
+				// update the xp value
+				UpdateAegisItemXP( item.m_AegisItemType );
+			}
+
+			// add a position link
+			_slotFromPosition[key] = slot;
+			
+			handled = true;
 		}
 		
+		// if this is the equipped shield slot, update the active shields
+		UpdateActiveAegis();
+		
 		invalidate();
+		
+		return handled;
+	}
+
+	private function loadIcon(slot:Object) : Void {
+
+		// aegis items can load different types of icons
+		if ( slot.item.m_AegisItemType && _aegisTypeIcons ) {
+			var iconClip:MovieClip = slot.mc.m_Icon.attachMovie( _aegisItemProps[slot.item.m_AegisItemType].icon, "m_Icon", 0 );
+			iconClip._width = iconClip._height = 24;
+		}
+		
+		else if ( slot.item ) {
+			var iconRef:ID32 = slot.item.m_Icon;
+			slot.mc.m_Icon.createEmptyMovieClip( "m_Icon", 0 );
+			_iconLoader.loadClip( com.Utils.Format.Printf( "rdb:%.0f:%.0f", iconRef.GetType(), iconRef.GetInstance() ), slot.mc.m_Icon.m_Icon );
+		}
+		
+	}
+	
+	// update all icons in all slots
+	private function updateIcons() : Void {
+
+		for ( var s:String in _slots ) {
+			loadIcon( _slots[s] );
+		}
+		
 	}
 	
 	// handler for MovieClipLoader.loadClip
-	private function onLoadInit(target:MovieClip)
-	{
+	private function onLoadInit(target:MovieClip) : Void {
 		// set proper scale of target element
-		// -- seems to be the right size if these values are the same as the width/height of the symbol in the library
-		target._xscale = 40;
-		target._yscale = 40;
+		target._width = target._height = 24;
 	}
 	
 
 	// highlight active aegis slot
-	private function draw():Void 
-	{
+	private function draw() : Void {
+		
 		if ( _suspendVisualUpdates ) return;
 
 		// do for both aegis sides
-		for ( var s:String in _sides )
-		{
-			var bar = _sides[s];
+		for ( var s:String in _bars ) {
+			
+			var bar = _bars[s];
 			var barMC:MovieClip = bar.mc;
 			
 			// establish bar tint value
-			var barTint = _tints[ _itemSlots[bar.selectedAegisEquipLocation].aegisType ];
+			var barTint = _tints[ _aegisItemProps[bar.selectedAegisSlot.item.m_AegisItemType].tint ];
+			if ( barTint == undefined ) barTint = _tints.empty;
 
-			// show or hide background (must use alpha so it remains a hit target for mouse)
-			barMC.m_Background._alpha = _showBarBackground ? 100 : 0;
-
-			// tint bar background
-			AddonUtils.Colorize( barMC.m_Background, _tintBarBackgroundByActiveAegis ? barTint : _tints.barStandard );
-			barMC.m_Background.gotoAndStop("white");
-			
 			// neon glow entire bar
 			if ( _neonEnabled && _neonGlowEntireBar ) {
-				var entireGlow:GlowFilter = new GlowFilter( barTint, 0.8, 10, 10, 2, 3, false, false );
+				var entireGlow:GlowFilter = new GlowFilter( barTint, 0.8, 8, 8, 1, 3, false, false );
 				
 				barMC.filters = [ entireGlow ];
 			}
 			else barMC.filters = [];
-			
-			// neon glow bar background
-			if ( _neonEnabled && _neonGlowBarBackground ) {
-				barMC.m_Background.gotoAndStop("black");
 
-				// two different methods available here
-				
-				// option 1, bolder colour than #2
-				// AddonUtils.Colorize( barMC.m_Background.m_Black, barTint );
-				// AddonUtils.Colorize( barMC.m_Background, barTint );
-				
-				// option 2
-				AddonUtils.Colorize( barMC.m_Background, barTint );
+			
+			// show or hide background (must use alpha so it remains a hit target for mouse)
+			if ( _showBarBackground ) {
+				barMC.m_Background._alpha = 100;
 
-				// this happens regardless
-				barMC.m_Background.m_White._visible = false;
-				barMC.m_Background.m_Black._visible = true;
-				
-				var barGlow:GlowFilter = new GlowFilter( barTint, 0.8, 10, 10, 2, 3, false, false );
-				
-				barMC.m_Background.filters = [ barGlow ];
-			}
-			else barMC.m_Background.filters = [];
+				// tint bar background
+				AddonUtils.Colorize( barMC.m_Background, _tintBarBackgroundByActiveAegis ? barTint : _tints.barStandard );
+				barMC.m_Background.gotoAndStop("white");
 			
-			// handle weapon slot
-			var weaponSlot = bar.weaponSlot;
-			var weaponSlotMC = weaponSlot.mc;
-			
-			// show or hide weapon icon
-			if ( weaponSlot.item == undefined ) {
-				weaponSlotMC.m_Watermark._visible = true;
-				weaponSlotMC.m_Icon._visible = false;
+				// neon glow bar background
+				if ( _tintBarBackgroundByActiveAegis && _neonEnabled && _neonGlowBarBackground ) {
+					barMC.m_Background.gotoAndStop("black");
+
+					var barGlow:GlowFilter =
+					_barBackgroundThin ?  new GlowFilter( barTint, 0.8, 6, 6, 2, 3, false, false )
+									   :  new GlowFilter( barTint, 0.8, 6, 6, 1, 3, false, false );
+					
+					barMC.m_Background.filters = [ barGlow ];
+				}
+				else barMC.m_Background.filters = [];
 			}
+			
 			else {
-				weaponSlotMC.m_Watermark._visible = false;
-				weaponSlotMC.m_Icon._visible = true;
+				barMC.m_Background._alpha = 0;
+			}
+
+			
+			// handle item slot
+			var itemSlot = bar.slots.item;
+			var itemSlotMC = itemSlot.mc;
+			
+			// show or hide item icon
+			if ( itemSlot.item == undefined && !itemSlot.locked ) {
+				itemSlotMC.m_Watermark._visible = true;
+				itemSlotMC.m_Icon._visible = false;
 			}
 			
-			// show weapon background
-			weaponSlotMC.m_Background._visible = _showWeaponBackgroundBehaviour == SlotBackgroundBehaviour.ALWAYS
-				|| ( _showWeaponBackgroundBehaviour == SlotBackgroundBehaviour.WHEN_SLOTTED && weaponSlot.item != undefined );
+			else {
+				itemSlotMC.m_Watermark._visible = false;
+				itemSlotMC.m_Icon._visible = true;
+			}
 			
-			// tint weapon background
-			var weaponTint:Number = _tintWeaponBackgroundByActiveAegis ? barTint : _tints.none;
-			AddonUtils.Colorize( weaponSlotMC.m_Background, weaponTint );
-			
-			// tint weapon icon
-			var weaponIconTint:Number = _tintWeaponIconByActiveAegis ? barTint : _tints.none;
-			AddonUtils.Colorize( weaponSlotMC.m_Icon, weaponIconTint );
+
+			// tint item icon
+			var itemIconTint:Number = _tintWeaponIconByActiveAegis ? barTint : _tints.none;
+			AddonUtils.Colorize( itemSlotMC.m_Icon, itemIconTint );
 				
+
 			// neon glow weapon
 			if ( _neonEnabled && _neonGlowWeapon ) {
-				var weaponGlow = new GlowFilter( barTint, 1, 10, 10, 3, 3, false, false );
-				weaponSlotMC.filters = [ weaponGlow ];
+				var itemGlow = new GlowFilter( barTint, 0.8, 6, 6, 2, 3, false, false );
+				itemSlotMC.filters = [ itemGlow ];
 			}
-			else weaponSlotMC.filters = [];
+			else itemSlotMC.filters = [];
 
+			
 			// iterate through aegis slots
 			for ( var a:String in bar.slots ) {
 				var slot = bar.slots[a];
 				
-				if ( slot.type != "aegis" ) continue;
+				if ( slot.type != "disruptor" && slot.type != "shield" ) continue;
 				
 				var slotMC = slot.mc;
-				var slotTint = _tints[ slot.aegisType ];
+				var slotTint = _tints[ _aegisItemProps[slot.item.m_AegisItemType].tint ];
+				if ( slotTint == undefined ) slotTint = _tints.empty;
 				
 				// show or hide aegis icon
 				if ( slot.item == undefined ) {
 					slotMC.m_Watermark._visible = true;
 					slotMC.m_Icon._visible = false;
 				}
+
 				else {
 					slotMC.m_Watermark._visible = false;
 					slotMC.m_Icon._visible = true;
 				}
 
+
 				// tint aegis icon
 				var iconTint:Number = _tintAegisIconByType ? slotTint : _tints.none;
 				AddonUtils.Colorize( slotMC.m_Icon, iconTint );
 				
+
 				// show xp display
 				if ( !_showXP || slot.item == undefined ) {
-					slotMC.m_XPBar._visible = slotMC.m_XPTextProgress._visible = slotMC.m_XPTextFull._visible = false;
+					slotMC.m_XP._visible = false;
 				}
+
 				else {
-
-					// use text display
-					if ( _xpIndicatorStyle == XPIndicatorStyles.Numbers ) {
-						slotMC.m_XPBar._visible = false;
-
-						if( slot.aegisXP >= 100 ) {
-							slotMC.m_XPTextProgress._visible = false;
-							slotMC.m_XPTextFull._visible = !_hideXPWhenFull;
-						}
-						else {
-							slotMC.m_XPTextProgress._visible = true;
-							slotMC.m_XPTextFull._visible = false;
-						}
-						
-						var textFormat:TextFormat = new TextFormat();
+					var textFormat:TextFormat = new TextFormat();
+					
+					if( slot.aegisXP >= 100 ) {
+						slotMC.m_XP._visible = !_hideXPWhenFull;
 						textFormat.color = _tints.xpFull;
-						slotMC.m_XPTextFull.m_Text.setTextFormat( textFormat );
-						slotMC.m_XPTextFull.m_Text.setNewTextFormat( textFormat );
-
-						textFormat.color = _tints.xpProgress;
-						slotMC.m_XPTextProgress.m_Text.setTextFormat( textFormat );
-						slotMC.m_XPTextProgress.m_Text.setNewTextFormat( textFormat );
 					}
 					
-					// use progress bar display
 					else {
-						slotMC.m_XPTextProgress._visible = false;
-						slotMC.m_XPTextFull._visible = false;
-						
-						AddonUtils.Colorize( slotMC.m_XPBar.m_Background, _tints.xpBackground );						
-						AddonUtils.Colorize( slotMC.m_XPBar.m_Progress, _tints.xpProgress );
-						AddonUtils.Colorize( slotMC.m_XPBar.m_Full, _tints.xpFull );
-
-						slotMC.m_XPBar._visible = true;
-
-						if( slot.aegisXP >= 100 ) {
-							slotMC.m_XPBar.m_Progress._visible = false;
-							slotMC.m_XPBar.m_Background._visible = false;
-							slotMC.m_XPBar.m_Full._visible = !_hideXPWhenFull;
-						}
-						else {
-							slotMC.m_XPBar.m_Progress._visible = true;
-							slotMC.m_XPBar.m_Background._visible = _showXPProgressBackground;
-							slotMC.m_XPBar.m_Full._visible = false;
-						}
+						slotMC.m_XP._visible = true;
+						textFormat.color = _tints.xpProgress;				
 					}
+					
+					slotMC.m_XP.t_XP.setTextFormat( textFormat );
+					slotMC.m_XP.t_XP.setNewTextFormat( textFormat );
 				}
 
-				// show aegis background
-				slotMC.m_Background._alpha = _showAegisBackgroundBehaviour == SlotBackgroundBehaviour.ALWAYS
-					|| ( _showAegisBackgroundBehaviour == SlotBackgroundBehaviour.WHEN_SLOTTED && slot.item != undefined ) ? 100 : 0;
-				
-				// tint aegis background
-				AddonUtils.Colorize( slotMC.m_Background, _tintAegisBackgroundByType ? slotTint : _tints.none );
-
-				// take neon glow off slot before the active check
-				slotMC.filters = [];
 
 				// handle active aegis higlighting
-				if ( slot.equip == bar.selectedAegisEquipLocation ) {
+				if ( slot == bar.selectedAegisSlot ) {
 
 					// show aegis background
-					slotMC.m_Background._alpha = _showActiveAegisBackground ? 100 : 0;
+					if ( _showActiveAegisBackground ) {
+						slotMC.m_Background._alpha = 100;
 
-					// tint aegis background
-					switch( _tintActiveAegisBackgroundBehaviour ) {
 						
-						case ActiveAegisBackgroundTintBehaviour.NEVER: 		AddonUtils.Colorize( slotMC.m_Background, _tints.none ); break;
-						case ActiveAegisBackgroundTintBehaviour.STANDARD: 	AddonUtils.Colorize( slotMC.m_Background, _tints.standard ); break;
-						case ActiveAegisBackgroundTintBehaviour.AEGIS_TYPE:	AddonUtils.Colorize( slotMC.m_Background, slotTint ); break;
+						// tint slot background
+						var backgroundTint:Number = _tintActiveAegisBackground ? slotTint : _tints.standard;
+						AddonUtils.Colorize( slotMC.m_Background, backgroundTint );
+						slotMC.m_Background.gotoAndStop("white");
+						
+
+						// neon glow slot background
+						if ( _tintActiveAegisBackground && _neonEnabled && _neonGlowActiveAegisBackground ) {
+							slotMC.m_Background.gotoAndStop("black");
+							var backgroundGlow:GlowFilter = new GlowFilter( barTint, 0.8, 6, 6, 3, 3, false, false );							
+							slotMC.m_Background.filters = [ backgroundGlow ];
+						}
+						
+						else {
+							slotMC.m_Background.filters = [];
+						}
+						
 					}
 					
-					// neon glow aegis
+					else {
+						slotMC.m_Background._alpha = 0;
+					}
+
+					
+					// neon glow aegis icon
 					if ( _neonEnabled && _neonGlowAegis ) {
-						var aegisGlow = new GlowFilter( slotTint, 1, 10, 10, 3, 3, false, false );
+						var aegisGlow = new GlowFilter( slotTint, 0.8, 6, 6, 3, 3, false, false );
+						if( slotMC.m_Icon._visible ) {
+							slotMC.m_Icon.filters = [ aegisGlow ];
+						}
 						
-						slotMC.filters = [ aegisGlow ];
+						else {
+							slotMC.m_Watermark.filters = [ aegisGlow ];
+						}
 					}
 					
-					// bring active aegis to front
-					// the check for weapon slots is to avoid an issue with swapDepths that for some reason causes the entire GUI to disappear
-					/*
-					if( weaponSlotMC._visible ) {
-						if ( slotMC.getDepth() < _itemSlots[slot.prev].mc.getDepth() ) slotMC.swapDepths( _itemSlots[slot.prev].mc );
-						if ( slotMC.getDepth() < _itemSlots[slot.next].mc.getDepth() ) slotMC.swapDepths( _itemSlots[slot.next].mc );
+					else {
+						slotMC.m_Icon.filters = [];
+						slotMC.m_Watermark.filters = [];
 					}
-					*/
 				}
 				
+				else {
+					slotMC.m_Background._alpha = 0;
+					slotMC.m_Icon.filters = [];
+					slotMC.m_Watermark.filters = [];
+					slotMC.m_Background.filters = [];
+				}
 			}
 		}	
 	}
 	
 	// set the current active aegis stat straight from the game
 	// note that this will NOT cause an invalidate() so no redraw will occur
-	private function UpdateActiveAegis():Void
-	{
-		_primary.activeAegisEquipLocation = _character.GetStat( _primary.activeAegisStat );
-		_secondary.activeAegisEquipLocation = _character.GetStat( _secondary.activeAegisStat );
+	private function UpdateActiveAegis() : Void {
+		
+		var keyPrefix:String = _equipped.GetInventoryID().GetType() + "_";
+		
+		_primary.activeAegisSlot = _staticPositions[ keyPrefix + _character.GetStat( _primary.activeAegisStat ) ];
+		_secondary.activeAegisSlot = _staticPositions[ keyPrefix + _character.GetStat( _secondary.activeAegisStat ) ];
+		
+		_shield.activeAegisSlot = _slotFromPosition[ keyPrefix + e_AegisShieldPosition ];
 		
 		// if this happens when the selection catchup timer isn't running, update the selected as well
 		if ( _swapTimeoutID == undefined ) {
@@ -800,44 +1236,76 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	}
 
 	// swap to an aegis slot
-	// -- note that slotNumber is equipment location in the inventory
-	private function SwapToAegisSlot(equipLocation:Number, dualSelect:Boolean)
-	{
-		// do nothing if no slot location provided
-		if ( equipLocation == undefined) return;
+	private function SwapToAegisSlot(slot:Object, dualSelect:Boolean) : Void {
 		
-		var side = _itemSlots[equipLocation].side;
+		// do nothing if no slot provided
+		if ( slot == undefined) return;
+		
+		var fromSlot:Object = slot.bar.selectedAegisSlot;
+		
+		// swapping to shields involves "using" the item
+		if ( slot.bar == _shield ) {
 
-		// switch forward?
-		if ( _itemSlots[ side.selectedAegisEquipLocation ].next == equipLocation )
-		{
-			// first param is first/second aegis, second param is forward/back
-			Character.SwapAegisController( side == _primary, true);
+			// swapping shields can only be done out of combat			
+			if ( _character.IsInCombat() || _character.IsGhosting() || _character.IsDead() ) return;
+				
+			// check that the item linked to the slot is actually still in the inventory position (sync check)
+			if ( slot.item != slot.inventory.GetItemAt(slot.position) ) {
+				RefreshShieldPositions();
+			}
+
+			// don't unequip the slotted shield if it is clicked, or if there is no item in the slot
+			if ( slot.inventory == _equipped || slot.item == undefined ) return;
+
+			// make sure we're not trying to switch to an already selected position, to avoid swap-backs
+			if ( slot == fromSlot ) return;
+			
+			// otherwise use the item to initiate a swap
+			slot.inventory.UseItem( slot.position );
+
+			// clear existing post-swap callback
+			PostSwapCatchup(true);
+			
+			// important to update the internal pointer for the aegis location
+			// even before we find out if the swap was successful
+			// otherwise rapid clicks can cause the selection to do a swapback
+			slot.bar.selectedAegisSlot = slot;
 		}
 		
-		// or switch back? (doing the extra check instead of a raw else prevents double-jumps with the switch latency)
-		else if ( _itemSlots[ side.selectedAegisEquipLocation ].prev == equipLocation )
-		{
-			Character.SwapAegisController( side == _primary, false);
-		}
+		// disruptors rotate through available slots
+		else {
 		
-		// clear existing post-swap callback
-		PostSwapCatchup(true);
-		
-		// important to update the internal pointer for the aegis location
-		// even before we find out if the swap was successful
-		// otherwise rapid clicks can cause the selection to jump 2 spots
-		side.selectedAegisEquipLocation = equipLocation;
-		
-		// select other side partner slot if dualSelect in use
-		if ( dualSelect ) {
-			SwapToAegisSlot( _itemSlots[equipLocation].dualSelectPartner );
+			// switch forward?
+			if ( fromSlot.next == slot )
+			{
+				// first param is first/second aegis, second param is forward/back
+				Character.SwapAegisController( slot.bar == _primary, true);
+			}
+			
+			// or switch back? (doing the extra check instead of an arbitrary 'else' prevents double-jumps caused by switch latency)
+			else if ( fromSlot.prev == slot )
+			{
+				Character.SwapAegisController( slot.bar == _primary, false);
+			}
+			
+			// clear existing post-swap callback
+			PostSwapCatchup(true);
+			
+			// important to update the internal pointer for the aegis location
+			// even before we find out if the swap was successful
+			// otherwise rapid clicks can cause the selection to jump 2 spots
+			slot.bar.selectedAegisSlot = slot;
+			
+			// select other side partner slot if dualSelect in use
+			if ( dualSelect ) {
+				SwapToAegisSlot( slot.pair );
+			}
 		}
 		
 		invalidate();
 	}
 
-	// post-swap callback that will catch up the selectedAegisEquipLocation for each side
+	// post-swap callback that will catch up the selectedAegisSlot for each bar
 	// this is needed in case of users going bonkers with very rapid clicks, which can
 	// get out of sync with the server if the server drops one of the request packets
 	// (yes it happens often under command spam)
@@ -847,7 +1315,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			_swapTimeoutID = undefined;
 		}
 		
-		// if restarting, not actioning, set up timer again
+		// if restarting timer, set up timer again
 		if ( restart ) {
 			_swapTimeoutID = setTimeout( Delegate.create(this, PostSwapCatchup), _postSwapCatchupInterval );
 		}
@@ -859,47 +1327,51 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	}
 	
 	private function SyncSelectedWithActive():Void {
+
+		var invalid:Boolean = false;
 		
-		if ( _primary.selectedAegisEquipLocation != _primary.activeAegisEquipLocation || _secondary.selectedAegisEquipLocation != _secondary.activeAegisEquipLocation ) {
-			_primary.selectedAegisEquipLocation = _primary.activeAegisEquipLocation;
-			_secondary.selectedAegisEquipLocation = _secondary.activeAegisEquipLocation;
-			
-			invalidate();
+		// the check is to avoid a lot of unnecessary redraws via invalidate
+		for ( var s:String in _bars) {
+			if ( _bars[s].selectedAegisSlot != _bars[s].activeAegisSlot ) {
+				_bars[s].selectedAegisSlot = _bars[s].activeAegisSlot;
+				invalid = true;
+			}
 		}
+		
+		if ( invalid )  invalidate();
 	}
 	
 	// handle mouse clicks that select an aegis
 	private function AegisSelectHandler(event:Object):Void {
-		SwapToAegisSlot( event.itemSlot.equip, event.dualSelect );
+		SwapToAegisSlot( event.slot, event.dualSelect );
 	}
 
 	// handle mouse rolling over an aegis
 	private function AegisRollOverHandler(event:Object):Void {
 		// prepare tooltip data
-		OpenTooltip( event.itemSlot );
+		OpenTooltip( event.slot );
 	}
 
 	private function AegisRollOutHandler(event:Object):Void {
 		CloseTooltip();
 	}
 	
-    private function OpenTooltip( tooltipSlot:Object ):Void {
+    private function OpenTooltip(slot:Object) : Void {
 		// close any existing tooltip
 		CloseTooltip();
 		
 		// don't show anything if setting disabled OR if the hud elements are currently being dragged
-		if ( !_showTooltips || _dragging || (!_suppressTooltipsInCombat && _character.IsInCombat()) ) return;
+		if ( !_showTooltips || _dragging || (!_suppressTooltipsInCombat && _character.IsInCombat()) || slot.item == undefined ) return;
 
-        if ( tooltipSlot.item != undefined ) {
-            var tooltipData:TooltipData = TooltipDataProvider.GetInventoryItemTooltip( _inventory.GetInventoryID(), tooltipSlot.equip );
-			
-			// add raw xp value
-			//tooltipData.AddAttributeSplitter();
-			var tokenID:Number = aegisXPTokenMap['id' + tooltipSlot.item.m_Icon.GetInstance()];
-			tooltipData.AddDescription( 'XP: <font color="#3AD9FF">' + _character.GetTokens(tokenID) + '</font>' );
-			
-			_tooltip = TooltipManager.GetInstance().ShowTooltip( tooltipSlot.mc, TooltipInterface.e_OrientationVertical, -1, tooltipData );
+		var tooltipData:TooltipData = TooltipDataProvider.GetInventoryItemTooltip( slot.inventory.GetInventoryID(), slot.position );
+		
+		// add raw xp value
+		//tooltipData.AddAttributeSplitter();
+		if ( slot.item.m_AegisItemType ) {
+			tooltipData.AddDescription( 'AEGIS Item ID: <font color="#ffff00">' + slot.item.m_AegisItemType + '</font>, XP: <font color="#ffff00">' + _character.GetTokens(slot.item.m_AegisItemType) + '</font>' );
 		}
+		
+		_tooltip = TooltipManager.GetInstance().ShowTooltip( slot.mc, TooltipInterface.e_OrientationVertical, -1, tooltipData );
     }
     
     private function CloseTooltip():Void {
@@ -922,7 +1394,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		m_DragProxy = this.createEmptyMovieClip("m_DragProxy", this.getNextHighestDepth());
 
 		if ( event.dual ) {
-			_dragObjects = [ _primary.mc, _secondary.mc ];
+			_dragObjects = [ _primary.mc, _secondary.mc, _shield.mc ];
 		}
 		else {
 			_dragObjects = [ event.bar ];
@@ -963,19 +1435,21 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		_mouseDown = button;
 
 		// TODO: check if no modifiers held down, and only fire click if that is the case, otherwise fire appropriate start drag etc
-		if ( Key.isDown( dualDragModifier ) && button == dualDragButton ) {
+		if ( !_lockBars && !_attachToPassiveBar && Key.isDown( dualDragModifier ) && button == dualDragButton ) {
 			_dragging = true;
 			dispatchEvent( { type:"dragStart", modifier:dualDragModifier, button:button, dual:true, bar: getBarMouseOver() } );
 		}
-		else if ( Key.isDown( singleDragModifier ) && button == singleDragButton ) {
+		
+		else if ( !lockBars && !_attachToPassiveBar && Key.isDown( singleDragModifier ) && button == singleDragButton ) {
 			_dragging = true;
 			dispatchEvent( { type:"dragStart", modifier:singleDragModifier, button:button, dual:false, bar: getBarMouseOver() } );
 		}
+		
 		else {
 			// check if an aegis selector button was involved
-			var slot:Object = getItemSlotMouseOver();
-			
-			if ( slot.type == "aegis" ) {
+			var slot:Object = getSlotMouseOver();
+
+			if ( slot.selectable ) {
 				var dual:Boolean;
 				if ( _dualSelectByDefault ) {
 					dual = !(dualSelectWithModifier && Key.isDown(dualSelectModifier)) && !(dualSelectWithButton && button == dualSelectButton);
@@ -984,7 +1458,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 					dual = (dualSelectWithModifier && Key.isDown(dualSelectModifier)) || (dualSelectWithButton && button == dualSelectButton);
 				}
 
-				dispatchEvent({ type:"select", modifier:dualSelectModifier, button:button, itemSlot:slot, dualSelect:dual });
+				dispatchEvent({ type:"select", modifier:dualSelectModifier, button:button, slot:slot, dualSelect:dual });
 			}
 		}
 	}
@@ -994,7 +1468,10 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		if ( _mouseDown != button ) return;
 		_mouseDown = -1;
 
-		if( _dragging ) dispatchEvent({type:"dragEnd", button:button});
+		if ( _dragging ) {
+			dispatchEvent( { type:"dragEnd", button:button } );
+			_dragging = false;
+		}
 	}
 	
 	private function handleReleaseOutside(controllerIdx:Number, button:Number):Void {
@@ -1003,8 +1480,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 	private function handleRollOver(mouseIdx:Number):Void {
 		// check which aegis selector button was involved
-		var slot:Object = getItemSlotMouseOver();
-		dispatchEvent( { type:"rollover", itemSlot:slot } );
+		var slot:Object = getSlotMouseOver();
+		dispatchEvent( { type:"rollover", slot:slot } );
 	}
 
 	private function handleRollOut(mouseIdx:Number):Void {
@@ -1017,23 +1494,25 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	}
 
 	
-	private function getItemSlotMouseOver():Object {
+	private function getSlotMouseOver():Object {
 
-		var slot;
-		for ( var s:String in _itemSlots ) {
-			if ( _itemSlots[s].mc.hitTest(_root._xmouse, _root._ymouse, true, true) ) {
-				slot = _itemSlots[s];
-				break;
+		for ( var s:String in _bars ) {
+			var bar:Object = _bars[s];
+			for ( var i:String in bar.slots ) {
+				var slot:Object = bar.slots[i];
+				if ( slot.mc.hitTest(_root._xmouse, _root._ymouse, true, true) ) {
+					return slot;
+				}
 			}
 		}
-		
-		return slot;
+
+		return undefined;
 	}
 	
 	private function getBarMouseOver():MovieClip {
 		
-		for ( var s:String in _sides ) {
-			if ( _sides[s].mc.hitTest(_root._xmouse, _root._ymouse, true, true) ) return _sides[s].mc;
+		for ( var s:String in _bars ) {
+			if ( _bars[s].mc.hitTest(_root._xmouse, _root._ymouse, true, true) ) return _bars[s].mc;
 		}
 		
 		return undefined;
@@ -1042,7 +1521,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	/**
 	 * Sets up mouse event handlers for hud or bar movement
 	 * 
-	 * @param	mc Movieclip to configure move handlers on
+	 * @param	mc Movieclip to configure handlers on
 	 */
 	private function SetupGlobalMouseHandlers(mc:MovieClip) {
 		
@@ -1062,7 +1541,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	/**
 	 * Sets up mouse event handlers for aegis selector buttons
 	 * 
-	 * @param	mc Movieclip to configure rollovers on
+	 * @param	mc Movieclip to configure handlers on
 	 */
 	private function SetupButtonHandlers(mc:MovieClip) {
 
@@ -1098,7 +1577,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		
 		// do nothing if XP isn't being shown
 		if ( !_showXP ) {
-			if ( _fetchXPAntiSpamTimeoutID != undefined) _global.clearTimeout( _fetchXPAntiSpamTimeoutID );
+			if ( _fetchXPAntiSpamTimeoutID != undefined ) _global.clearTimeout( _fetchXPAntiSpamTimeoutID );
 			_fetchXPAntiSpamTimeoutID = undefined;
 			
 			return;
@@ -1125,31 +1604,33 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		_lastXPFetchTime = now;
 		
 		// for each aegis controller, get the tooltip data and extract the XP value
-		for ( var s:String in _itemSlots ) {
-			UpdateAegisSlotXP( _itemSlots[s] );
+		for ( var s:String in _slotFromAegisID ) {
+			UpdateAegisItemXP( s );
 		}
-
 	}
 	
 	// update aegis xp for a single item
-	private function UpdateAegisSlotXP(slot:Object):Void {
+	private function UpdateAegisItemXP(aegisID:Number) : Void {
 		
 		// do nothing if there is nothing sensible to act on
-		// important clause in there for efficiency -- the only way to get a slotted item away from 100 is to unslot it
-		// which will clear the xp value, this when it gets reslotted after being upgraded it won't be on 100 anymore... :)
-		if ( !_showXP || slot == undefined || slot.type != "aegis" || slot.item == undefined || slot.aegisXP == 100) return;
+		if ( !_showXP ) return;
 
-		var slotMC:MovieClip = slot.mc;
+		var slot:Object = _slotFromAegisID[ aegisID ];
 		
+		// check that the slot has a valid item in it
+		if ( slot == undefined || slot.item == undefined || slot.inventory.GetItemAt(slot.position).m_AegisItemType != aegisID ) return;
+
 		// fetch tooltip for item
-		var tooltipData:TooltipData = TooltipDataProvider.GetInventoryItemTooltip( _inventory.GetInventoryID(), slot.equip );
+		var tooltipData:TooltipData = TooltipDataProvider.GetInventoryItemTooltip( slot.inventory.GetInventoryID(), slot.position );
 
 		// break out xp value
 		var xpString:String = tooltipData.m_Descriptions[2];
 
 		// get the first occurence of %
 		var endPos:Number = xpString.indexOf('%');
+		
 		if ( LDBFormat.GetCurrentLanguageCode() == 'de' ) endPos--;	// german client has a space between number and %
+
 		for ( var startPos:Number = endPos; startPos >= 0; startPos-- ) {
 			
 			var char:String = xpString.charAt(startPos);
@@ -1164,63 +1645,31 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 		// put xp value into slot and publish into component
 		slot.aegisXP = xp == Number.NaN ? undefined : xp;
-
+		
 		// text display being used
-		slotMC.m_XPTextProgress.m_Text.text = slotMC.m_XPTextFull.m_Text.text = xp == Number.NaN ? "?" : xp;
+		slot.mc.m_XP.t_XP.text = xp == Number.NaN ? "?" : xp;
 		
 		// progress bar being used
 		slot.mc.m_XPBar.m_Progress._xscale = xp == Number.NaN ? 0: xp;
 		
 		// when reaching 100, redraw to show the "Full" elements
-		if ( xp >= 100 ) invalidate()
+		if ( xp <= 0 || xp >= 100 ) invalidate();
 	}
 	
 	
 	// signal handlers for inventory and character stat changes
-	// I think some of these are not necessary just for Aegis or Weapon swapping, but they are the complete list
-	// used by the default CharacterSheetController, as I'd rather cover everything than have
-	// something not work in an unforeseen situation
 	
 	// handles active aegis being swapped
-	private function SlotStatChanged(statID:Number):Void {
-		// only proceed if stat is to do with aegis selector
-		if ( !(statID == _primary.activeAegisStat || statID == _secondary.activeAegisStat) ) return;
-		UpdateActiveAegis();	
-		
-		//invalidate();	// removed in 2.3.0, cuts redraws in half, but does this pass sanity check under heavy load?
+	private function SlotStatChanged(statID:Number, value:Number):Void {
+		// only proceed if stat is to do with selected disruptor
+		if ( statID == _primary.activeAegisStat || statID == _secondary.activeAegisStat) {
+			UpdateActiveAegis();
+		}
 	}
 
-	//Slot Item Added
-	private function SlotItemAdded(inventoryID:com.Utils.ID32, itemPos:Number):Void {
-		LoadItem(itemPos);
-	}
-
-	private function SlotItemLoaded(inventoryID:com.Utils.ID32, itemPos:Number):Void {
-		SlotItemAdded(inventoryID, itemPos);
-	}
-
-	//Slot Item Moved
-	private function SlotItemMoved(inventoryID:com.Utils.ID32, fromPos:Number, toPos:Number):Void {
-		//LoadEquipment();
-	}
-
-	//Slot Item Removed
-	private function SlotItemRemoved(inventoryID:com.Utils.ID32, itemPos:Number, moved:Boolean):Void {
-		LoadItem(itemPos);
-	}
-	 
-	//Slot Item Changed
-	private function SlotItemChanged(inventoryID:com.Utils.ID32, itemPos:Number):Void {
-		LoadItem(itemPos);
-	}
-
-	private function SlotItemStatChanged(inventoryID:com.Utils.ID32, itemPos:Number, stat:Number, newValue:Number ) {
-		SlotItemChanged(inventoryID, itemPos);
-	}
-	
 	// aegis xp listener
 	private function SlotTokenAmountChanged( tokenID:Number, newValue:Number, oldNumber:Number ) {
-		if ( tokenID >= e_AegisXPTokenID_Min && tokenID <= e_AegisXPTokenID_Max ) UpdateAegisXP();
+		UpdateAegisItemXP( tokenID );
 	}
 	
 	
@@ -1255,7 +1704,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		// set up proxies and force HUD into position
 		if ( attach ) {
 			
-			// make sure not to "re-attach"
+			// make sure not to "re-attach" if already attached
 			if( passivebar.m_Bar.onTweenComplete_AegisHUD_Saved == undefined ) {
 				passivebar.m_Bar.onTweenComplete_AegisHUD_Saved = passivebar.m_Bar.onTweenComplete;
 				// break the link
@@ -1266,7 +1715,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			}
 		}
 		
-		// remove proxy and restore original function -- make sure not to "detach when not attached"
+		// remove proxy and restore original function -- make sure not to detach when not attached
 		else if( passivebar.m_Bar.onTweenComplete_AegisHUD_Saved != undefined ) {
 			passivebar.m_Bar.onTweenComplete = passivebar.m_Bar.onTweenComplete_AegisHUD_Saved;
 			passivebar.m_Bar.onTweenComplete_AegisHUD_Saved = undefined;
@@ -1284,45 +1733,60 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	// apply a bundle of settings all at once
 	public function ApplySettingsPack(pack:Object) {
 		
+		_suspendVisualUpdates = true;
+		
 		for ( var s:String in pack ) {
 			// TODO : implement something equivalent to AS3's .hasOwnProperty(name)
 			this[s] = pack[s];
 		}
+		
+		_suspendVisualUpdates = false;
+		invalidate();
 	}
 
 	/**
-	 * handler for the swap AEGIS RPC calls
+	 * handler for the swap disruptor RPC calls
+	 * 
+	 * these calls typically arrive only from the hotkey hijacker, but there is nothing stopping other things sending them
 	 * 
 	 * format of message is specific:
 	 * <primary|secondary>.<next|prev>.<sequence>
 	 * 
-	 * sequence is just a unique number that forces the DValue SignalChanged to fire (becaues the value has changed)
-	 * so if the same command is sent twice in a row it still triggers
+	 * sequence is just a unique number that forces the DValue SignalChanged to fire (because the value has changed)
+	 * so if the same command is sent twice in a row it still triggers twice
 	 * 
 	 */
-	
-	private function SwapAegisRPCHandler():Void {
+	private function SwapDisruptorRPCHandler():Void {
 		
 		// split message into component parts
-		var parts:Array = String(_swapAegisRPC.GetValue()).split('.');
+		var parts:Array = String(_swapDisruptorRPC.GetValue()).split('.');
+		var bar:Object = _bars[ parts[0] ];
+		var direction:String = parts[1];
 		
-		if ( parts[0] == "primary" || parts[0] == "secondary" ) {
-			
-			var side:Object = this['_' + parts[0]];
-			
-			if ( parts[1] == "next" || parts[1] == "prev" ) {
-				var direction:String = parts[1];
-				
-				SwapToAegisSlot( _itemSlots[ side.selectedAegisEquipLocation ][direction], _dualSelectByDefault && _dualSelectFromHotkey);
-			}
+		if ( bar && (direction == "next" || direction == "prev") ) {
+			SwapToAegisSlot( bar.selectedAegisSlot[direction], _dualSelectByDefault && _dualSelectFromHotkey);
 		}
 	}
 	
-	// getters & setters
+	
+	/**
+	 * 
+	 * getters & setters
+	 * 
+	 */
+	
 	public function get showWeapons():Boolean { return _showWeapons; }
 	public function set showWeapons(value:Boolean) {
 		if( _showWeapons != value) {
 			_showWeapons = value;
+			LayoutBars();
+		}
+	}
+
+	public function get showShield():Boolean { return _showShield; }
+	public function set showShield(value:Boolean) {
+		if( _showShield != value) {
+			_showShield = value;
 			LayoutBars();
 		}
 	}
@@ -1331,6 +1795,15 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	public function set showBarBackground(value:Boolean) {
 		if( _showBarBackground != value) {
 			_showBarBackground = value;
+			invalidate();
+		}
+	}
+
+	public function get barBackgroundThin():Boolean { return _barBackgroundThin; }
+	public function set barBackgroundThin(value:Boolean) {
+		if( _barBackgroundThin != value) {
+			_barBackgroundThin = value;
+			LayoutBars();
 			invalidate();
 		}
 	}
@@ -1361,6 +1834,12 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		Layout();
 	}
 
+	public function get shieldPosition():Point { return new Point(m_Shield._x, m_Shield._y); }
+	public function set shieldPosition(value:Point) {
+		_shieldPosition = value;
+		Layout();
+	}
+	
 	// overall hud scale
 	public function get hudScale():Number { return _hudScale; }
 	public function set hudScale(value:Number) {
@@ -1376,33 +1855,33 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	}
 	
 
-	public function get primaryWeaponFirst():Boolean { return _primaryWeaponFirst; }
-	public function set primaryWeaponFirst(value:Boolean) {
-		if( _primaryWeaponFirst != value ) {
-			_primaryWeaponFirst = value;
+	public function get primaryItemFirst():Boolean { return _primaryItemFirst; }
+	public function set primaryItemFirst(value:Boolean) {
+		if( _primaryItemFirst != value ) {
+			_primaryItemFirst = value;
 			LayoutBars();
 		}
 	}
 
-	public function get secondaryWeaponFirst():Boolean { return _secondaryWeaponFirst; }
-	public function set secondaryWeaponFirst(value:Boolean) {
-		if( _secondaryWeaponFirst != value ) {
-			_secondaryWeaponFirst = value;
+	public function get secondaryItemFirst():Boolean { return _secondaryItemFirst; }
+	public function set secondaryItemFirst(value:Boolean) {
+		if( _secondaryItemFirst != value ) {
+			_secondaryItemFirst = value;
 			LayoutBars();
 		}
 	}
 
-	public function get lockBars():Boolean { return _lockBars; }
-	public function set lockBars(value:Boolean) { _lockBars = value; }
-		
-	public function get barStyle():Number { return _barStyle; }	
-	public function set barStyle(value:Number) {
-		if ( _barStyle != value ) {
-			_barStyle = value;
+	public function get shieldItemFirst():Boolean { return _shieldItemFirst; }
+	public function set shieldItemFirst(value:Boolean) {
+		if( _shieldItemFirst != value ) {
+			_shieldItemFirst = value;
 			LayoutBars();
 		}
 	}
 	
+	public function get lockBars():Boolean { return _lockBars; }
+	public function set lockBars(value:Boolean) { _lockBars = value; }
+		
 	public function get neonGlowEntireBar():Boolean { return _neonGlowEntireBar; }
 	public function set neonGlowEntireBar(value:Boolean):Void {
 		if ( _neonGlowEntireBar != value ) {
@@ -1433,22 +1912,6 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		}
 	}
 	
-	public function get showWeaponBackgroundBehaviour():Number { return _showWeaponBackgroundBehaviour; }
-	public function set showWeaponBackgroundBehaviour(value:Number):Void {
-		if ( _showWeaponBackgroundBehaviour != value) {
-			_showWeaponBackgroundBehaviour = value;
-			invalidate();
-		}
-	}
-	
-	public function get tintWeaponBackgroundByActiveAegis():Boolean { return _tintWeaponBackgroundByActiveAegis; }
-	public function set tintWeaponBackgroundByActiveAegis(value:Boolean):Void {
-		if ( _tintWeaponBackgroundByActiveAegis != value) {
-			_tintWeaponBackgroundByActiveAegis = value;
-			invalidate();
-		}
-	}
-	
 	public function get tintWeaponIconByActiveAegis():Boolean { return _tintWeaponIconByActiveAegis; }
 	public function set tintWeaponIconByActiveAegis(value:Boolean):Void {
 		if( _tintWeaponIconByActiveAegis != value ) {
@@ -1465,22 +1928,6 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		}
 	}
 	
-	public function get showAegisBackgroundBehaviour():Number { return _showAegisBackgroundBehaviour; }
-	public function set showAegisBackgroundBehaviour(value:Number):Void {
-		if ( _showAegisBackgroundBehaviour != value ) {
-			_showAegisBackgroundBehaviour = value;
-			invalidate();
-		}
-	}
-	
-	public function get tintAegisBackgroundByType():Boolean { return _tintAegisBackgroundByType; }
-	public function set tintAegisBackgroundByType(value:Boolean):Void {
-		if( _tintAegisBackgroundByType != value ) {
-			_tintAegisBackgroundByType = value;
-			invalidate();
-		}
-	}
-	
 	public function get showActiveAegisBackground():Boolean { return _showActiveAegisBackground; }
 	public function set showActiveAegisBackground(value:Boolean):Void {
 		if( _showActiveAegisBackground != value ) {
@@ -1488,11 +1935,19 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			invalidate();
 		}
 	}
+
+	public function get tintActiveAegisBackground():Boolean { return _tintActiveAegisBackground; }
+	public function set tintActiveAegisBackground(value:Boolean):Void {
+		if( _tintActiveAegisBackground != value ) {
+			_tintActiveAegisBackground = value;
+			invalidate();
+		}
+	}
 	
-	public function get tintActiveAegisBackgroundBehaviour():Number { return _tintActiveAegisBackgroundBehaviour; }
-	public function set tintActiveAegisBackgroundBehaviour(value:Number):Void {
-		if( _tintActiveAegisBackgroundBehaviour != value ) {
-			_tintActiveAegisBackgroundBehaviour = value;
+	public function get neonGlowActiveAegisBackground():Boolean { return _neonGlowActiveAegisBackground; }
+	public function set neonGlowActiveAegisBackground(value:Boolean):Void {
+		if( _neonGlowActiveAegisBackground != value ) {
+			_neonGlowActiveAegisBackground = value;
 			invalidate();
 		}
 	}
@@ -1510,29 +1965,6 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		if( _neonEnabled != value ) {
 			_neonEnabled = value;
 			invalidate();
-		}
-	}
-	public function get xpIndicatorStyle():Number { return _xpIndicatorStyle; }
-	public function set xpIndicatorStyle(value:Number):Void {
-		if ( _xpIndicatorStyle != value ) {
-			_xpIndicatorStyle = value;
-			if( showXP ) invalidate();
-		}
-	}
-	public function get showXPProgressBackground():Boolean { return _showXPProgressBackground; }
-	public function set showXPProgressBackground(value:Boolean):Void 
-	{
-		if ( _showXPProgressBackground != value ) {
-			_showXPProgressBackground = value;
-			
-			if ( showXP && xpIndicatorStyle == XPIndicatorStyles.ProgressBar ) invalidate();
-		}
-	}
-	public function get fetchXPAntiSpamInterval():Number { return _fetchXPAntiSpamInterval; }
-	public function set fetchXPAntiSpamInterval(value:Number):Void 
-	{
-		if ( _fetchXPAntiSpamInterval != value) {
-			_fetchXPAntiSpamInterval = value;
 		}
 	}
 
@@ -1555,80 +1987,21 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		}
 	}
 
-
-	/**
-	 * I tried to use a static var here, but then whenever anything used it, it would create a reference to the property and was updating the values!!
-	 * 
-	 * readonly
-	 */
-	public static function get defaultSettingsPack():Object {
-		
-		return new Object( {
-		
-			slotSize: 30,
-			barPadding: 5,
-			slotSpacing: 4,
-			hudScale: 100,
-			maxHUDScale: 150,
-			minHUDScale: 50,
+	public function get aegisTypeIcons():Boolean { return _aegisTypeIcons; }
+	public function set aegisTypeIcons(value:Boolean):Void {
+		if ( _aegisTypeIcons != value ) {
+			_aegisTypeIcons = value;
 			
-			primaryPosition: undefined,
-			secondaryPosition: undefined,
-			
-			barStyle: 0,
-			neonGlowEntireBar: false,
-			lockBars: false,
-			attachToPassiveBar: false,
-			animateMovementsToDefaultPosition: true,
-			
-			showBarBackground: true,
-			tintBarBackgroundByActiveAegis: true,
-			neonGlowBarBackground: true,
-
-			showWeapons: true,
-			primaryWeaponFirst: false,
-			secondaryWeaponFirst: true,
-			
-			showWeaponBackgroundBehaviour: 0,
-			tintWeaponBackgroundByActiveAegis: false,
-			tintWeaponIconByActiveAegis: false,
-			neonGlowWeapon: false,
-			
-			showXP: true,
-			showXPProgressBackground: true,
-			xpIndicatorStyle: 1,
-			hideXPWhenFull: false,
-			fetchXPAntiSpamInterval: 1000,
-
-			showTooltips: true,
-			suppressTooltipsInCombat: true,
-
-			showAegisBackgroundBehaviour: 0,
-			tintAegisBackgroundByType: false,
-			tintAegisIconByType: false,
-			showActiveAegisBackground: true,
-			tintActiveAegisBackgroundBehaviour: 0,
-			neonGlowAegis: true,
-			
-			neonEnabled: true,
-
-			dualSelectWithModifier: true,
-			dualSelectWithButton: true,
-			dualSelectByDefault: true,
-			dualSelectFromHotkey: true,
-			
-			tintAegisPsychic:		0xbf00ff,
-			tintAegisCybernetic:	0x0099ff,
-			tintAegisDemonic:		0xdd0000,
-			tintAegisEmpty:			0x999999,
-			tintAegisStandard:		0x006AFF,
-
-			tintXPBackground:		0xffffff,
-			tintXPProgress:			0x00ff88,		/* 0x00E5A3 */
-			tintXPFull:				0xff6600,		/* // 0x4EE500 // 0x19FDFF */
-			
-			tintBarStandard:		0x000000
-		});
+			updateIcons();
+		}
+	}
+	
+	public function get autoSwap():Boolean { return _autoSwap; }
+	public function set autoSwap(value:Boolean):Void {
+		if( _autoSwap != value ) {
+			_autoSwap = value;
+			manageAutoSwap();
+		}
 	}
 	
 	public function get slotSize():Number { return _slotSize; }
@@ -1693,14 +2066,6 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		}
 	}
 	
-	public function get tintXPBackground():Number { return _tints.xpBackground };
-	public function set tintXPBackground(value:Number):Void {
-		if ( _tints.xpBackground != value && AddonUtils.isRGB(value)) {
-			_tints.xpBackground = value;
-			invalidate();
-		}
-	}
-
 	public function get tintXPProgress():Number { return _tints.xpProgress };
 	public function set tintXPProgress(value:Number):Void {
 		if ( _tints.xpProgress != value && AddonUtils.isRGB(value)) {
@@ -1732,7 +2097,24 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			
 			if ( showXP ) invalidate();
 		}
-		
 	}
 
+	public function get hideDefaultSwapUI():Boolean { return _hideDefaultSwapUI; }
+	public function set hideDefaultSwapUI(value:Boolean):Void {
+		if ( _hideDefaultSwapUI != value ) {
+			_hideDefaultSwapUI = value;
+			
+			hideDefaultSwapButtons(_hideDefaultSwapUI);
+		}
+	}
+
+	public function get active():Boolean { return _active; }
+	public function set active(value:Boolean):Void {
+		if ( _active != value ) {
+			_active = value;
+			
+			_active ? Activate() : Deactivate();
+		}
+	}
+	
 }

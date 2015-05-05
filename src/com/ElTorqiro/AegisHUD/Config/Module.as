@@ -1,32 +1,21 @@
 import com.Components.WinComp;
-import com.GameInterface.Tooltip.Tooltip;
+
 import com.GameInterface.Tooltip.TooltipData;
 import com.GameInterface.Tooltip.TooltipInterface;
-
-//import com.Utils.Point;
-import flash.geom.Point;
-
-import gfx.core.UIComponent;
-import mx.utils.Delegate;
-import com.GameInterface.Chat;
-import com.GameInterface.DistributedValue;
-import com.Utils.Archive;
-import com.GameInterface.UtilsBase;
-import com.GameInterface.Game.Shortcut;
-
-import com.GameInterface.Inventory;
-import com.Utils.ID32;
-import com.GameInterface.Game.Character;
-import com.GameInterface.Tooltip.TooltipDataProvider;
-import com.GameInterface.Lore
 import com.GameInterface.Tooltip.TooltipManager;
 
-import com.ElTorqiro.AegisHUD.AddonUtils.AddonUtils;
-import com.ElTorqiro.AegisHUD.AddonInfo;
+import flash.geom.Point;
+import mx.utils.Delegate;
 
+import com.GameInterface.DistributedValue;
+import com.Utils.Archive;
+
+import com.ElTorqiro.AegisHUD.AddonInfo;
+import com.ElTorqiro.AegisHUD.AddonUtils.AddonUtils;
 
 // config window
-var g_configWindow:WinComp;
+//var g_configWindow:WinComp;
+var g_configWindow;
 
 // internal distributed value listeners
 var g_showConfig:DistributedValue;
@@ -63,7 +52,7 @@ function onLoad()
 	};
 
 	// load module settings
-	var loadData = DistributedValue.GetDValue(AddonInfo.Name + "_Config_Data");
+	var loadData = DistributedValue.GetDValue(AddonInfo.ID + "_Config_Data");
 	for ( var i:String in g_settings )
 	{
 		g_settings[i] = loadData.FindEntry( i, g_settings[i] );
@@ -82,18 +71,18 @@ function onLoad()
 	}
 
 	// hud enabled connector
-	g_hudEnabled = DistributedValue.Create(AddonInfo.Name + "_HUD_Enabled");
+	g_hudEnabled = DistributedValue.Create(AddonInfo.ID + "_HUD_Enabled");
 	g_hudEnabled.SignalChanged.Connect(HUDEnabledHandler, this);
 	HUDEnabledHandler();
 	
 	// config window toggle listener
-	g_showConfig = DistributedValue.Create(AddonInfo.Name + "_ShowConfig");
+	g_showConfig = DistributedValue.Create(AddonInfo.ID + "_ShowConfig");
 	g_showConfig.SignalChanged.Connect(ToggleConfigWindow, this);
 }
 
 
-function OnModuleActivated():Void
-{
+function OnModuleActivated() : Void {
+	
 }
 
 function OnModuleDeactivated():Void
@@ -117,7 +106,7 @@ function OnUnload():Void
 	}
 	
 	// becaues LoginPrefs.xml has a reference to this DValue, the contents will be saved whenever the game thinks it is necessary (e.g. closing the game, reloadui etc)
-	DistributedValue.SetDValue(AddonInfo.Name + "_Config_Data", saveData);
+	DistributedValue.SetDValue(AddonInfo.ID + "_Config_Data", saveData);
 }
 
 function CheckVTIOIsLoaded()
@@ -127,7 +116,7 @@ function CheckVTIOIsLoaded()
 	{
 		// register with VTIO
 		DistributedValue.SetDValue("VTIO_RegisterAddon", 
-			AddonInfo.Name + "|" + AddonInfo.Author + "|" + AddonInfo.Version + "|" + AddonInfo.Name + "_ShowConfig|" + g_icon
+			AddonInfo.ID + "|" + AddonInfo.Author + "|" + AddonInfo.Version + "|" + AddonInfo.ID + "_ShowConfig|" + g_icon
 		);
 		
 		g_isRegisteredWithVTIO = true;
@@ -165,12 +154,25 @@ function CreateIcon():Void
 		// left mouse click, toggle config window
 		else if ( buttonID == 1 ) {
 			CloseTooltip();
-			DistributedValue.SetDValue(AddonInfo.Name + "_ShowConfig",	!DistributedValue.GetDValue(AddonInfo.Name + "_ShowConfig"));
+			DistributedValue.SetDValue(AddonInfo.ID + "_ShowConfig",	!DistributedValue.GetDValue(AddonInfo.ID + "_ShowConfig"));
+		}
+		
+		// shift right click, toggle autoswap
+		else if ( buttonID == 2 && Key.isDown(Key.SHIFT) ) {
+			if ( g_hudEnabled.GetValue() ) {
+				_root["eltorqiro_aegishud\\hud"].g_HUD.autoSwap = !_root["eltorqiro_aegishud\\hud"].g_HUD.autoSwap;
+				HUDEnabledHandler();
+			}
+			
+			else {
+				_root["eltorqiro_aegishud\\hud"].g_HUD.autoSwap = true;
+				_root["eltorqiro_aegishud\\hud"].g_HUD.active = true;
+			}
 		}
 		
 		// right mouse click, toggle hud enabled/disabled
 		else if ( buttonID == 2 ) {
-			_root["eltorqiro_aegishud\\hud"].Do( "option.hudEnabled", !g_hudEnabled.GetValue() );
+			_root["eltorqiro_aegishud\\hud"].g_HUD.active = !_root["eltorqiro_aegishud\\hud"].g_HUD.active;
 		}
 		
 		// reset icon scale, only if VTIO not present
@@ -203,7 +205,7 @@ function CreateIcon():Void
 	g_icon.onRollOver = function()
 	{
 		CloseTooltip();
-		g_tooltip = TooltipManager.GetInstance().ShowTooltip(g_Icon,com.GameInterface.Tooltip.TooltipInterface.e_OrientationVertical,0,g_iconTooltipData);
+		g_tooltip = TooltipManager.GetInstance().ShowTooltip(g_Icon, TooltipInterface.e_OrientationVertical, 0, g_iconTooltipData);
 	};
 
 	// mouse out, hide tooltip
@@ -216,11 +218,11 @@ function CreateIcon():Void
 function CreateTooltipData():Void
 {
 	// create icon tooltip data
-	g_iconTooltipData = new com.GameInterface.Tooltip.TooltipData();
+	g_iconTooltipData = new TooltipData();
 	g_iconTooltipData.AddAttribute("","<font face=\'_StandardFont\' size=\'14\' color=\'#00ccff\'><b>" + AddonInfo.Name + " v" + AddonInfo.Version + "</b></font>");
 	g_iconTooltipData.AddAttributeSplitter();
 	g_iconTooltipData.AddAttribute("","");
-	g_iconTooltipData.AddAttribute("", "<font face=\'_StandardFont\' size=\'11\' color=\'#BFBFBF\'><b>Left Click</b> Open/Close configuration window.\n<b>Right Click</b> Toggle HUD visibility.</font>");
+	g_iconTooltipData.AddAttribute("", "<font face=\'_StandardFont\' size=\'11\' color=\'#BFBFBF\'><b>Left Click</b> Open/Close configuration window.\n<b>Right Click</b> Toggle HUD visibility.\n<b>SHIFT + Right Click</b> Toggle AutoSwap.</font>");
 	
 	// show icon handling control instructions if VTIO has not hijacked the icon
 	if ( !g_isRegisteredWithVTIO )
@@ -265,7 +267,7 @@ function PositionIcon(x:Number, y:Number)
 		if ( x != undefined )  g_icon._x = x;
 		if ( y != undefined )  g_icon._y = y;
 		
-		var onScreenPos:Point = Utils.OnScreen( g_icon );
+		var onScreenPos:Point = AddonUtils.OnScreen( g_icon );
 		
 		g_icon._x = onScreenPos.x;
 		g_icon._y = onScreenPos.y;
@@ -283,6 +285,7 @@ function ToggleConfigWindow():Void
 function CreateConfigWindow():Void
 {
 	// do nothing if window already open
+
 	if ( g_configWindow )  return;
 	
 	g_configWindow = WinComp(attachMovie( "com.ElTorqiro.AegisHUD.Config.WindowComponent", "m_ConfigWindow", getNextHighestDepth() ));
@@ -293,7 +296,7 @@ function CreateConfigWindow():Void
 
 	// load the content panel
 	g_configWindow.SetContent( "com.ElTorqiro.AegisHUD.Config.WindowContent" );
-
+	
 	// set position -- rounding of the values is critical here, else it will not reposition reliably
 	g_configWindow._x = Math.round(g_settings.configWindowPosition.x);
 	g_configWindow._y = Math.round(g_settings.configWindowPosition.y);
@@ -302,10 +305,12 @@ function CreateConfigWindow():Void
 	g_configWindow.SignalClose.Connect( function() {
 		g_showConfig.SetValue(false);
 	}, this);
+
 }
 
 function DestroyConfigWindow():Void
 {
+
 	if ( g_configWindow )
 	{	
 		g_configWindow.GetContent().Destroy();
@@ -315,11 +320,27 @@ function DestroyConfigWindow():Void
 		
 		g_configWindow.removeMovieClip();
 	}
+
 }
 
+function HUDEnabledHandler(retry:Boolean):Void {
+	
+	var state:String;
+	
+	if ( !g_hudEnabled.GetValue() ) {
+		state = "disabled";
+	}
+	
+	else if ( _root["eltorqiro_aegishud\\hud"].g_HUD.autoSwap ) {
+		state = "autoswap";
+	}
+	
+	else {
+		state = "enabled";
+	}
 
-function HUDEnabledHandler():Void {
-	g_icon.gotoAndStop( g_hudEnabled.GetValue() ? "enabled" : "disabled" );
+	g_icon.gotoAndStop( state );
+	this["Icon"].gotoAndStop( state );	
 	
 	/* VTIO doesn't use your original icon, it creates a dupe, so a different approach is needed if integrated with VTIO
 	 * proof: g_icon._alpha = 100; g_icon._visible = true; g_icon._y = 150; UtilsBase.PrintChatText("f:" + g_icon._currentframe);
@@ -327,11 +348,8 @@ function HUDEnabledHandler():Void {
 	
 	// hack to wait for VTIO to have created the dupe icon after a full reload
 	// VTIO creates its dupe icon forcibly in your movieclip (so it can use your SWFs assets) as "Icon"
-	if ( this["Icon"] != undefined ) ColorizeVTIOIcon();
-	else _global.setTimeout( Delegate.create( this, ColorizeVTIOIcon), 500 );
+	if ( !retry && this["Icon"] == undefined ) {
+		_global.setTimeout( Delegate.create( this, HUDEnabledHandler), 500 );
+	}
 
-}
-
-function ColorizeVTIOIcon():Void {
-	if ( g_hudEnabled.GetValue() != undefined ) this["Icon"].gotoAndStop( g_hudEnabled.GetValue() ? "enabled" : "disabled"  );
 }

@@ -1,19 +1,21 @@
 import com.Components.FCSlider;
 import com.Components.WindowComponentContent;
-import com.ElTorqiro.AegisHUD.Enums.AegisBarLayoutStyles;
-import com.Utils.Archive;
 import flash.geom.Point;
 import gfx.controls.CheckBox;
 import gfx.controls.DropdownMenu;
 import gfx.controls.Button;
 import gfx.controls.Slider;
 import gfx.controls.TextInput;
-import mx.data.encoders.Bool;
 import mx.utils.Delegate;
 import com.GameInterface.UtilsBase;
 import com.GameInterface.DistributedValue;
-import com.ElTorqiro.AegisHUD.AddonInfo;
+
+import com.GameInterface.Tooltip.TooltipManager;
+import com.GameInterface.Tooltip.TooltipData;
+import com.GameInterface.Tooltip.TooltipInterface;
+
 import com.ElTorqiro.AegisHUD.AddonUtils.AddonUtils;
+
 
 class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowComponentContent
 {
@@ -27,366 +29,642 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 	
 	private var _hud:MovieClip;
 	
-	public function WindowContent()
-	{
-		super();
+	private var _tooltip:TooltipInterface;
+	
+	public function WindowContent() {
 		
-		// get a handle on the hud module
-		_hud = _root["eltorqiro_aegishud\\hud"];
+		// get a handle on the hud instance
+		_hud = _root["eltorqiro_aegishud\\hud"].g_HUD;
 	}
 
-	// cleanup operations
-	public function Destroy():Void
-	{
-	}
-	
-	private function configUI():Void
-	{
-		_layoutCursor = new Point(0, 0);
-		
+	private function configUI() : Void {
 		super.configUI();
 
+		_layoutCursor = new Point(0, 0);
+		
 		m_Content = createEmptyMovieClip("m_Content", getNextHighestDepth() );
 
-		
-		AddLabel("helpLink", 'Click Here for Help').onPress = function() {
-			DistributedValue.SetDValue("web_browser", false);			
-			DistributedValue.SetDValue("WebBrowserStartURL", "http://torq.the009.net/tsw/AegisHUD/");
-			DistributedValue.SetDValue("web_browser", true);
+		_uiControls.VisitForums = {
+			ui:	AddButton("VisitForums", "Visit the AegisHUD forum thread"),
+			tooltip: "Clicking this button will open the in-game browser and visit the AegisHUD forum thread.",
+			event:		"click",
+			context:	this,
+			fn: 		function(e:Object) {
+				DistributedValue.SetDValue("web_browser", false);
+				DistributedValue.SetDValue("WebBrowserStartURL", "https://forums.thesecretworld.com/showthread.php?80429-MOD-ElTorqiro_AegisHUD");
+				DistributedValue.SetDValue("web_browser", true);
+			}
 		};
 		
+		AddHeading("Global Reset");
+		_uiControls.ApplyDefaultSettings = {
+			ui:	AddButton("ApplyDefaultSettings", "Reset settings to defaults"),
+			tooltip: "Clicking this button will reset every setting to defaults.  The only information that will not be overwritten is the playfield memory for visibility and autoswap.",
+			event:		"click",
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.ApplyDefaultSettings();
+				LoadValues();
+			}
+		};
 		
-		// positioning section
-		// add options section
+		// options section
 		AddHeading("Options");
 		_uiControls.hideDefaultSwapButtons = {
-			control:	AddCheckbox( "hideDefaultSwapButtons", "Hide default AEGIS swap buttons" ),
+			ui:	AddCheckbox( "hideDefaultSwapButtons", "Hide default AEGIS swap buttons" ),
+			tooltip: "When on, will remove Funcom's default AEGIS swap buttons from the UI.",
 			event:		"click",
-			type:		"option"
-		};
-		_uiControls.playfieldMemoryEnabled = {
-			control:	AddCheckbox( "playfieldMemoryEnabled", "Enable HUD visibility memory in each playfield" ),
-			event:		"click",
-			type:		"option"
-		};
-		_uiControls.combatIndicator = {
-			control:	AddCheckbox( "combatIndicator", "Enable in-combat indicator" ),
-			event:		"click",
-			type:		"option"
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.hideDefaultSwapUI = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.hideDefaultSwapUI;
+			}
 		};
 
-		
 		// dual select section
-		AddHeading("Dual-Select");
+		AddHeading("Disruptor Dual-Select");
 		_uiControls.dualSelectWithButton = {
-			control:	AddCheckbox( "dualSelectWithButton", "...with Right-Click" ),
+			ui:	AddCheckbox( "dualSelectWithButton", "...with Right-Click" ),
+			tooltip: "Enables dual-selecting AEGIS controllers when right-clicking one of the selector buttons.",
 			event:		"click",
-			type:		"setting"
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.dualSelectWithButton = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.dualSelectWithButton;
+			}
 		};
 		_uiControls.dualSelectWithModifier = {
-			control:	AddCheckbox( "dualSelectWithModifier", "...with Shift-Click" ),
+			ui:	AddCheckbox( "dualSelectWithModifier", "...with Shift-Click" ),
+			tooltip: "Enables dual-selecting AEGIS controllers when shift-left-clicking one of the selector buttons.",
 			event:		"click",
-			type:		"setting"
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.dualSelectWithModifier = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.dualSelectWithModifier;
+			}
 		};
 		_uiControls.dualSelectByDefault = {
-			control:	AddCheckbox( "dualSelectByDefault", "Dual-by-Default (inverts single/dual behaviour)" ),
+			ui:	AddCheckbox( "dualSelectByDefault", "Dual-by-Default (inverts single/dual behaviour)" ),
+			tooltip: "Enables dual-select as the default behaviour when left-clicking one of the selector buttons.  This inverts the above settings such that a right-click or shift-left-click will do a <i>single</i> select instead.",
 			event:		"click",
-			type:		"setting"
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.dualSelectByDefault = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.dualSelectByDefault;
+			}
 		};
 		AddIndent(10);
 		_uiControls.dualSelectFromHotkey = {
-			control:	AddCheckbox( "dualSelectFromHotkey", "also when using default hotkeys [<variable name='hotkey:Combat_NextPrimaryAEGIS'/ > / <variable name='hotkey:Combat_NextSecondaryAEGIS'/ >]" ),
+			ui:	AddCheckbox( "dualSelectFromHotkey", "also when using default hotkeys [<variable name='hotkey:Combat_NextPrimaryAEGIS'/ > / <variable name='hotkey:Combat_NextSecondaryAEGIS'/ >]" ),
+			tooltip: "If Dual-by-Default is enabled, enabling this setting will perform a dual-select when you use the default in-game hotkeys to rotate AEGIS disruptors.",
 			event:		"click",
-			type:		"setting"
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.dualSelectFromHotkey = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.dualSelectFromHotkey;
+			}
 		};
 		AddIndent( -10);
 
 
-		// add position section
-		AddHeading("Position");
+		// position section
+		AddHeading("HUD Position");
 		_uiControls.MoveToDefaultPosition = {
-			control:	AddButton("MoveToDefaultPosition", "Reset to default position"),
+			ui:	AddButton("MoveToDefaultPosition", "Reset to default position"),
+			tooltip: "Clicking this button will position the HUD in its default position just above the passive ability bar.",
 			event:		"click",
-			type:		"command"
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.MoveToDefaultPosition();
+			}
 		};
 		_uiControls.lockBars = {
-			control:	AddCheckbox( "lockBars", "Lock bar position and scale" ),
+			ui:	AddCheckbox( "lockBars", "Lock bar position and scale" ),
+			tooltip: "Prevents the HUD from being moved or scaled.  Recommended to enable once you have positioned and scaled the HUD where you want, so there are no accidental moves.",
 			event:		"click",
-			type:		"setting"
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.lockBars = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.lockBars;
+			}
 		};
 
 		_uiControls.attachToPassiveBar = {
-			control:	AddCheckbox( "attachToPassiveBar", "Attach and lock HUD to PassiveBar" ),
+			ui:	AddCheckbox( "attachToPassiveBar", "Attach and lock HUD to PassiveBar" ),
+			tooltip: "Attaches the HUD directly to the passive ability bar, in precisely the same position as the default swap buttons.  HUD will not be moveable, but will follow the slide in/out of the passive ability bar.",
 			event:		"click",
-			type:		"setting"
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.attachToPassiveBar = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.attachToPassiveBar;
+			}
 		};
 		AddIndent(10);
 		_uiControls.animateMovementsToDefaultPosition = {
-			control:	AddCheckbox( "animateMovementsToDefaultPosition", "Animate HUD during PassiveBar open/close" ),
+			ui:	AddCheckbox( "animateMovementsToDefaultPosition", "Animate HUD during PassiveBar open/close" ),
+			tooltip: "If the HUD is attached to the passive ability bar, this will animate the HUD movement when the passive bar is opened or closed.",
 			event:		"click",
-			type:		"setting"
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.animateMovementsToDefaultPosition = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.animateMovementsToDefaultPosition;
+			}
 		};
 		AddIndent( -10);
 
-		
-		// add layout section
-		AddHeading("Bar Layout");
-		_uiControls.barStyle = {
-			control:	AddDropdown( "barStyle", "Bar Layout", ["Horizontal", "Vertical"] ),
-			event:		"change",
-			type:		"setting"
-		};
 
+		// tooltips section
+		AddHeading("Tooltips");
 		
-		// bar background style
-		AddHeading("Bar Backgrounds");
-		_uiControls.showBarBackground = {
-			control:	AddCheckbox( "showBarBackground", "Show" ),
+		_uiControls.showTooltips = {
+			ui:	AddCheckbox( "showTooltips", "Show Tooltips" ),
+			tooltip: "Enables bringing up the slotted item tooltip when hovering the mouse over a button on the HUD.",
 			event:		"click",
-			type:		"setting"
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.showTooltips = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.showTooltips;
+			}
 		};
-		_uiControls.tintBarBackgroundByActiveAegis = {
-			control:	AddCheckbox( "tintBarBackgroundByActiveAegis", "Tint per active AEGIS type" ),
+		AddIndent(10);
+		_uiControls.suppressTooltipsInCombat = {
+			ui:	AddCheckbox( "suppressTooltipsInCombat", "Suppress in combat" ),
+			tooltip: "Suppress the tooltips when in combat, which is handy if you typically use the mouse to select AEGIS controllers.",
 			event:		"click",
-			type:		"setting"
-		};
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.suppressTooltipsInCombat = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.suppressTooltipsInCombat;
+			}
+		};	
+		AddIndent(-10);
+		
 		
 		AddColumn();
 		
 		// add weapon slots section
-		AddHeading("Weapon Slots");
+		AddHeading("Item Slots");
 		_uiControls.showWeapons = {
-			control:	AddCheckbox( "showWeapons", "Show" ),
+			ui:	AddCheckbox( "showWeapons", "Show Weapons" ),
+			tooltip: "Shows the slotted weapon in each AegisHUD weapon/disruptor bar.",
 			event:		"click",
-			type:		"setting"
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.showWeapons = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.showWeapons;
+			}
 		};
-		_uiControls.primaryWeaponFirst = {
-			control:	AddCheckbox( "primaryWeaponFirst", "On Primary bar, weapon placed first" ),
+		AddIndent(10);
+		_uiControls.primaryItemFirst = {
+			ui:	AddCheckbox( "primaryItemFirst", "On Primary bar, weapon placed first" ),
+			tooltip: "On the Primary bar, the weapon will be positioned first.  Otherwise it will be placed last.",
 			event:		"click",
-			type:		"setting"
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.primaryItemFirst = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.primaryItemFirst;
+			}
 		};
-		_uiControls.secondaryWeaponFirst = {
-			control:	AddCheckbox( "secondaryWeaponFirst", "On Secondary bar, weapon placed first" ),
+		_uiControls.secondaryItemFirst = {
+			ui:	AddCheckbox( "secondaryItemFirst", "On Secondary bar, weapon placed first" ),
+			tooltip: "On the Secondary bar, the weapon will be positioned first.  Otherwise it will be placed last.",
 			event:		"click",
-			type:		"setting"
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.secondaryItemFirst = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.secondaryItemFirst;
+			}
 		};
-		_uiControls.showWeaponBackgroundBehaviour = {
-			control:	AddDropdown( "showWeaponBackgroundBehaviour", "Show Background", ["Never", "Always", "Only when slotted"] ),
-			event:		"change",
-			type:		"setting"
-		};
-		_uiControls.tintWeaponBackgroundByActiveAegis = {
-			control:	AddCheckbox( "tintWeaponBackgroundByActiveAegis", "Tint background per active AEGIS type" ),
+		AddIndent(-10);
+
+		AddVerticalSpace(10);		
+		
+		_uiControls.showShield = {
+			ui:	AddCheckbox( "showShield", "Show Shield symbol" ),
+			tooltip: "Shows the static shield symbol on the AegisHUD shield bar.",
 			event:		"click",
-			type:		"setting"
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.showShield = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.showShield;
+			}
 		};
+		AddIndent(10);
+		_uiControls.shieldItemFirst = {
+			ui:	AddCheckbox( "shieldItemFirst", "On Shield bar, symbol placed first" ),
+			tooltip: "On the Shield bar, the static shield symbol will be positioned first.  Otherwise it will be placed last.",
+			event:		"click",
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.shieldItemFirst = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.shieldItemFirst;
+			}
+		};
+		AddIndent(-10);
+
+		AddVerticalSpace(10);		
+		
 		_uiControls.tintWeaponIconByActiveAegis = {
-			control:	AddCheckbox( "tintWeaponIconByActiveAegis", "Tint icon per active AEGIS type" ),
+			ui:	AddCheckbox( "tintWeaponIconByActiveAegis", "Tint icon per active AEGIS type" ),
+			tooltip: "Directly tints the item icons according to their corresponding active AEGIS type.",
 			event:		"click",
-			type:		"setting"
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.tintWeaponIconByActiveAegis = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.tintWeaponIconByActiveAegis;
+			}
+		};
+		_uiControls.neonGlowWeapon = {
+			ui:	AddCheckbox( "neonGlowWeapon", "[NEON] Glow icon per active AEGIS type" ),
+			tooltip: "If [NEON] options are enabled, emits a glow from the item slot on each bar, according to the selected AEGIS type.",
+			event:		"click",
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.neonGlowWeapon = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.neonGlowWeapon;
+			}
 		};
 		
 		
 		// add XP section
 		AddHeading("AEGIS Slots");
-		_uiControls.showAegisBackgroundBehaviour = {
-			control:	AddDropdown( "showAegisBackgroundBehaviour", "Show Background", ["Never", "Always", "Only when slotted"] ),
-			event:		"change",
-			type:		"setting"
-		};		
-		_uiControls.tintAegisBackgroundByType = {
-			control:	AddCheckbox( "tintAegisBackgroundByType", "Tint background per AEGIS type" ),
+
+		_uiControls.aegisTypeIcons = {
+			ui:	AddCheckbox( "aegisTypeIcons", "Use AEGIS-type icons" ),
+			tooltip: "Use colourful embedded AEGIS-type icons for each slotted icon, rather than the in-game item icon.",
 			event:		"click",
-			type:		"setting"
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.aegisTypeIcons = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.aegisTypeIcons;
+			}
 		};
 		_uiControls.tintAegisIconByType = {
-			control:	AddCheckbox( "tintAegisIconByType", "Tint icon per AEGIS type" ),
+			ui:	AddCheckbox( "tintAegisIconByType", "Tint icon per AEGIS type" ),
+			tooltip: "Directly tints the controller icons according to their corresponding AEGIS type.",
 			event:		"click",
-			type:		"setting"
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.tintAegisIconByType = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.tintAegisIconByType;
+			}
 		};
 
 		AddVerticalSpace(10);
 		
 		_uiControls.showXP = {
-			control:	AddCheckbox( "showXP", "Show XP indicator" ),
+			ui:	AddCheckbox( "showXP", "Show XP percentage" ),
+			tooltip: "Enables an AEGIS XP (i.e. 'Analysis %') meter on each of the AEGIS controller selector buttons.",
 			event:		"click",
-			type:		"setting"
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.showXP = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.showXP;
+			}
 		};
-		AddIndent(10);
-		
-		_uiControls.xpIndicatorStyle = {
-			control:	AddDropdown( "xpIndicatorStyle", "Style", ["Progress Bar", "Numbers"] ),
-			event:		"change",
-			type:		"setting"
-		};	
-		_uiControls.showXPProgressBackground = {
-			control:	AddCheckbox( "showXPProgressBackground", "Show background in Progress Bar" ),
-			event:		"click",
-			type:		"setting"
-		};
-		/*
-		_uiControls.textWhenFull = {
-			control:	AddTextInput( "textWhenFull", "Replace 100% with", "", 3, false, 60, false ),
-			event:		"textChange",
-			type:		"setting"
-		};
-		*/
+		AddIndent(10);		
 		_uiControls.hideXPWhenFull = {
-			control:	AddCheckbox( "hideXPWhenFull", "Hide when Full" ),
+			ui:	AddCheckbox( "hideXPWhenFull", "Hide when at 100%" ),
+			tooltip: "By default, the XP meter will change colours when it reaches 100%.  This option will hide the meter instead, on a per button basis.",
 			event:		"click",
-			type:		"setting"
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.hideXPWhenFull = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.hideXPWhenFull;
+			}
 		};
 		AddIndent(-10);
-
-		AddVerticalSpace(10);
-		
-		_uiControls.showTooltips = {
-			control:	AddCheckbox( "showTooltips", "Show Tooltips" ),
-			event:		"click",
-			type:		"setting"
-		};
-		AddIndent(10);
-		_uiControls.suppressTooltipsInCombat = {
-			control:	AddCheckbox( "suppressTooltipsInCombat", "Suppress in combat" ),
-			event:		"click",
-			type:		"setting"
-		};	
-		AddIndent(-10);
-
 
 		// active aegis section
 		AddHeading("Active AEGIS Slot");
-		_uiControls.showActiveAegisBackground = {
-			control:	AddCheckbox( "showActiveAegisBackground", "Show background" ),
+		_uiControls.neonGlowAegis = {
+			ui:	AddCheckbox( "neonGlowAegis", "[NEON] Glow icon per AEGIS type" ),
+			tooltip: "Emits a glow from the currently active AEGIS controller.",
 			event:		"click",
-			type:		"setting"
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.neonGlowAegis = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.neonGlowAegis;
+			}
 		};
-		_uiControls.tintActiveAegisBackgroundBehaviour = {
-			control:	AddDropdown( "tintActiveAegisBackgroundBehaviour", "Tint Background", ["Never", "Standard", "Per Active AEGIS"] ),
-			event:		"change",
-			type:		"setting"
-		};	
+		_uiControls.showActiveAegisBackground = {
+			ui:	AddCheckbox( "showActiveAegisBackground", "Show Background" ),
+			tooltip: "Displays a lit background on active AEGIS controllers.",
+			event:		"click",
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.showActiveAegisBackground = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.showActiveAegisBackground;
+			}
+		};
+		AddIndent(10);
+		_uiControls.tintActiveAegisBackground = {
+			ui:	AddCheckbox( "tintActiveAegisBackground", "Tint per AEGIS type" ),
+			tooltip: "Tints the background of active AEGIS controllers their AEGIS type.",
+			event:		"click",
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.tintActiveAegisBackground = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.tintActiveAegisBackground;
+			}
+		};
+		AddIndent(10);
+		_uiControls.neonGlowActiveAegisBackground = {
+			ui:	AddCheckbox( "neonGlowActiveAegisBackground", "[NEON] Use NeonFX Glow" ),
+			tooltip: "If [NEON] options are enabled, replaces the tint on active AEGIS controller backgrounds with a glow effect",
+			event:		"click",
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.neonGlowActiveAegisBackground = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.neonGlowActiveAegisBackground;
+			}
+		};
+		AddIndent(-20);
 		
+
 		AddColumn();
+
+		// bar background style
+		AddHeading("Bar Background");
+		_uiControls.showBarBackground = {
+			ui:	AddCheckbox( "showBarBackground", "Show Background" ),
+			tooltip: "Enables the semi-transparent background behind each of the AegisHUD bars.",
+			event:		"click",
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.showBarBackground = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.showBarBackground;
+			}
+		};
+		AddIndent(10);
+		_uiControls.barBackgroundThin = {
+			ui:	AddCheckbox( "barBackgroundThin", "Thin background" ),
+			tooltip: "Uses a thin bar for the background, placed vertically in the centre of the bar, rather than a full height box.",
+			event:		"click",
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.barBackgroundThin = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.barBackgroundThin;
+			}
+		};
+		_uiControls.tintBarBackgroundByActiveAegis = {
+			ui:	AddCheckbox( "tintBarBackgroundByActiveAegis", "Tint per active AEGIS type" ),
+			tooltip: "Tints each bar background with its corresponding selected AEGIS controller type.",
+			event:		"click",
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.tintBarBackgroundByActiveAegis = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.tintBarBackgroundByActiveAegis;
+			}
+		};
+		AddIndent(10);
+		_uiControls.neonGlowBarBackground = {
+			ui:	AddCheckbox( "neonGlowBarBackground", "[NEON] Use NeonFX Glow" ),
+			tooltip: "If [NEON] options are enabled, replaces the tint on the bar background with a glow effect",
+			event:		"click",
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.neonGlowBarBackground = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.neonGlowBarBackground;
+			}
+		};
+		AddIndent( -20);
+		
+		AddVerticalSpace(10);
+		_uiControls.neonGlowEntireBar = {
+			ui:	AddCheckbox( "neonGlowEntireBar", "[NEON] Glow entire bar per active AEGIS type" ),
+			tooltip: "Enables a strong glow which wraps around all HUD elements on each bar.",
+			event:		"click",
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.neonGlowEntireBar = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.neonGlowEntireBar;
+			}
+		};
+		
 		// neon highlighting section
 		AddHeading("NeonFX");
 		_uiControls.neonEnabled = {
-			control:	AddCheckbox( "neonEnabled", "Enable NeonFX per active AEGIS type" ),
+			ui:	AddCheckbox( "neonEnabled", "Allow use of [NEON] options" ),
+			tooltip: "Global override for all options labelled [NEON].  Does not toggle the individual options, but rather provides an overriding global setting.",
 			event:		"click",
-			type:		"setting"
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.neonEnabled = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.neonEnabled;
+			}
 		};
-		AddIndent(10);
-		_uiControls.neonGlowEntireBar = {
-			control:	AddCheckbox( "neonGlowEntireBar", "Overall HUD" ),
-			event:		"click",
-			type:		"setting"
-		};
-		_uiControls.neonGlowBarBackground = {
-			control:	AddCheckbox( "neonGlowBarBackground", "Bar background (overrides Bar Tint)" ),
-			event:		"click",
-			type:		"setting"
-		};
-		_uiControls.neonGlowWeapon = {
-			control:	AddCheckbox( "neonGlowWeapon", "Weapon slot" ),
-			event:		"click",
-			type:		"setting"
-		};
-		_uiControls.neonGlowAegis = {
-			control:	AddCheckbox( "neonGlowAegis", "Active AEGIS" ),
-			event:		"click",
-			type:		"setting"
-		};
-		AddIndent(-10);
+
 		
 		// Tints section
 		AddHeading("Tints", false);
-		AddIndent( -10);
 		_uiControls.ApplyDefaultTints = {
-			control:	AddButton("ApplyDefaultTints", "Reset to default tints"),
+			ui:	AddButton("ApplyDefaultTints", "Reset to default tints"),
+			tooltip: "Clicking this button will reset all tint colours to their default values.",
 			event:		"click",
-			type:		"command"
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.ApplyDefaultTints();
+				LoadValues();
+			}
 		};
-		AddIndent(10);
 
 		_uiControls.tintAegisPsychic = {
-			control:	AddTextInput( "tintAegisPsychic", "Psychic", "", 6, true, undefined, true ),
+			ui:	AddTextInput( "tintAegisPsychic", "Psychic", "", 6, true, undefined, true ),
 			event:		"textChange",
-			type:		"setting"
+			context:	this,
+			fn: 		function(e:Object) {
+				var eventValue:Number = parseInt( '0x' + e.target.text );
+				if ( AddonUtils.isRGB(eventValue) ) _hud.tintAegisPsychic = eventValue;
+			},
+			init:		function(e:Object) {
+				var displayString:String = decColor2hex(_hud.tintAegisPsychic);
+				if ( e.control.ui.text != displayString ) e.control.ui.text = displayString;
+			}
 		};
 		_uiControls.tintAegisCybernetic = {
-			control:	AddTextInput( "tintAegisCybernetic", "Cybernetic", "", 6, true, undefined, true ),
+			ui:	AddTextInput( "tintAegisCybernetic", "Cybernetic", "", 6, true, undefined, true ),
 			event:		"textChange",
-			type:		"setting"
+			context:	this,
+			fn: 		function(e:Object) {
+				var eventValue:Number = parseInt( '0x' + e.target.text );
+				if ( AddonUtils.isRGB(eventValue) ) _hud.tintAegisCybernetic = eventValue;
+			},
+			init:		function(e:Object) {
+				var displayString:String = decColor2hex(_hud.tintAegisCybernetic);
+				if ( e.control.ui.text != displayString ) e.control.ui.text = displayString;
+			}
 		};
 		_uiControls.tintAegisDemonic = {
-			control:	AddTextInput( "tintAegisDemonic", "Demonic", "", 6, true, undefined, true ),
+			ui:	AddTextInput( "tintAegisDemonic", "Demonic", "", 6, true, undefined, true ),
 			event:		"textChange",
-			type:		"setting"
+			context:	this,
+			fn: 		function(e:Object) {
+				var eventValue:Number = parseInt( '0x' + e.target.text );
+				if ( AddonUtils.isRGB(eventValue) ) _hud.tintAegisDemonic = eventValue;
+			},
+			init:		function(e:Object) {
+				var displayString:String = decColor2hex(_hud.tintAegisDemonic);
+				if ( e.control.ui.text != displayString ) e.control.ui.text = displayString;
+			}
 		};
 		_uiControls.tintAegisEmpty = {
-			control:	AddTextInput( "tintAegisEmpty", "Empty Slot", "", 6, true, undefined, true ),
+			ui:	AddTextInput( "tintAegisEmpty", "Empty Slot", "", 6, true, undefined, true ),
 			event:		"textChange",
-			type:		"setting"
+			context:	this,
+			fn: 		function(e:Object) {
+				var eventValue:Number = parseInt( '0x' + e.target.text );
+				if ( AddonUtils.isRGB(eventValue) ) _hud.tintAegisEmpty = eventValue;
+			},
+			init:		function(e:Object) {
+				var displayString:String = decColor2hex(_hud.tintAegisEmpty);
+				if ( e.control.ui.text != displayString ) e.control.ui.text = displayString;
+			}
 		};
 		_uiControls.tintAegisStandard = {
-			control:	AddTextInput( "tintAegisStandard", "Default Active Highlight", "", 6, true, undefined, true ),
+			ui:	AddTextInput( "tintAegisStandard", "Default Active Highlight", "", 6, true, undefined, true ),
 			event:		"textChange",
-			type:		"setting"
+			context:	this,
+			fn: 		function(e:Object) {
+				var eventValue:Number = parseInt( '0x' + e.target.text );
+				if ( AddonUtils.isRGB(eventValue) ) _hud.tintAegisStandard = eventValue;
+			},
+			init:		function(e:Object) {
+				var displayString:String = decColor2hex(_hud.tintAegisStandard);
+				if ( e.control.ui.text != displayString ) e.control.ui.text = displayString;
+			}
 		};
 
-		_uiControls.tintXPBackground = {
-			control:	AddTextInput( "tintXPBackground", "XP Bar Background", "", 6, true, undefined, true ),
-			event:		"textChange",
-			type:		"setting"
-		};
 		_uiControls.tintXPProgress = {
-			control:	AddTextInput( "tintXPProgress", "XP Progress", "", 6, true, undefined, true ),
+			ui:	AddTextInput( "tintXPProgress", "XP 0-99%", "", 6, true, undefined, true ),
 			event:		"textChange",
-			type:		"setting"
+			context:	this,
+			fn: 		function(e:Object) {
+				var eventValue:Number = parseInt( '0x' + e.target.text );
+				if ( AddonUtils.isRGB(eventValue) ) _hud.tintXPProgress = eventValue;
+			},
+			init:		function(e:Object) {
+				var displayString:String = decColor2hex(_hud.tintXPProgress);
+				if ( e.control.ui.text != displayString ) e.control.ui.text = displayString;
+			}
 		};
 		_uiControls.tintXPFull = {
-			control:	AddTextInput( "tintXPFull", "XP Full", "", 6, true, undefined, true ),
+			ui:	AddTextInput( "tintXPFull", "XP 100%", "", 6, true, undefined, true ),
 			event:		"textChange",
-			type:		"setting"
+			context:	this,
+			fn: 		function(e:Object) {
+				var eventValue:Number = parseInt( '0x' + e.target.text );
+				if ( AddonUtils.isRGB(eventValue) ) _hud.tintXPFull = eventValue;
+			},
+			init:		function(e:Object) {
+				var displayString:String = decColor2hex(_hud.tintXPFull);
+				if ( e.control.ui.text != displayString ) e.control.ui.text = displayString;
+			}
 		};
 
 		
 		SetSize( Math.round(Math.max(m_Content._width, 200)), Math.round(Math.max(m_Content._height, 200)) );
 		
 		// wire up event handlers for ui controls
-		for (var s:String in _uiControls)
-		{
-			_uiControls[s].control.addEventListener( _uiControls[s].event, this, "ControlHandler" );
-
-			/* this will be useful when/if different types of interactions are needed */
-			/*
-			var fName:String = s + _uiControls[s].event + "Handler";
-
-			this[fName] = function(e:Object) {
-				var rpcArchive:Archive = new Archive();
-				var eventValue = eval(e.target.eventValue + "");
-
-				// always invalidate previous value
-				rpcArchive.AddEntry( "_setTime", new Date().valueOf() );
-				rpcArchive.AddEntry( e.target.controlName, ( eventValue == undefined ? true : eventValue ) );
-
-				DistributedValue.SetDValue(AddonInfo.Name + "_RPC", rpcArchive);
-			};
-			_uiControls[s].control.addEventListener( _uiControls[s].event, this, fName );
-			*/
+		for (var s:String in _uiControls) {
+			_uiControls[s].ui.addEventListener( _uiControls[s].event, this, "ControlHandler" );
+			
+			_uiControls[s].ui.addEventListener( "rollOver", this, "OpenTooltip" );
+			_uiControls[s].ui.addEventListener( "rollOut", this, "CloseTooltip" );
+			
 		}
 
 		// load initial values
 		LoadValues();
 	}
 
+	private function OpenTooltip(e:Object) : Void {
+		
+		CloseTooltip();
+
+		var control = _uiControls[e.target.controlName];
+		
+		if ( control.tooltip == undefined ) return;
+		
+		var tooltipData:TooltipData = new TooltipData();
+		tooltipData.AddAttribute("","<font face=\'_StandardFont\' size=\'12\' color=\'#3ad9ff\'>" + e.target.tooltipTitle + "</font>");
+		tooltipData.AddAttribute( "", "<font face=\'_StandardFont\' size=\'11\' color=\'#f0f0f0\'>" + control.tooltip + "</font>" );
+		tooltipData.m_Padding = 8;
+		tooltipData.m_MaxWidth = 350;
+		
+		_tooltip = TooltipManager.GetInstance().ShowTooltip( undefined /*e.target*/, TooltipInterface.e_OrientationVertical, -1, tooltipData );
+	}
+
+	private function CloseTooltip(e:Object) : Void {
+		_tooltip.Close();
+		_tooltip = undefined;
+	}
 	
 	// universal control interaction handler
-	private function ControlHandler(e:Object)
-	{
+	private function ControlHandler( e:Object ) {
 		if ( !_uiInitialised ) return;
-		
-		var eventValue = eval(e.target.eventValue + "");
 
 		// handle textinput hex color fields
 		if ( e.target instanceof TextInput && e.target["isHexColor"] ) {
@@ -394,39 +672,22 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 			if ( !AddonUtils.isRGB(eventValue) ) return;
 		}
 		
-		// execute against HUD module
-		_hud.Do( _uiControls[e.target.controlName].type + '.' + e.target.controlName, ( eventValue == undefined ? true : eventValue ) );
+		var control:Object = _uiControls[e.target.controlName];
 		
-		// some commands change settings (like apply default tints)
-		// so as a hacky workaround, reload settings after firing a command
-		if( _uiControls[e.target.controlName].type == "command" ) LoadValues();
+		// execute the control event handler
+		Delegate.create(control.context, control.fn)(e);
 	}
 	
 
 	// populate the states of the config ui controls based on the hud module's published data
-	private function LoadValues():Void
-	{
+	private function LoadValues() : Void {
 		_uiInitialised = false;
 		
 		var data:Object = _hud.g_data;
 		
-		for ( var s:String in _uiControls )
-		{
-			var control = _uiControls[s].control;
-			var value = data[ _uiControls[s].type + 's' ][s];
-			
-			if ( control instanceof DropdownMenu ) {
-				if( control.selectedIndex != value )  control.selectedIndex = value;
-			}
-			
-			else if ( control instanceof CheckBox ) {
-				if( control.selected != value )  control.selected = value;				
-			}
-			
-			else if ( control instanceof TextInput ) {
-				var displayString:String = control["isHexColor"] ? decColor2hex(value) : value;
-				if ( control.text != displayString ) control.text = displayString;
-			}
+		for ( var s:String in _uiControls ) {
+			var control = _uiControls[s];
+			Delegate.create(control.context, control.init)( { control: control } );
 		}
 		
 		_uiInitialised = true;
@@ -448,6 +709,7 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 		var y:Number = m_Content._height;
 		
 		var o:CheckBox = CheckBox(m_Content.attachMovie( "Checkbox", "m_" + name, m_Content.getNextHighestDepth() ));
+		o["tooltipTitle"] = text;
 		o["controlName"] = name;
 		o["eventValue"] = "e.target.selected";
 		with ( o )
@@ -472,16 +734,19 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 		var y:Number = m_Content._height;
 		
 		var o:Button = Button(m_Content.attachMovie( "Button", "m_" + name, m_Content.getNextHighestDepth() ));
+		o["tooltipTitle"] = text;
 		o["controlName"] = name;
 		o["eventValue"] = "e.target.selected";
 		o.label = text;
-		o.autoSize = "center";
+		o.autoSize = "left";
 		o.disableFocus = true;
-//o._y = y;
-		o._y = _layoutCursor.y;
-		o._x = _layoutCursor.x + 6;
 
-		_layoutCursor.y += o._height;
+		var marginTop:Number = ( _layoutCursor.y > 0 ? 3 : 0 );
+
+		o._y = _layoutCursor.y + marginTop;
+		o._x = _layoutCursor.x; // + 6;
+
+		_layoutCursor.y += marginTop + o._height + 3;
 		
 		return o;
 	}
@@ -500,6 +765,7 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 		
 		var o:DropdownMenu = DropdownMenu(m_Content.attachMovie( "Dropdown", "m_" + name, m_Content.getNextHighestDepth() ));
 
+		o["tooltipTitle"] = text;
 		o["controlName"] = name;
 		o["eventValue"] = "e.index";
 		//o["labelField"].autoSize = "left";
@@ -525,6 +791,8 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 		if ( y != 0) y += 10;
 		
 		var o:MovieClip = m_Content.attachMovie( "ConfigGroupHeading", "m_Heading", m_Content.getNextHighestDepth() );
+
+		o["tooltipTitle"] = text;
 		o.textField.autoSize = "left";
 		o.textField.text = text;
 //		o._y = y;
@@ -542,6 +810,7 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 		var y:Number = m_Content._height;
 
 		var o:FCSlider = FCSlider(m_Content.attachMovie( "Slider", "m_" + name, m_Content.getNextHighestDepth() ));
+		o["tooltipTitle"] = text;
 		o["controlName"] = name;
 		o["eventValue"] = "e.value";
 		o.width = 200;
@@ -565,6 +834,7 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 	private function AddTextInput(name:String, label:String, defaultValue:String, maxChars:Number, isHexColor:Boolean, width:Number, alignRight:Boolean):TextInput {
 		
 			var l = m_Content.attachMovie( "ConfigLabel", "m_" + name + "_Label", m_Content.getNextHighestDepth() );
+			o["tooltipTitle"] = text;
 			l.textField.autoSize = "left";
 			l.textField.text = label;
 			l._y = _layoutCursor.y;
@@ -591,7 +861,7 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 			if ( alignRight ) o._x += 130;
 			else o._x += l._width;
 			
-			_layoutCursor.y += o._height;
+			_layoutCursor.y += o._height + 3;
 			
 			return o;
 	}
@@ -599,6 +869,7 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 	private function AddLabel(name:String, text:String):MovieClip {
 
 		var l = m_Content.attachMovie( "ConfigLabel", "m_" + name + "_Label", m_Content.getNextHighestDepth() );
+		o["tooltipTitle"] = text;
 		l.textField.autoSize = "left";
 		l.textField.text = text;
 		l._y = _layoutCursor.y;
@@ -637,17 +908,18 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 
 	
 	/**
-	 * 
 	 * this is the all-important override that makes window resizing work properly
 	 * the SignalSizeChanged signal is monitored by the host window, which resizes accordingly
-	 * the underlying WindowComponentContent.SetSize() is just a stub, since it doesn't know what Instance Name you've given your content wrapper in Flash
 	 */
     public function SetSize(width:Number, height:Number)
     {	
         m_ContentSize._width = width;
         m_ContentSize._height = height;
         
-		SignalSizeChanged.Emit();	// must fire this signal, else the parent WinComp container never gets resized, only the inner content does
+		SignalSizeChanged.Emit();	// must fire this signal, else the parent WinComp container never gets resized
     }	
-	
+
+    public function GetSize():Point {
+        return new Point( m_ContentSize._width, m_ContentSize._height );
+    }	
 }
