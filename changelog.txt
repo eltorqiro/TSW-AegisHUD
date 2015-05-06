@@ -1,3 +1,8 @@
+3.0.3 beta -- 2015-05-06
+
+ * fixes position of bars not being restored when zoning if not attached to passive bar
+ 
+
 3.0.2 beta -- 2015-05-05
 
  * fix for default swap UI buttons becoming visible after a soft zone

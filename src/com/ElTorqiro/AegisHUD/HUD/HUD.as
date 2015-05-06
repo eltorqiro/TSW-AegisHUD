@@ -839,8 +839,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		
 		else {
 
-			if ( _primaryPosition )
-			{
+			if ( _primaryPosition ) {
 				// Despite Point.x being a number, the +0 below is a quick way to ensure the ._x accepts the Point.x property.
 				// If not doing this, then the number prints out as "xxx", but seems to get sent to the _x property as "xxx.0000000000"
 				// which the _x setter fails to interpret for some reason and does not set.
@@ -855,8 +854,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			}
 			
 			// set default positions to simulate the default buttons
-			else
-			{
+			else {
 				MoveToDefaultPosition();
 			}
 		}
@@ -1820,21 +1818,37 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	public function set showTooltips(value:Boolean) { _showTooltips = value; }
 	
 	public function get primaryPosition():Point { return new Point(m_Primary._x, m_Primary._y); }
-	public function set primaryPosition(value:Point) { 
-		_primaryPosition = value;
-		Layout();
+	public function set primaryPosition(value:Point) {
+		_primaryPosition = setBarPosition( m_Primary, value );
 	}
 
 	public function get secondaryPosition():Point { return new Point(m_Secondary._x, m_Secondary._y); }
 	public function set secondaryPosition(value:Point) {
-		_secondaryPosition = value;
-		Layout();
+		_secondaryPosition = setBarPosition( m_Secondary, value );
 	}
 
 	public function get shieldPosition():Point { return new Point(m_Shield._x, m_Shield._y); }
 	public function set shieldPosition(value:Point) {
-		_shieldPosition = value;
+		_shieldPosition = setBarPosition( m_Shield, value );
+	}
+
+	/**
+	 * handles updating the properties controlling position of the bars
+	 * 
+	 * @param	bar			movieclip of the bar to position
+	 * @param	position	point to move the bar to
+	 * 
+	 * @return	point bar was moved to, can be undefined if undefined is passed in the position parameter
+	 */
+	private function setBarPosition( bar:MovieClip, position:Point ) : Point {
+		if ( position != undefined ) {
+			bar._x = position.x;
+			bar._y = position.y;
+		}
+
 		Layout();
+		
+		return position;
 	}
 	
 	// overall hud scale
