@@ -56,10 +56,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	// aegis unlock achivement id
 	public static var e_AegisUnlockAchievement:Number = 6817;	// The Lore number that unlocks the AEGIS system
 																// 6817 is pulled straight from Funcom's PassiveBar
-	
-	public static var e_HotkeyDown:Number = _global.Enums.Hotkey.eHotkeyDown;
 
-	
 	private var _active:Boolean;
 	
 	private var _slotSize:Number;
@@ -227,10 +224,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		_showAegisSwapUI = DistributedValue.Create( "ShowAegisSwapUI" );
 		
 		// hijack hotkeys
-		Input.RegisterHotkey( HotkeyHijacker.e_Hotkey_PrimaryAegisNext, "com.ElTorqiro.AegisHUD.HUD.HotkeyHijacker.HotkeyPrimaryAegisNext", e_HotkeyDown, 0 );
-		Input.RegisterHotkey( HotkeyHijacker.e_Hotkey_PrimaryAegisPrev, "com.ElTorqiro.AegisHUD.HUD.HotkeyHijacker.HotkeyPrimaryAegisPrev", e_HotkeyDown, 0 );
-		Input.RegisterHotkey( HotkeyHijacker.e_Hotkey_SecondaryAegisNext, "com.ElTorqiro.AegisHUD.HUD.HotkeyHijacker.HotkeySecondaryAegisNext", e_HotkeyDown, 0 );
-		Input.RegisterHotkey( HotkeyHijacker.e_Hotkey_SecondaryAegisPrev, "com.ElTorqiro.AegisHUD.HUD.HotkeyHijacker.HotkeySecondaryAegisPrev", e_HotkeyDown, 0 );
+		HotkeyHijacker.Hijack();
 	}
 
 	public function onUnload():Void {
@@ -242,10 +236,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		hideDefaultSwapButtons( false );
 		
 		// release hijacked hotkeys
-		Input.RegisterHotkey( HotkeyHijacker.e_Hotkey_PrimaryAegisNext, "", e_HotkeyDown, 0 );
-		Input.RegisterHotkey( HotkeyHijacker.e_Hotkey_PrimaryAegisPrev, "", e_HotkeyDown, 0 );
-		Input.RegisterHotkey( HotkeyHijacker.e_Hotkey_SecondaryAegisNext, "", e_HotkeyDown, 0 );
-		Input.RegisterHotkey( HotkeyHijacker.e_Hotkey_SecondaryAegisPrev, "", e_HotkeyDown, 0 );
+		HotkeyHijacker.Release();
 		
 		// unwire signal listeners
 		Lore.SignalTagAdded.Disconnect(SlotTagAdded, this);
