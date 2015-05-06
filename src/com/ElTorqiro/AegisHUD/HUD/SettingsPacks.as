@@ -55,7 +55,7 @@ class com.ElTorqiro.AegisHUD.HUD.SettingsPacks {
 			secondaryItemFirst: true,
 			shieldItemFirst: true,
 			
-			tintWeaponIconByActiveAegis: false,
+			tintWeaponIconByActiveAegis: true,
 			neonGlowWeapon: false,
 			
 			showXP: true,
