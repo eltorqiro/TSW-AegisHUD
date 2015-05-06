@@ -366,10 +366,16 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		
 		// wait for the passivebar to be loaded, as it actually gets unloaded during teleports etc, not just deactivated
 		if ( pb.LoadAegisButtons == undefined ) {
-			// if the thrash count is exceeded, reset count and do nothing
-			if (_findPassiveBarThrashCount++ == 10)  _findPassiveBarThrashCount = 0;
-			// otherwise try again
-			else _global.setTimeout( Delegate.create(this, hideDefaultSwapButtons), 300, hide );
+			
+			// only retry if we're trying to hide the default UI
+			if( hide ) {
+				// if the thrash count is exceeded, reset count and do nothing
+				if (_findPassiveBarThrashCount++ == 10)  _findPassiveBarThrashCount = 0;
+				// otherwise try again only if we aren't trying to restore the buttons
+				else {
+					_global.setTimeout( Delegate.create(this, hideDefaultSwapButtons), 300, hide );
+				}
+			}
 			
 			return;
 		}
