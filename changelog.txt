@@ -1,4 +1,4 @@
-develop -- ????-??-??
+3.1.0 -- 2015-05-07
 
  + added "HUD active" option to the config panel (does the same as right-clicking the mod icon)
  + added "AutoSwap active" opton to the config panel (does the same as shift-right clicking the mod icon)
