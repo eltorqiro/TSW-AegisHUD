@@ -32,6 +32,9 @@ class com.ElTorqiro.AegisHUD.HUD.SettingsPacks {
 			hideDefaultSwapUI: true,
 			
 			autoSwap: true,
+			autoSwapPrimaryEnabled: true,
+			autoSwapSecondaryEnabled: true,
+			autoSwapShieldEnabled: true,
 			
 			primaryPosition: undefined,
 			secondaryPosition: undefined,
@@ -55,8 +58,8 @@ class com.ElTorqiro.AegisHUD.HUD.SettingsPacks {
 			secondaryItemFirst: true,
 			shieldItemFirst: true,
 			
-			tintWeaponIconByActiveAegis: true,
-			neonGlowWeapon: false,
+			tintWeaponIconByActiveAegis: false,
+			neonGlowWeapon: true,
 			
 			showXP: true,
 			hideXPWhenFull: false,

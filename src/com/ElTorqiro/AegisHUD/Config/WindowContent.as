@@ -70,9 +70,76 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 		
 		// options section
 		AddHeading("Options");
+
+		_uiControls.active = {
+			ui:	AddCheckbox( "active", "HUD enabled" ),
+			tooltip: "When on, the AegisHUD is active and will be visible on the screen.",
+			event:		"click",
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.active = e.target.selected;
+				HUDEnabledHandler();
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.active;
+			}
+		};
+		
+		_uiControls.autoSwap = {
+			ui:	AddCheckbox( "autoSwap", "AutoSwap system enabled" ),
+			tooltip: "When on, the AutoSwap system is active and will swap AEGIS controllers based on your offensive target.",
+			event:		"click",
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.autoSwap = e.target.selected;
+				HUDEnabledHandler();
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.autoSwap;
+			}
+		};
+		AddIndent(10);
+		_uiControls.autoSwapPrimaryEnabled = {
+			ui:	AddCheckbox( "autoSwapPrimaryEnabled", "Primary AEGIS Disruptor" ),
+			tooltip: "When on, the AutoSwap system will handle swapping of the Primary AEGIS Disruptor.",
+			event:		"click",
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.autoSwapPrimaryEnabled = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.autoSwapPrimaryEnabled;
+			}
+		};
+		_uiControls.autoSwapSecondaryEnabled = {
+			ui:	AddCheckbox( "autoSwapSecondaryEnabled", "Secondary AEGIS Disruptor" ),
+			tooltip: "When on, the AutoSwap system will handle swapping of the Secondary AEGIS Disruptor.",
+			event:		"click",
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.autoSwapSecondaryEnabled = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.autoSwapSecondaryEnabled;
+			}
+		};
+		_uiControls.autoSwapShieldEnabled = {
+			ui:	AddCheckbox( "autoSwapShieldEnabled", "AEGIS Shield" ),
+			tooltip: "When on, the AutoSwap system will handle swapping of the AEGIS shield.",
+			event:		"click",
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.autoSwapShieldEnabled = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.autoSwapShieldEnabled;
+			}
+		};
+		AddIndent( -10);
+		AddVerticalSpace(10);
 		_uiControls.hideDefaultSwapButtons = {
 			ui:	AddCheckbox( "hideDefaultSwapButtons", "Hide default AEGIS swap buttons" ),
-			tooltip: "When on, will remove Funcom's default AEGIS swap buttons from the UI.",
+			tooltip: "When on, will remove the default TSW AEGIS disruptor swap buttons from the UI.",
 			event:		"click",
 			context:	this,
 			fn: 		function(e:Object) {
@@ -83,6 +150,7 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 			}
 		};
 
+		
 		// dual select section
 		AddHeading("Disruptor Dual-Select");
 		_uiControls.dualSelectWithButton = {
@@ -189,37 +257,6 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 		AddIndent( -10);
 
 
-		// tooltips section
-		AddHeading("Tooltips");
-		
-		_uiControls.showTooltips = {
-			ui:	AddCheckbox( "showTooltips", "Show Tooltips" ),
-			tooltip: "Enables bringing up the slotted item tooltip when hovering the mouse over a button on the HUD.",
-			event:		"click",
-			context:	this,
-			fn: 		function(e:Object) {
-				_hud.showTooltips = e.target.selected;
-			},
-			init:		function(e:Object) {
-				e.control.ui.selected = _hud.showTooltips;
-			}
-		};
-		AddIndent(10);
-		_uiControls.suppressTooltipsInCombat = {
-			ui:	AddCheckbox( "suppressTooltipsInCombat", "Suppress in combat" ),
-			tooltip: "Suppress the tooltips when in combat, which is handy if you typically use the mouse to select AEGIS controllers.",
-			event:		"click",
-			context:	this,
-			fn: 		function(e:Object) {
-				_hud.suppressTooltipsInCombat = e.target.selected;
-			},
-			init:		function(e:Object) {
-				e.control.ui.selected = _hud.suppressTooltipsInCombat;
-			}
-		};	
-		AddIndent(-10);
-		
-		
 		AddColumn();
 		
 		// add weapon slots section
@@ -430,8 +467,38 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 			}
 		};
 		AddIndent(-20);
-		
 
+		// tooltips section
+		AddHeading("Tooltips");
+		
+		_uiControls.showTooltips = {
+			ui:	AddCheckbox( "showTooltips", "Show Tooltips" ),
+			tooltip: "Enables bringing up the slotted item tooltip when hovering the mouse over a button on the HUD.",
+			event:		"click",
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.showTooltips = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.showTooltips;
+			}
+		};
+		AddIndent(10);
+		_uiControls.suppressTooltipsInCombat = {
+			ui:	AddCheckbox( "suppressTooltipsInCombat", "Suppress in combat" ),
+			tooltip: "Suppress the tooltips when in combat, which is handy if you typically use the mouse to select AEGIS controllers.",
+			event:		"click",
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.suppressTooltipsInCombat = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.suppressTooltipsInCombat;
+			}
+		};	
+		AddIndent(-10);
+
+		
 		AddColumn();
 
 		// bar background style

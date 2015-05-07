@@ -112,6 +112,9 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	private var _tints:Object = { none: 0xffffff };
 	
 	private var _autoSwap:Boolean;
+	public var  autoSwapPrimaryEnabled:Boolean;
+	public var  autoSwapSecondaryEnabled:Boolean;
+	public var  autoSwapShieldEnabled:Boolean;
 	
 	public var playfieldMemoryEnabled:Boolean;
 	
@@ -640,10 +643,12 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 		if( targetShieldType) {
 		
-			var weaponBars:Array = [ _primary, _secondary ];
+			var weaponBars:Array = [ {bar: _primary, swap: autoSwapPrimaryEnabled}, {bar: _secondary, swap: autoSwapSecondaryEnabled} ];
 			for ( var s:String in weaponBars ) {
 				
-				var bar:Object = weaponBars[s];
+				if ( !weaponBars[s].swap ) continue;
+				
+				var bar:Object = weaponBars[s].bar;
 				
 				// find first aegis on bar that matches the target aegis shield type
 				for ( var i:String in bar.slots ) {
@@ -662,7 +667,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 	private function autoSwapShield() : Void {
 
-		if ( !_autoSwap ) return;
+		if ( !_autoSwap || !autoSwapShieldEnabled ) return;
 		
 		// get current target
 		var target:Character = Character.GetCharacter(_character.GetOffensiveTarget());

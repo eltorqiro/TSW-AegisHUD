@@ -340,7 +340,11 @@ function HUDEnabledHandler(retry:Boolean):Void {
 	}
 
 	g_icon.gotoAndStop( state );
-	this["Icon"].gotoAndStop( state );	
+	this["Icon"].gotoAndStop( state );
+	
+	// in case state has been toggled, trigger a refresh of the config window
+	g_configWindow.GetContent().LoadValues();
+	
 	
 	/* VTIO doesn't use your original icon, it creates a dupe, so a different approach is needed if integrated with VTIO
 	 * proof: g_icon._alpha = 100; g_icon._visible = true; g_icon._y = 150; UtilsBase.PrintChatText("f:" + g_icon._currentframe);

@@ -1,6 +1,10 @@
 develop -- ????-??-??
 
- * changed default style to include highlighting the item icon on each bar with the aegis type colour
+ * added "HUD active" option to the config panel (does the same as right-clicking the mod icon)
+ * added "AutoSwap active" opton to the config panel (does the same as shift-right clicking the mod icon)
+ * added setting to choose which bars are managed by the AutoSwap system (primary/secondary/shield)
+
+ * changed default style to include the AEGIS coloured glow on the weapon and shield icons
  
 
 3.0.3 beta -- 2015-05-06
