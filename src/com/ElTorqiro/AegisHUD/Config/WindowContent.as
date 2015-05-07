@@ -73,7 +73,7 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 
 		_uiControls.active = {
 			ui:	AddCheckbox( "active", "HUD enabled" ),
-			tooltip: "When on, the AegisHUD is active and will be visible on the screen.",
+			tooltip: "When on, the AegisHUD is active and will be visible on the screen.  This setting is remembered on a per-playfield basis.",
 			event:		"click",
 			context:	this,
 			fn: 		function(e:Object) {
@@ -87,7 +87,7 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 		
 		_uiControls.autoSwap = {
 			ui:	AddCheckbox( "autoSwap", "AutoSwap system enabled" ),
-			tooltip: "When on, the AutoSwap system is active and will swap AEGIS controllers based on your offensive target.",
+			tooltip: "When on, the AutoSwap system is active and will swap AEGIS controllers based on your offensive target.  This setting is remembered on a per-playfield basis.",
 			event:		"click",
 			context:	this,
 			fn: 		function(e:Object) {
