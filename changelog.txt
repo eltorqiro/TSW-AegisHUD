@@ -6,6 +6,8 @@ develop -- ????-??-??
 
  + add ability to hide the default in-game shield swap UI (next to the player health bar)
  
+ + add integration with Ultimate Ability progress bar for the "attach to passivebar" setting
+ 
  * changed default style to include the AEGIS coloured glow on the weapon and shield icons
  
 

@@ -54,9 +54,9 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	public static var e_SecondaryActiveAegisStat:Number = _global.Enums.Stat.e_SecondActiveAegis;
 
 	// aegis unlock achivement id
-	public static var e_AegisUnlockAchievement:Number = 6817;	// The Lore number that unlocks the AEGIS system
-																// 6817 is pulled straight from Funcom's PassiveBar
-
+	public static var e_AegisUnlockAchievement:Number = 6817;				// The Lore number that unlocks the AEGIS system
+	public static var e_UltimateAbilityUnlockAchievement:Number = 7783;		// the Lore number that unlocks the Ultimate Ability
+																
 	private var _active:Boolean;
 	
 	private var _slotSize:Number;
@@ -576,9 +576,23 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 	// handler for situation where AEGIS system becomes unlocked during play session
 	private function SlotTagAdded( tag:Number ) : Void {
-		if ( tag == e_AegisUnlockAchievement ) {
-			Lore.SignalTagAdded.Disconnect( SlotTagAdded, this );
-			Activate();
+		
+		switch( tag ) {
+		
+			// aegis system has become unlocked
+			case e_AegisUnlockAchievement:
+				Lore.SignalTagAdded.Disconnect( SlotTagAdded, this );
+				Activate();
+			break;
+			
+			
+			// ultimate ability has become unlocked
+			case e_UltimateAbilityUnlockAchievement:
+				if ( _attachToPassiveBar ) {
+					MoveToDefaultPosition();
+				}
+			break;
+			
 		}
 	}
 
@@ -780,13 +794,15 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	 */
 	public function MoveToDefaultPosition(userTriggered:Boolean):Void {
 
+		var targetY:Number = _root.passivebar.m_UltimateProgress._visible ? _root.passivebar.m_UltimateProgress._y + 2 : _root.passivebar.m_Bar._y;
+		
 		// if passivebar is available, default position is directly above that
-		if ( _root.passivebar.m_Bar != undefined ) {
+		if ( targetY != undefined ) {
 
 			var pb = _root.passivebar;
 			
 			var pbx:Number = pb.m_BaseWidth / 2 + pb.m_Button._x; // - 4;
-			var pby:Number = pb.m_Bar._y; // - 5;
+			var pby:Number = targetY; // pb.m_Bar._y; // - 5;
 			
 			var globalPassiveBarPos:Point = new Point( pbx, pby );
 			pb.localToGlobal( globalPassiveBarPos );
