@@ -29,7 +29,8 @@ class com.ElTorqiro.AegisHUD.HUD.SettingsPacks {
 			maxHUDScale: 150,
 			minHUDScale: 50,
 			
-			hideDefaultSwapUI: true,
+			hideDefaultDisruptorSwapUI: true,
+			hideDefaultShieldSwapUI: true,
 			
 			autoSwap: true,
 			autoSwapPrimaryEnabled: true,

@@ -66,7 +66,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	public  var maxHUDScale:Number;
 	public  var minHUDScale:Number;
 	
-	private var _hideDefaultSwapUI:Boolean;
+	private var _hideDefaultDisruptorSwapUI:Boolean;
+	private var _hideDefaultShieldSwapUI:Boolean;
 	
 	private var _neonGlowEntireBar:Boolean;
 	private var _lockBars:Boolean;
@@ -133,6 +134,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	private var _lastXPFetchTime:Number = 0;
 	private var _findPassiveBarThrashCount:Number = 0;
 	private var _findPassiveBarTimeoutID:Number;
+	private var _findPlayerInfoThrashCount:Number = 0;
 	private var _swapTimeoutID:Number;
 	private var _postSwapCatchupInterval:Number = 1000;
 	private var _suspendVisualUpdates:Boolean;
@@ -237,6 +239,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		
 		// restore default swap UI
 		hideDefaultSwapButtons( false );
+		hideDefaultShieldButton( false );
 		
 		// release hijacked hotkeys
 		HotkeyHijacker.Release();
@@ -406,7 +409,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 				pb.m_SecondaryAegisSwap.removeMovieClip();
 			}
 		}
-
+		
 		// restore default buttons if they have been previously disabled
 		else if ( pb.LoadPrimaryAegisButton_AegisHUD_Saved != undefined ) {
 			pb.LoadPrimaryAegisButton = pb.LoadPrimaryAegisButton_AegisHUD_Saved;
@@ -414,10 +417,37 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 			pb.LoadSecondaryAegisButton = pb.LoadSecondaryAegisButton_AegisHUD_Saved;
 			pb.LoadSecondaryAegisButton_AegisHUD_Saved = undefined;
-			
+
 			// do a load to restore buttons naturally if they need to be visible
 			pb.LoadAegisButtons();
 		}	
+	}
+
+	// hide or show default buttons
+	public function hideDefaultShieldButton( hide:Boolean ) : Void {
+		
+		var pi:MovieClip = _root.playerinfo.m_PlayerShield;
+		
+		// wait for the playerinfo panel to be loaded, as it actually gets unloaded during teleports etc, not just deactivated
+		if ( pi == undefined ) {
+			
+			// only retry if we're trying to hide the default UI
+			if( hide ) {
+				// if the thrash count is exceeded, reset count and do nothing
+				if (_findPlayerInfoThrashCount++ == 10)  _findPlayerInfoThrashCount = 0;
+				// otherwise try again only if we aren't trying to restore the buttons
+				else {
+					_global.setTimeout( Delegate.create(this, hideDefaultShieldButton), 300, hide );
+				}
+			}
+			
+			return;
+		}
+		// if we reached this far, reset thrash count
+		_findPlayerInfoThrashCount = 0;
+
+		// hide/show button
+		pi._visible = !hide;
 	}
 	
 	
@@ -2115,15 +2145,24 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		}
 	}
 
-	public function get hideDefaultSwapUI():Boolean { return _hideDefaultSwapUI; }
-	public function set hideDefaultSwapUI(value:Boolean):Void {
-		if ( _hideDefaultSwapUI != value ) {
-			_hideDefaultSwapUI = value;
+	public function get hideDefaultDisruptorSwapUI():Boolean { return _hideDefaultDisruptorSwapUI; }
+	public function set hideDefaultDisruptorSwapUI(value:Boolean):Void {
+		if ( _hideDefaultDisruptorSwapUI != value ) {
+			_hideDefaultDisruptorSwapUI = value;
 			
-			hideDefaultSwapButtons(_hideDefaultSwapUI);
+			hideDefaultSwapButtons(_hideDefaultDisruptorSwapUI);
 		}
 	}
 
+	public function get hideDefaultShieldSwapUI():Boolean { return _hideDefaultShieldSwapUI; }
+	public function set hideDefaultShieldSwapUI(value:Boolean):Void {
+		if ( _hideDefaultShieldSwapUI != value ) {
+			_hideDefaultShieldSwapUI = value;
+			
+			hideDefaultShieldButton(_hideDefaultShieldSwapUI);
+		}
+	}
+	
 	public function get active():Boolean { return _active; }
 	public function set active(value:Boolean):Void {
 		if ( _active != value ) {

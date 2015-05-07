@@ -1,9 +1,11 @@
 develop -- ????-??-??
 
- * added "HUD active" option to the config panel (does the same as right-clicking the mod icon)
- * added "AutoSwap active" opton to the config panel (does the same as shift-right clicking the mod icon)
- * added setting to choose which bars are managed by the AutoSwap system (primary/secondary/shield)
+ + added "HUD active" option to the config panel (does the same as right-clicking the mod icon)
+ + added "AutoSwap active" opton to the config panel (does the same as shift-right clicking the mod icon)
+ + added setting to choose which bars are managed by the AutoSwap system (primary/secondary/shield)
 
+ + add ability to hide the default in-game shield swap UI (next to the player health bar)
+ 
  * changed default style to include the AEGIS coloured glow on the weapon and shield icons
  
 

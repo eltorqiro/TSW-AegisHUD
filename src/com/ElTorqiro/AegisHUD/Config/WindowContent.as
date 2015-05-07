@@ -137,16 +137,28 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 		};
 		AddIndent( -10);
 		AddVerticalSpace(10);
-		_uiControls.hideDefaultSwapButtons = {
-			ui:	AddCheckbox( "hideDefaultSwapButtons", "Hide default AEGIS swap buttons" ),
-			tooltip: "When on, will remove the default TSW AEGIS disruptor swap buttons from the UI.",
+		_uiControls.hideDefaultDisruptorSwapUI = {
+			ui:	AddCheckbox( "hideDefaultDisruptorSwapUI", "Hide default AEGIS Disruptor swap UI" ),
+			tooltip: "When on, will remove the default TSW AEGIS Disruptor swap buttons from the UI.",
 			event:		"click",
 			context:	this,
 			fn: 		function(e:Object) {
-				_hud.hideDefaultSwapUI = e.target.selected;
+				_hud.hideDefaultDisruptorSwapUI = e.target.selected;
 			},
 			init:		function(e:Object) {
-				e.control.ui.selected = _hud.hideDefaultSwapUI;
+				e.control.ui.selected = _hud.hideDefaultDisruptorSwapUI;
+			}
+		};
+		_uiControls.hideDefaultShieldSwapUI = {
+			ui:	AddCheckbox( "hideDefaultShieldSwapUI", "Hide default AEGIS Shield swap UI" ),
+			tooltip: "When on, will remove the default TSW AEGIS Shield swap button from the UI (next to the player health bar).",
+			event:		"click",
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.hideDefaultShieldSwapUI = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.hideDefaultShieldSwapUI;
 			}
 		};
 
