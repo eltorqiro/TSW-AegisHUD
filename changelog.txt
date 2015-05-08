@@ -1,6 +1,12 @@
-3.1.0 +develop -- ????-??-??
+3.1.1 +develop -- ????-??-??
 
 
+
+
+3.1.1 -- 2015-05-08
+
+ * fixed game completely freezing when switching from a character with AEGIS to one without
+ * fixed AutoSwap setting not being remembered per playfield
 
 
 3.1.0 -- 2015-05-07

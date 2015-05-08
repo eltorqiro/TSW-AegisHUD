@@ -6,6 +6,8 @@ import com.ElTorqiro.AegisHUD.HUD.HUD;
 import com.ElTorqiro.AegisHUD.AddonInfo;
 import com.ElTorqiro.AegisHUD.HUD.SettingsPacks;
 
+import com.GameInterface.UtilsBase;
+
 // the HUD instance
 var g_HUD:HUD;
 
@@ -54,14 +56,14 @@ function OnModuleActivated() : Void {
 	settings.active = g_playfieldMemoryBlacklist[ playfieldID ] == undefined;
 	
 	// playfield autoswap
-	var playfields:Array = loadData.FindEntryArray( "autoswap" );
+	var playfields:Array = data.FindEntryArray( "autoswap.blacklist" );
 	g_playfieldMemoryAutoSwap = { };
 	
 	for ( var s:String in playfields ) {
 		if ( playfields[s] != undefined ) g_playfieldMemoryAutoSwap[ playfields[s] ] = true;
 	}	
 	
-	settings.autoswap = g_playfieldMemoryAutoSwap[ playfieldID ];
+	settings.autoSwap = g_playfieldMemoryAutoSwap[ playfieldID ] == undefined;
 
 	
 	// instantiate hud
@@ -104,15 +106,15 @@ function OnModuleDeactivated() : Void {
 	
 	// autoswap memory
 	// current playfield
-	g_HUD.autoSwap ? g_playfieldMemoryAutoSwap[ playfieldID ] = true : delete g_playfieldMemoryAutoSwap[ playfieldID ];
+	g_HUD.autoSwap ? delete g_playfieldMemoryAutoSwap[ playfieldID ] : g_playfieldMemoryAutoSwap[ playfieldID ] = true;
 	
 	for ( var s:String in g_playfieldMemoryAutoSwap ) {
-		data.AddEntry( 'autoswap', s );
+		data.AddEntry( 'autoswap.blacklist', s );
 	}
 	
 	
 	g_playfieldMemory.SetValue( data );
 	
 	// remove HUD
-	g_HUD.unloadMovie();
+	g_HUD.removeMovieClip();
 }
