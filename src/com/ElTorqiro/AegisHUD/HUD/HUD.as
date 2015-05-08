@@ -551,7 +551,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		_aegisItemProps[114] = { id: 114, itemType: e_ItemTypeAegisShield, aegisType: e_AegisTypeRed, tint: "demonic", icon: "shield-demonic" };
 
 		// if the toon doesn't have the AEGIS system unlocked already, listen in case it unlocks during session
-		if ( Lore.IsLocked(e_AegisUnlockAchievement) )  Lore.SignalTagAdded.Connect(SlotTagAdded, this);
+		if ( Lore.IsLocked(e_AegisUnlockAchievement) || Lore.IsLocked(e_UltimateAbilityUnlockAchievement) )  Lore.SignalTagAdded.Connect(SlotTagAdded, this);
 		
 		// handle the TSW user config option for showing/hiding AEGIS HUD UI
 		_showAegisSwapUI.SignalChanged.Connect( Activate, this);
@@ -588,6 +588,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			
 			// ultimate ability has become unlocked
 			case e_UltimateAbilityUnlockAchievement:
+				Lore.SignalTagAdded.Disconnect( SlotTagAdded, this );			
 				if ( _attachToPassiveBar ) {
 					MoveToDefaultPosition();
 				}
@@ -1620,9 +1621,9 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	
 	// fetch aegis XP for each slotted controller, using tooltip data as the source of the values
 	private function UpdateAegisXP():Void {
-		
+
 		// do nothing if XP isn't being shown
-		if ( !_showXP ) {
+		if ( !_showXP || !visible ) {
 			if ( _fetchXPAntiSpamTimeoutID != undefined ) _global.clearTimeout( _fetchXPAntiSpamTimeoutID );
 			_fetchXPAntiSpamTimeoutID = undefined;
 			
@@ -1664,14 +1665,16 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		var slot:Object = _slotFromAegisID[ aegisID ];
 		
 		// check that the slot has a valid item in it
-		if ( slot == undefined || slot.item == undefined || slot.inventory.GetItemAt(slot.position).m_AegisItemType != aegisID ) return;
-
+		if ( slot.item == undefined || slot.inventory.GetItemAt(slot.position).m_AegisItemType != aegisID ) return;
+		
 		// fetch tooltip for item
 		var tooltipData:TooltipData = TooltipDataProvider.GetInventoryItemTooltip( slot.inventory.GetInventoryID(), slot.position );
 
 		// break out xp value
 		var xpString:String = tooltipData.m_Descriptions[2];
 
+		if ( xpString == undefined ) return;
+		
 		// get the first occurence of %
 		var endPos:Number = xpString.indexOf('%');
 		
