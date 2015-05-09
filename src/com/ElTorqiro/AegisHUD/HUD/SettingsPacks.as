@@ -23,6 +23,8 @@ class com.ElTorqiro.AegisHUD.HUD.SettingsPacks {
 			hideWhenAutoSwapEnabled: false,
 			hideWhenNotInCombat: false,
 			
+			enableDefaultHotkeysWhenHUDInactive: false,
+			
 			slotSize: 24,
 			barPadding: 3,
 			slotSpacing: 3,

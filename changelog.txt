@@ -1,6 +1,7 @@
 3.1.1 +develop -- ????-??-??
 
- + add option to automatically hide HUD when autoswap is enabled or when not in combat
+ + added option to automatically hide HUD when autoswap is enabled or when not in combat
+ + added option to enable/disable Disruptor swap hotkeys when HUD is disabled
  
  * changed mod icon graphics
  

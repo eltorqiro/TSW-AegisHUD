@@ -76,6 +76,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	private var _hideDefaultDisruptorSwapUI:Boolean;
 	private var _hideDefaultShieldSwapUI:Boolean;
 	
+	private var _enableDefaultHotkeysWhenHUDInactive:Boolean;
+	
 	private var _neonGlowEntireBar:Boolean;
 	public  var lockBars:Boolean;
 	private var _attachToPassiveBar:Boolean;
@@ -346,6 +348,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 		// manage autoswap
 		manageAutoSwap();
+		manageHotkeys();
 		
 		CheckVisibility();		
 	}
@@ -383,6 +386,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		
 		// tear down autoswap
 		manageAutoSwap();
+		manageHotkeys();
 	}
 
 	private function setupInventorySignals( connect:Boolean ) : Void {
@@ -644,6 +648,14 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		}
 	}
 
+	
+	/**
+	 * 
+	 * hotkey hijacking manager
+	 */
+	private function manageHotkeys() : Void {
+		_active || !enableDefaultHotkeysWhenHUDInactive ? HotkeyHijacker.Hijack() : HotkeyHijacker.Release();
+	}
 	
 	/**
 	 * 
@@ -2182,6 +2194,13 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			LayoutBars();
 			invalidate();
 		}
+	}
+
+	public function get enableDefaultHotkeysWhenHUDInactive():Boolean { return _enableDefaultHotkeysWhenHUDInactive; }
+	public function set enableDefaultHotkeysWhenHUDInactive(value:Boolean):Void {
+		_enableDefaultHotkeysWhenHUDInactive = value;
+		
+		manageHotkeys();
 	}
 	
 }

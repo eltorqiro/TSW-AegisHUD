@@ -72,7 +72,21 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 				e.control.ui.selected = _hud.hudEnabled;
 			}
 		};
+		_uiControls.enableDefaultHotkeysWhenHUDInactive = {
+			ui:	AddCheckbox( "enableDefaultHotkeysWhenHUDInactive", "Enable default hotkey behaviour when HUD inactive" ),
+			tooltip: "Enables the default AEGIS Disruptor swap hotkey behaviour when the AegisHUD is not active.<br><br>This setting is best left <i>off</i>, as it helps prevent accidental hotkey-swap events in playfields that do not have AEGIS mobs, thus avoiding the ability lockout period.",
+			event:		"click",
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.enableDefaultHotkeysWhenHUDInactive = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.enableDefaultHotkeysWhenHUDInactive;
+			}
+		};
 		
+		
+		AddVerticalSpace(10);
 		_uiControls.autoSwapEnabled = {
 			ui:	AddCheckbox( "autoSwapEnabled", "AutoSwap system enabled" ),
 			tooltip: "When on, the AutoSwap system will swap AEGIS controllers based on your offensive target.",
