@@ -53,7 +53,7 @@ function OnModuleActivated() : Void {
 		if ( playfields[s] != undefined ) g_playfieldMemoryBlacklist[ playfields[s] ] = true;
 	}
 
-	settings.active = g_playfieldMemoryBlacklist[ playfieldID ] == undefined;
+	settings.hudEnabled = g_playfieldMemoryBlacklist[ playfieldID ] == undefined;
 	
 	// playfield autoswap
 	var playfields:Array = data.FindEntryArray( "autoswap.blacklist" );
@@ -63,7 +63,10 @@ function OnModuleActivated() : Void {
 		if ( playfields[s] != undefined ) g_playfieldMemoryAutoSwap[ playfields[s] ] = true;
 	}	
 	
-	settings.autoSwap = g_playfieldMemoryAutoSwap[ playfieldID ] == undefined;
+	// a blacklist for autoswap is not as good for players who aren't on a 1-second swap time
+	// those on a 4 second will want it off most of the time
+	// TODO: consider what to do about potentially having both a whitelist and a blacklist
+	//settings.autoSwapEnabled = g_playfieldMemoryAutoSwap[ playfieldID ] == undefined;
 
 	
 	// instantiate hud
@@ -97,7 +100,7 @@ function OnModuleDeactivated() : Void {
 
 	// blacklist memory
 	// current playfield
-	g_HUD.active ? delete g_playfieldMemoryBlacklist[ playfieldID ] : g_playfieldMemoryBlacklist[ playfieldID ] = true;
+	g_HUD.hudEnabled ? delete g_playfieldMemoryBlacklist[ playfieldID ] : g_playfieldMemoryBlacklist[ playfieldID ] = true;
 	
 	for ( var s:String in g_playfieldMemoryBlacklist ) {
 		data.AddEntry( 'blacklist', s );
@@ -106,7 +109,7 @@ function OnModuleDeactivated() : Void {
 	
 	// autoswap memory
 	// current playfield
-	g_HUD.autoSwap ? delete g_playfieldMemoryAutoSwap[ playfieldID ] : g_playfieldMemoryAutoSwap[ playfieldID ] = true;
+	g_HUD.autoSwapEnabled ? delete g_playfieldMemoryAutoSwap[ playfieldID ] : g_playfieldMemoryAutoSwap[ playfieldID ] = true;
 	
 	for ( var s:String in g_playfieldMemoryAutoSwap ) {
 		data.AddEntry( 'autoswap.blacklist', s );

@@ -21,7 +21,7 @@ var g_configWindow;
 var g_showConfig:DistributedValue;
 
 // hud visible DV
-var g_hudEnabled:DistributedValue;
+var g_HUDState:DistributedValue;
 
 // Viper's Top Bar Information Overload (VTIO) integration
 var g_VTIOIsLoadedMonitor:DistributedValue;
@@ -71,9 +71,9 @@ function onLoad()
 	}
 
 	// hud enabled connector
-	g_hudEnabled = DistributedValue.Create(AddonInfo.ID + "_HUD_Enabled");
-	g_hudEnabled.SignalChanged.Connect(HUDEnabledHandler, this);
-	HUDEnabledHandler();
+	g_HUDState = DistributedValue.Create(AddonInfo.ID + "_HUD_State");
+	g_HUDState.SignalChanged.Connect(StateHandler, this);
+	StateHandler();
 	
 	// config window toggle listener
 	g_showConfig = DistributedValue.Create(AddonInfo.ID + "_ShowConfig");
@@ -85,28 +85,26 @@ function OnModuleActivated() : Void {
 	
 }
 
-function OnModuleDeactivated():Void
-{
+function OnModuleDeactivated( ): Void {
 	// destroy config window
 	g_showConfig.SetValue(false);
 }
 
-function OnUnload():Void
-{
-	g_hudEnabled.SignalChanged.Disconnect(HUDEnabledHandler, this);
+function OnUnload() : Void {
 	
 	g_VTIOIsLoadedMonitor.SignalChanged.Disconnect(CheckVTIOIsLoaded, this);
-	g_hudData.SignalChanged.Disconnect(HUDDataChanged, this);
+	g_HUDState.SignalChanged.Disconnect(StateHandler, this);
+	g_showConfig.SignalChanged.Disconnect(ToggleConfigWindow, this);
 	
 	// save module settings
-	var saveData = new Archive();
+	var data:Archive = new Archive();
 	for(var i:String in g_settings)
 	{
-		saveData.AddEntry( i, g_settings[i] );
+		data.AddEntry( i, g_settings[i] );
 	}
 	
 	// becaues LoginPrefs.xml has a reference to this DValue, the contents will be saved whenever the game thinks it is necessary (e.g. closing the game, reloadui etc)
-	DistributedValue.SetDValue(AddonInfo.ID + "_Config_Data", saveData);
+	DistributedValue.SetDValue(AddonInfo.ID + "_Config_Data", data);
 }
 
 function CheckVTIOIsLoaded()
@@ -159,20 +157,21 @@ function CreateIcon():Void
 		
 		// shift right click, toggle autoswap
 		else if ( buttonID == 2 && Key.isDown(Key.SHIFT) ) {
-			if ( g_hudEnabled.GetValue() ) {
-				_root["eltorqiro_aegishud\\hud"].g_HUD.autoSwap = !_root["eltorqiro_aegishud\\hud"].g_HUD.autoSwap;
-				HUDEnabledHandler();
+			if ( g_HUDState.GetValue() == "locked" ) return;
+			
+			if ( g_HUDState.GetValue() == "disabled" ) {
+				_root["eltorqiro_aegishud\\hud"].g_HUD.hudEnabled = true;
+				_root["eltorqiro_aegishud\\hud"].g_HUD.autoSwapEnabled = true;				
 			}
 			
 			else {
-				_root["eltorqiro_aegishud\\hud"].g_HUD.autoSwap = true;
-				_root["eltorqiro_aegishud\\hud"].g_HUD.active = true;
+				_root["eltorqiro_aegishud\\hud"].g_HUD.autoSwapEnabled = !_root["eltorqiro_aegishud\\hud"].g_HUD.autoSwapEnabled;
 			}
 		}
 		
 		// right mouse click, toggle hud enabled/disabled
 		else if ( buttonID == 2 ) {
-			_root["eltorqiro_aegishud\\hud"].g_HUD.active = !_root["eltorqiro_aegishud\\hud"].g_HUD.active;
+			_root["eltorqiro_aegishud\\hud"].g_HUD.hudEnabled = !_root["eltorqiro_aegishud\\hud"].g_HUD.hudEnabled;
 		}
 		
 		// reset icon scale, only if VTIO not present
@@ -308,8 +307,7 @@ function CreateConfigWindow():Void
 
 }
 
-function DestroyConfigWindow():Void
-{
+function DestroyConfigWindow() : Void {
 
 	if ( g_configWindow )
 	{	
@@ -323,22 +321,11 @@ function DestroyConfigWindow():Void
 
 }
 
-function HUDEnabledHandler(retry:Boolean):Void {
+function StateHandler(retry:Boolean):Void {
 	
-	var state:String;
+	var state:String = g_HUDState.GetValue();
+	if ( state == undefined ) state = "locked";
 	
-	if ( !g_hudEnabled.GetValue() ) {
-		state = "disabled";
-	}
-	
-	else if ( _root["eltorqiro_aegishud\\hud"].g_HUD.autoSwap ) {
-		state = "autoswap";
-	}
-	
-	else {
-		state = "enabled";
-	}
-
 	g_icon.gotoAndStop( state );
 	this["Icon"].gotoAndStop( state );
 	
@@ -353,7 +340,7 @@ function HUDEnabledHandler(retry:Boolean):Void {
 	// hack to wait for VTIO to have created the dupe icon after a full reload
 	// VTIO creates its dupe icon forcibly in your movieclip (so it can use your SWFs assets) as "Icon"
 	if ( !retry && this["Icon"] == undefined ) {
-		_global.setTimeout( Delegate.create( this, HUDEnabledHandler), 500 );
+		_global.setTimeout( Delegate.create( this, StateHandler), 500 );
 	}
 
 }

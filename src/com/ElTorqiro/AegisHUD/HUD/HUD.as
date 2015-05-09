@@ -56,8 +56,15 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	// aegis unlock achivement id
 	public static var e_AegisUnlockAchievement:Number = 6817;				// The Lore number that unlocks the AEGIS system
 	public static var e_UltimateAbilityUnlockAchievement:Number = 7783;		// the Lore number that unlocks the Ultimate Ability
-																
+
+	private var _configured:Boolean;
+	
 	private var _active:Boolean;
+	private var _lockedOut:Boolean;
+	private var _hudEnabled:Boolean;
+	
+	private var _hideWhenAutoSwapEnabled:Boolean;
+	private var _hideWhenNotInCombat:Boolean;
 	
 	private var _slotSize:Number;
 	private var _barPadding:Number;
@@ -70,9 +77,9 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	private var _hideDefaultShieldSwapUI:Boolean;
 	
 	private var _neonGlowEntireBar:Boolean;
-	private var _lockBars:Boolean;
+	public  var lockBars:Boolean;
 	private var _attachToPassiveBar:Boolean;
-	private var _animateMovementsToDefaultPosition:Boolean;
+	public  var animateMovementsToDefaultPosition:Boolean;
 	
 	private var _showBarBackground:Boolean;
 	private var _barBackgroundThin:Boolean;
@@ -94,8 +101,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	private var _hideXPWhenFull:Boolean;
 	private var _fetchXPAntiSpamInterval:Number = 1000; // milliseconds
 
-	private var _showTooltips:Boolean;
-	private var _suppressTooltipsInCombat:Boolean;
+	public  var showTooltips:Boolean;
+	public  var suppressTooltipsInCombat:Boolean;
 
 	private var _tintAegisIconByType:Boolean;
 	private var _showActiveAegisBackground:Boolean;
@@ -107,17 +114,15 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 	public  var dualSelectWithModifier:Boolean;
 	public  var dualSelectWithButton:Boolean;
-	private var _dualSelectByDefault:Boolean;
-	private var _dualSelectFromHotkey:Boolean;
+	public  var dualSelectByDefault:Boolean;
+	public  var dualSelectFromHotkey:Boolean;
 	
 	private var _tints:Object = { none: 0xffffff };
 	
-	private var _autoSwap:Boolean;
-	public var  autoSwapPrimaryEnabled:Boolean;
-	public var  autoSwapSecondaryEnabled:Boolean;
-	public var  autoSwapShieldEnabled:Boolean;
-	
-	public var playfieldMemoryEnabled:Boolean;
+	private var _autoSwapEnabled:Boolean;
+	public  var autoSwapPrimaryEnabled:Boolean;
+	public  var autoSwapSecondaryEnabled:Boolean;
+	public  var autoSwapShieldEnabled:Boolean;
 	
 	// position restoration for windows
 	private var _primaryPosition:Point;
@@ -137,7 +142,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	private var _findPlayerInfoThrashCount:Number = 0;
 	private var _swapTimeoutID:Number;
 	private var _postSwapCatchupInterval:Number = 1000;
-	private var _suspendVisualUpdates:Boolean;
+	private var _visualUpdatesSuspended:Boolean;
 	
 	// internal movieclips
 	private var m_Primary:MovieClip;
@@ -159,19 +164,19 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	private var _dragObjects:Array;
 	
 	// behaviour modifier keys
-	public var dualDragModifier:Number = Key.CONTROL;
-	public var dualDragButton:Number = 0;
+	public  var dualDragModifier:Number = Key.CONTROL;
+	public  var dualDragButton:Number = 0;
 
-	public var singleDragModifier:Number = Key.CONTROL;
-	public var singleDragButton:Number = 1;
+	public  var singleDragModifier:Number = Key.CONTROL;
+	public  var singleDragButton:Number = 1;
 	
-	public var scaleModifier:Number = Key.CONTROL;
-	public var scaleResetModifier:Number = Key.SHIFT;
+	public  var scaleModifier:Number = Key.CONTROL;
+	public  var scaleResetModifier:Number = Key.SHIFT;
 
-	public var dualSelectModifier:Number = Key.SHIFT;
-	public var dualSelectButton:Number = 1;
+	public  var dualSelectModifier:Number = Key.SHIFT;
+	public  var dualSelectButton:Number = 1;
 	
-	public var singleSelectButton:Number = 0;
+	public  var singleSelectButton:Number = 0;
 
 	// swap AEGIS RPC DV used as part of hotkey hijacking
 	private var _swapDisruptorRPC:DistributedValue;
@@ -202,7 +207,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	private var _lastSetTargetDisruptorType:Number;
 
 	// broadcast for enabled/disabled value for HUD
-	private var _hudState:DistributedValue;
+	private var _aegisHUDState:DistributedValue;
 	
 	
 	/**
@@ -210,7 +215,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	 */
 	public function HUD() {
 		
-		// start up hidden, Activate will take care of visibility later
+		// start up inactive
+		_active = false;
 		visible = false;
 		
 		_character = Character.GetClientCharacter();
@@ -222,7 +228,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		_iconLoader.addListener(this);
 		
 		// initialise distributed values
-		_hudState = DistributedValue.Create( AddonInfo.ID + "_HUD_Enabled" );
+		_aegisHUDState = DistributedValue.Create( AddonInfo.ID + "_HUD_State" );
 		_swapDisruptorRPC = DistributedValue.Create( AddonInfo.ID + "_Swap" );
 		_guiResolutionScale = DistributedValue.Create("GUIResolutionScale");
 		_guiHUDScale = DistributedValue.Create("GUIScaleHUD")
@@ -246,22 +252,54 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		
 		// unwire signal listeners
 		Lore.SignalTagAdded.Disconnect(SlotTagAdded, this);
-		_showAegisSwapUI.SignalChanged.Disconnect( Activate, this );
+		_showAegisSwapUI.SignalChanged.Disconnect( CheckState, this );
+		
+		_character.SignalToggleCombat.Disconnect( CheckVisibility, this );
+	}
+	
+	public function CheckState() : Void {
+		
+		_lockedOut = !_showAegisSwapUI.GetValue() || Lore.IsLocked(e_AegisUnlockAchievement);
+		
+		// determine whether to activate
+		!hudEnabled || _lockedOut ? Deactivate() : Activate();
+
+		CheckVisibility();
+		
+		// publish current HUD state
+		var state:String;
+		if ( !hudEnabled ) {
+			state = "disabled";
+		}
+		
+		else if ( _lockedOut ) {
+			state = "locked";
+		}
+		
+		else if( autoSwapEnabled ) {
+			state = "autoswap";
+		}
+		
+		else {
+			state = "enabled";
+		}
+		
+		_aegisHUDState.SetValue( state );
+	}
+	
+	private function CheckVisibility() : Void {
+		// determine if HUD should be visible
+		visible = _active && !(_lockedOut || (autoSwapEnabled && hideWhenAutoSwapEnabled) || (!_character.IsThreatened() && hideWhenNotInCombat));
+		invalidate();
 	}
 	
 	public function Activate() : Void {
 		
-		if ( _suspendVisualUpdates ) return;
+		// don't re-activate if not configured or already active
+		if ( _active || !_configured ) return;
 		
-		// don't re-activate if already visible
-		if ( visible ) return;
+		_active = true;
 		
-		// don't activate if aegis system not available
-		if ( !_active || !_showAegisSwapUI.GetValue() || Lore.IsLocked(e_AegisUnlockAchievement) ) {
-			Deactivate();
-			return;
-		}
-
 		// wire up listener for disruptor swap RPC (as sent by hotkeys)
 		_swapDisruptorRPC.SignalChanged.Connect( SwapDisruptorRPCHandler, this );
 		
@@ -294,7 +332,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		_character.SignalTokenAmountChanged.Connect( SlotTokenAmountChanged, this );
 		
 		// attach to passivebar if needed
-		AttachToPassiveBar( _attachToPassiveBar );
+		HookPassiveBarToggle( attachToPassiveBar );
 		
 		// wire up event listener
 		this.addEventListener("select", this, "AegisSelectHandler");
@@ -306,18 +344,16 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		
 		this.addEventListener("scale", this, "ScaleHandler");
 
-		// show UI
-		visible = true;
-		_hudState.SetValue(true);
-		
 		// manage autoswap
 		manageAutoSwap();
+		
+		CheckVisibility();		
 	}
 	
 	public function Deactivate() : Void {
-		// hide UI
-		visible = false;
-		_hudState.SetValue(false);
+		
+		// don't try to deactivate if not active
+		if ( !_active ) return;
 		
 		// disconnect disruptor RPC listener
 		_swapDisruptorRPC.SignalChanged.Disconnect( SwapDisruptorRPCHandler, this );
@@ -330,7 +366,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		CloseTooltip();
 
 		// undo passivebar attachment
-		AttachToPassiveBar( false );
+		HookPassiveBarToggle( false );
 
 		// unwire aegis related listeners
 		_character.SignalStatChanged.Disconnect( SlotStatChanged, this);
@@ -339,11 +375,14 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		// tear down inventory listeners
 		setupInventorySignals( false );
 		
-		// tear down autoswap
-		manageAutoSwap();
-		
 		// remove event listeners
 		this.removeAllEventListeners();
+		
+		_active = false;
+		visible = false;
+		
+		// tear down autoswap
+		manageAutoSwap();
 	}
 
 	private function setupInventorySignals( connect:Boolean ) : Void {
@@ -550,11 +589,11 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		_aegisItemProps[113] = { id: 113, itemType: e_ItemTypeAegisShield, aegisType: e_AegisTypeBlue, tint: "cyber", icon: "shield-cyber" };
 		_aegisItemProps[114] = { id: 114, itemType: e_ItemTypeAegisShield, aegisType: e_AegisTypeRed, tint: "demonic", icon: "shield-demonic" };
 
-		// if the toon doesn't have the AEGIS system unlocked already, listen in case it unlocks during session
+		// if the toon doesn't have the AEGIS system or Ultimate Ability unlocked already, listen in case of unlocks during session
 		if ( Lore.IsLocked(e_AegisUnlockAchievement) || Lore.IsLocked(e_UltimateAbilityUnlockAchievement) )  Lore.SignalTagAdded.Connect(SlotTagAdded, this);
 		
 		// handle the TSW user config option for showing/hiding AEGIS HUD UI
-		_showAegisSwapUI.SignalChanged.Connect( Activate, this);
+		_showAegisSwapUI.SignalChanged.Connect( CheckState, this);
 		
 		// apply initial settings based on defaults
 		var initSettings:Object = SettingsPacks.defaultSettings;
@@ -571,29 +610,37 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		ApplySettingsPack( initSettings );
 		delete settings;
 		
-		Activate();
+		// if the bars have no previously saved position, move to the default
+		if ( _primaryPosition == undefined ) {
+			MoveToDefaultPosition();
+		}
+
+		// hide default UI items if needed
+		hideDefaultSwapButtons( _hideDefaultDisruptorSwapUI );
+		hideDefaultShieldButton( _hideDefaultShieldSwapUI );
+		
+		// HUD is configured and can now run freely
+		_configured = true;
+		
+		CheckState();
 	}
 
 	// handler for situation where AEGIS system becomes unlocked during play session
 	private function SlotTagAdded( tag:Number ) : Void {
 		
 		switch( tag ) {
-		
 			// aegis system has become unlocked
 			case e_AegisUnlockAchievement:
-				Lore.SignalTagAdded.Disconnect( SlotTagAdded, this );
-				Activate();
+				Lore.SignalTagAdded.Disconnect( SlotTagAdded, this );	// assume aegis unlock and ultimate ability unlock cannot happen in a single playfield
+				CheckState();
 			break;
 			
 			
 			// ultimate ability has become unlocked
 			case e_UltimateAbilityUnlockAchievement:
-				Lore.SignalTagAdded.Disconnect( SlotTagAdded, this );			
-				if ( _attachToPassiveBar ) {
-					MoveToDefaultPosition();
-				}
+				Lore.SignalTagAdded.Disconnect( SlotTagAdded, this );
+				updatePositions();
 			break;
-			
 		}
 	}
 
@@ -606,8 +653,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 	private function manageAutoSwap() : Void {
 
-		// only swap if visible and setting is enabled
-		if ( visible && _autoSwap ) {
+		// only swap if hud active and autoswap is enabled
+		if ( _active && autoSwapEnabled ) {
 			_character.SignalOffensiveTargetChanged.Connect( offensiveTargetChangedHandler, this );
 			_character.SignalToggleCombat.Connect( autoSwapAll, this );
 
@@ -620,6 +667,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			
 			detachLastTarget();
 		}
+		
+		CheckState();
 	}
 
 	private function offensiveTargetChangedHandler(target:ID32) : Void {
@@ -665,7 +714,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	
 	private function autoSwapDisruptors() : Void {
 		
-		if ( !_autoSwap ) return;
+		if ( !autoSwapEnabled ) return;
 		
 		// get current target
 		var target:Character = Character.GetCharacter(_character.GetOffensiveTarget());
@@ -686,7 +735,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			}
 		}
 
-		if( targetShieldType) {
+		if( targetShieldType ) {
 		
 			var weaponBars:Array = [ {bar: _primary, swap: autoSwapPrimaryEnabled}, {bar: _secondary, swap: autoSwapSecondaryEnabled} ];
 			for ( var s:String in weaponBars ) {
@@ -712,7 +761,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 	private function autoSwapShield() : Void {
 
-		if ( !_autoSwap || !autoSwapShieldEnabled ) return;
+		if ( !autoSwapEnabled || !autoSwapShieldEnabled ) return;
 		
 		// get current target
 		var target:Character = Character.GetCharacter(_character.GetOffensiveTarget());
@@ -738,32 +787,32 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	// layout bar internally
 	private function LayoutBars():Void {
 
-		if ( _suspendVisualUpdates ) return;		
+		if ( visualUpdatesSuspended ) return;		
 		
 		for ( var s:String in _bars ) {
 			var bar = _bars[s].mc;
 			
 			// item slot visibility
-			if ( (bar != m_Shield && _showWeapons) || (bar == m_Shield && _showShield) ) {
+			if ( (bar != m_Shield && showWeapons) || (bar == m_Shield && showShield) ) {
 				bar.m_Item._visible = true;
 				
 				// item slot position
 				if ( this["_" + s + "ItemFirst"] ) {
-					bar.m_Item._x = _barPadding;
-					bar.m_Aegis1._x = bar.m_Item._x + bar.m_Item._width + _slotSpacing;
+					bar.m_Item._x = barPadding;
+					bar.m_Aegis1._x = bar.m_Item._x + bar.m_Item._width + slotSpacing;
 					var lastButton:MovieClip = bar.m_Aegis3;
 				}
 				
 				else {
-					bar.m_Aegis1._x = _barPadding;
-					bar.m_Item._x = bar.m_Aegis1._x + (bar.m_Aegis1._width * 3) + _slotSpacing;
+					bar.m_Aegis1._x = barPadding;
+					bar.m_Item._x = bar.m_Aegis1._x + (bar.m_Aegis1._width * 3) + slotSpacing;
 					var lastButton:MovieClip = bar.m_Item;
 				}
 			}
 			
 			else {
 				bar.m_Item._visible = false;
-				bar.m_Aegis1._x = _barPadding;
+				bar.m_Aegis1._x = barPadding;
 				var lastButton:MovieClip = bar.m_Aegis3;
 			}
 
@@ -771,21 +820,26 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			bar.m_Aegis3._x = bar.m_Aegis2._x + bar.m_Aegis2._width;
 			
 			// position and resize background to wrap buttons
-			bar.m_Background._width = lastButton._x + lastButton._width + (_barPadding);
-			
-			if ( _barBackgroundThin ) {
+			bar.m_Background._width = lastButton._x + lastButton._width + (barPadding);
+
+			if ( barBackgroundThin ) {
 				bar.m_Background._y = 9;
 				bar.m_Background._height = 6;
 			}
 			
 			else {
-				bar.m_Background._y = 0 - _barPadding;
-				bar.m_Background._height = _slotSize + (_barPadding * 2);
+				bar.m_Background._y = 0 - barPadding;
+				bar.m_Background._height = slotSize + (barPadding * 2);
 			}
 		}
 		
 		// if hud is attached to passivebar, reset to default swap button position
-		if ( _attachToPassiveBar ) {
+		updatePositions();
+	}
+	
+	private function updatePositions( reset:Boolean ) : Void {
+		
+		if ( attachToPassiveBar || reset ) {
 			MoveToDefaultPosition();
 		}
 	}
@@ -815,7 +869,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			
 			// userTriggered parameter needed to prevent the annoying pop-in when first loading into an area
 			// when the bars are initially positioned
-			if( userTriggered && _animateMovementsToDefaultPosition ) {
+			if( userTriggered && animateMovementsToDefaultPosition ) {
 			
 				m_Primary.tweenTo(1, {
 						_x: primaryDefaultPosition.x,
@@ -863,11 +917,11 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		}
 
 	}
-	
+
 	// sets the real scale & position of the AegisHUD, integrating with the game's resolution & HUD scaling
 	private function Layout():Void {
 		
-		if ( _suspendVisualUpdates ) return;		
+		if ( !_configured ) return;		
 
 		// this is based on the trio: GUI resolution, GUI hud scale, this hud scale
 		var guiResolutionScale:Number = _guiResolutionScale.GetValue();
@@ -878,14 +932,14 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		if ( guiHUDScale == undefined ) guiHUDScale = 100;
 
 		// calculate the real final scale
-		var realScale:Number = guiResolutionScale * ( guiHUDScale * _hudScale / 100 );
+		var realScale:Number = guiResolutionScale * ( guiHUDScale * hudScale / 100 );
 		
 		m_Primary._xscale = m_Primary._yscale = realScale;
 		m_Secondary._xscale = m_Secondary._yscale = realScale;
 		m_Shield._xscale = m_Shield._yscale = realScale;
 		
 		// if attached to passivebar, reset position
-		if ( _attachToPassiveBar ) {
+		if ( attachToPassiveBar ) {
 			MoveToDefaultPosition();
 		}
 		
@@ -918,7 +972,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		
 		var defaults:Object = SettingsPacks.defaultSettings;
 		
-		_suspendVisualUpdates = true;
+		visualUpdatesSuspended = true;
 		
 		tintAegisPsychic = defaults.tintAegisPsychic;
 		tintAegisCybernetic = defaults.tintAegisCybernetic;
@@ -931,15 +985,12 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		
 		tintBarStandard = defaults.tintBarStandard;
 		
-		_suspendVisualUpdates = false;
-		invalidate();
+		visualUpdatesSuspended = false;
 	}
 	
 	// restore all settings to default
 	public function ApplyDefaultSettings() : Void {
 		ApplySettingsPack( SettingsPacks.defaultSettings );
-		LayoutBars();
-		Layout();
 	}
 	
 	
@@ -973,12 +1024,18 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	// refresh all slot items
 	private function RefreshItems() : Void {
 		
+		visualUpdatesSuspended = true;
+		
+		// update shields
 		RefreshShieldPositions();
 
+		// update fixed location items (e.g. disruptors)
 		for ( var s:String in _staticPositions ) {
 			var slot:Object = _staticPositions[s];
 			inventoryUpdateHandler( slot.inventory.GetInventoryID(), slot.position );
 		}
+		
+		visualUpdatesSuspended = false;
 	}
 
 	private function inventoryUpdateHandler(inventoryID:ID32, position:Number) : Boolean {
@@ -1039,7 +1096,11 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		// if this is the equipped shield slot, update the active shields
 		UpdateActiveAegis();
 		
-		invalidate();
+		if ( handled ) {
+		UtilsBase.PrintChatText("pos: " + position);
+			
+			invalidate();
+		}
 		
 		return handled;
 	}
@@ -1062,11 +1123,9 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	
 	// update all icons in all slots
 	private function updateIcons() : Void {
-
 		for ( var s:String in _slots ) {
 			loadIcon( _slots[s] );
 		}
-		
 	}
 	
 	// handler for MovieClipLoader.loadClip
@@ -1079,7 +1138,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	// highlight active aegis slot
 	private function draw() : Void {
 		
-		if ( _suspendVisualUpdates ) return;
+		if ( visualUpdatesSuspended || !visible || !_configured ) return;
 
 		// do for both aegis sides
 		for ( var s:String in _bars ) {
@@ -1092,7 +1151,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			if ( barTint == undefined ) barTint = _tints.empty;
 
 			// neon glow entire bar
-			if ( _neonEnabled && _neonGlowEntireBar ) {
+			if ( neonEnabled && neonGlowEntireBar ) {
 				var entireGlow:GlowFilter = new GlowFilter( barTint, 0.8, 8, 8, 1, 3, false, false );
 				
 				barMC.filters = [ entireGlow ];
@@ -1101,7 +1160,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 			
 			// show or hide background (must use alpha so it remains a hit target for mouse)
-			if ( _showBarBackground ) {
+			if ( showBarBackground ) {
 				barMC.m_Background._alpha = 100;
 
 				// tint bar background
@@ -1109,12 +1168,12 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 				barMC.m_Background.gotoAndStop("white");
 			
 				// neon glow bar background
-				if ( _tintBarBackgroundByActiveAegis && _neonEnabled && _neonGlowBarBackground ) {
+				if ( tintBarBackgroundByActiveAegis && neonEnabled && neonGlowBarBackground ) {
 					barMC.m_Background.gotoAndStop("black");
 
 					var barGlow:GlowFilter =
-					_barBackgroundThin ?  new GlowFilter( barTint, 0.8, 6, 6, 2, 3, false, false )
-									   :  new GlowFilter( barTint, 0.8, 6, 6, 1, 3, false, false );
+					barBackgroundThin ?  new GlowFilter( barTint, 0.8, 6, 6, 2, 3, false, false )
+									  :  new GlowFilter( barTint, 0.8, 6, 6, 1, 3, false, false );
 					
 					barMC.m_Background.filters = [ barGlow ];
 				}
@@ -1143,12 +1202,12 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			
 
 			// tint item icon
-			var itemIconTint:Number = _tintWeaponIconByActiveAegis ? barTint : _tints.none;
+			var itemIconTint:Number = tintWeaponIconByActiveAegis ? barTint : _tints.none;
 			AddonUtils.Colorize( itemSlotMC.m_Icon, itemIconTint );
 				
 
 			// neon glow weapon
-			if ( _neonEnabled && _neonGlowWeapon ) {
+			if ( neonEnabled && neonGlowWeapon ) {
 				var itemGlow = new GlowFilter( barTint, 0.8, 6, 6, 2, 3, false, false );
 				itemSlotMC.filters = [ itemGlow ];
 			}
@@ -1178,12 +1237,12 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 
 				// tint aegis icon
-				var iconTint:Number = _tintAegisIconByType ? slotTint : _tints.none;
+				var iconTint:Number = tintAegisIconByType ? slotTint : _tints.none;
 				AddonUtils.Colorize( slotMC.m_Icon, iconTint );
 				
 
 				// show xp display
-				if ( !_showXP || slot.item == undefined ) {
+				if ( !showXP || slot.item == undefined ) {
 					slotMC.m_XP._visible = false;
 				}
 
@@ -1191,7 +1250,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 					var textFormat:TextFormat = new TextFormat();
 					
 					if( slot.aegisXP >= 100 ) {
-						slotMC.m_XP._visible = !_hideXPWhenFull;
+						slotMC.m_XP._visible = !hideXPWhenFull;
 						textFormat.color = _tints.xpFull;
 					}
 					
@@ -1209,18 +1268,18 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 				if ( slot == bar.selectedAegisSlot ) {
 
 					// show aegis background
-					if ( _showActiveAegisBackground ) {
+					if ( showActiveAegisBackground ) {
 						slotMC.m_Background._alpha = 100;
 
 						
 						// tint slot background
-						var backgroundTint:Number = _tintActiveAegisBackground ? slotTint : _tints.standard;
+						var backgroundTint:Number = tintActiveAegisBackground ? slotTint : _tints.standard;
 						AddonUtils.Colorize( slotMC.m_Background, backgroundTint );
 						slotMC.m_Background.gotoAndStop("white");
 						
 
 						// neon glow slot background
-						if ( _tintActiveAegisBackground && _neonEnabled && _neonGlowActiveAegisBackground ) {
+						if ( tintActiveAegisBackground && neonEnabled && neonGlowActiveAegisBackground ) {
 							slotMC.m_Background.gotoAndStop("black");
 							var backgroundGlow:GlowFilter = new GlowFilter( barTint, 0.8, 6, 6, 3, 3, false, false );							
 							slotMC.m_Background.filters = [ backgroundGlow ];
@@ -1238,7 +1297,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 					
 					// neon glow aegis icon
-					if ( _neonEnabled && _neonGlowAegis ) {
+					if ( neonEnabled && neonGlowAegis ) {
 						var aegisGlow = new GlowFilter( slotTint, 0.8, 6, 6, 3, 3, false, false );
 						if( slotMC.m_Icon._visible ) {
 							slotMC.m_Icon.filters = [ aegisGlow ];
@@ -1408,7 +1467,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		CloseTooltip();
 		
 		// don't show anything if setting disabled OR if the hud elements are currently being dragged
-		if ( !_showTooltips || _dragging || (!_suppressTooltipsInCombat && _character.IsInCombat()) || slot.item == undefined ) return;
+		if ( !showTooltips || _dragging || (suppressTooltipsInCombat && _character.IsInCombat()) || slot.item == undefined ) return;
 
 		var tooltipData:TooltipData = TooltipDataProvider.GetInventoryItemTooltip( slot.inventory.GetInventoryID(), slot.position );
 		
@@ -1422,17 +1481,15 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
     }
     
     private function CloseTooltip():Void {
-        if (_tooltip != undefined) {
-            _tooltip.Close();
-			_tooltip = undefined;
-        }
+		_tooltip.Close();
+		_tooltip = undefined;
     }
 
 	// handle move / drag start of one or both bars
 	private function DragStartHandler(event:Object):Void {
 
 		// do nothing if scale and movement is prevented
-		if ( _lockBars || _attachToPassiveBar ) return;
+		if ( lockBars || attachToPassiveBar ) return;
 		
 		// close any open tooltip
 		CloseTooltip();
@@ -1482,12 +1539,12 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		_mouseDown = button;
 
 		// TODO: check if no modifiers held down, and only fire click if that is the case, otherwise fire appropriate start drag etc
-		if ( !_lockBars && !_attachToPassiveBar && Key.isDown( dualDragModifier ) && button == dualDragButton ) {
+		if ( !lockBars && !attachToPassiveBar && Key.isDown( dualDragModifier ) && button == dualDragButton ) {
 			_dragging = true;
 			dispatchEvent( { type:"dragStart", modifier:dualDragModifier, button:button, dual:true, bar: getBarMouseOver() } );
 		}
 		
-		else if ( !lockBars && !_attachToPassiveBar && Key.isDown( singleDragModifier ) && button == singleDragButton ) {
+		else if ( !lockBars && !attachToPassiveBar && Key.isDown( singleDragModifier ) && button == singleDragButton ) {
 			_dragging = true;
 			dispatchEvent( { type:"dragStart", modifier:singleDragModifier, button:button, dual:false, bar: getBarMouseOver() } );
 		}
@@ -1498,7 +1555,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 			if ( slot.selectable ) {
 				var dual:Boolean;
-				if ( _dualSelectByDefault ) {
+				if ( dualSelectByDefault ) {
 					dual = !(dualSelectWithModifier && Key.isDown(dualSelectModifier)) && !(dualSelectWithButton && button == dualSelectButton);
 				}
 				else {
@@ -1607,7 +1664,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		// simplified scale handler which doesn't bother scaling around centre of entire hud, unlike previous version
 
 		// do nothing if scale and movement is prevented
-		if ( _lockBars ) return;
+		if ( lockBars ) return;
 
 		// scale in 5% increments
 		if ( event.reset ) {
@@ -1622,34 +1679,6 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	// fetch aegis XP for each slotted controller, using tooltip data as the source of the values
 	private function UpdateAegisXP():Void {
 
-		// do nothing if XP isn't being shown
-		if ( !_showXP || !visible ) {
-			if ( _fetchXPAntiSpamTimeoutID != undefined ) _global.clearTimeout( _fetchXPAntiSpamTimeoutID );
-			_fetchXPAntiSpamTimeoutID = undefined;
-			
-			return;
-		}
-		
-		// calculate interval values
-		var now:Number = Number(new Date());
-		var timeSinceFetch:Number = now - _lastXPFetchTime;
-
-		// if within the spam interval since last successful fetch, start the timer or just wait for an existing one to finish
-		if ( timeSinceFetch < _fetchXPAntiSpamInterval ) {
-			if ( _fetchXPAntiSpamTimeoutID == undefined) {
-				_fetchXPAntiSpamTimeoutID = _global.setTimeout( Delegate.create(this, UpdateAegisXP), _fetchXPAntiSpamInterval ); // Math.max(_fetchXPAntiSpamInterval - timeSinceFetch, 100) );
-			}
-			return;
-		}
-		
-		// otherwise cancel any outstanding timer
-		else if ( _fetchXPAntiSpamTimeoutID != undefined) _global.clearTimeout( _fetchXPAntiSpamTimeoutID );
-
-		_fetchXPAntiSpamTimeoutID = undefined;
-
-		// update last run time
-		_lastXPFetchTime = now;
-		
 		// for each aegis controller, get the tooltip data and extract the XP value
 		for ( var s:String in _slotFromAegisID ) {
 			UpdateAegisItemXP( s );
@@ -1659,8 +1688,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	// update aegis xp for a single item
 	private function UpdateAegisItemXP(aegisID:Number) : Void {
 		
-		// do nothing if there is nothing sensible to act on
-		if ( !_showXP ) return;
+		// do nothing if xp not being shown
+		if ( !showXP || !_active ) return;
 
 		var slot:Object = _slotFromAegisID[ aegisID ];
 		
@@ -1721,53 +1750,31 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		UpdateAegisItemXP( tokenID );
 	}
 	
-	
-	// separating this from AttachToPassiveBar to ensure only one of them runs at once, given how quickly it could be called in succession at startup
-	private function FindPassiveBarToAttach(attach:Boolean):Void {
-		if ( _root.passivebar.m_Bar.onTweenComplete == undefined ) {
-			// if the thrash count is exceeded, reset count and do nothing
-			if (_findPassiveBarThrashCount++ == 30) {
-				_findPassiveBarThrashCount = 0;
-				_findPassiveBarTimeoutID = undefined;
-			}
-			// otherwise try again
-			else _findPassiveBarTimeoutID = _global.setTimeout( Delegate.create(this, AttachToPassiveBar), 100, attach );
-			
-			return;
-		}
-
-		// if we reached this far, reset thrash count
-		_findPassiveBarThrashCount = 0;
-		_findPassiveBarTimeoutID = undefined;
-		
-		AttachToPassiveBar( attach );
-	}
-	
 	// hooks into the passivebar to set up proxies for open/close
-	private function AttachToPassiveBar(attach:Boolean):Void {
+	private function HookPassiveBarToggle(hook:Boolean):Void {
 		
 		if ( _findPassiveBarTimeoutID != undefined ) return;
 		
-		var passivebar = _root.passivebar;
+		var pb = _root.passivebar.m_Bar;
 		
 		// set up proxies and force HUD into position
-		if ( attach ) {
+		if ( hook ) {
 			
 			// make sure not to "re-attach" if already attached
-			if( passivebar.m_Bar.onTweenComplete_AegisHUD_Saved == undefined ) {
-				passivebar.m_Bar.onTweenComplete_AegisHUD_Saved = passivebar.m_Bar.onTweenComplete;
+			if( pb.onTweenComplete_AegisHUD_Saved == undefined ) {
+				pb.onTweenComplete_AegisHUD_Saved = pb.onTweenComplete;
 				// break the link
-				passivebar.m_Bar.onTweenComplete = undefined;
-				passivebar.m_Bar.onTweenComplete = Delegate.create(this, PassiveBarOnTweenCompleteProxy);
+				pb.onTweenComplete = undefined;
+				pb.onTweenComplete = Delegate.create(this, PassiveBarOnTweenCompleteProxy);
 				
 				MoveToDefaultPosition();
 			}
 		}
 		
 		// remove proxy and restore original function -- make sure not to detach when not attached
-		else if( passivebar.m_Bar.onTweenComplete_AegisHUD_Saved != undefined ) {
-			passivebar.m_Bar.onTweenComplete = passivebar.m_Bar.onTweenComplete_AegisHUD_Saved;
-			passivebar.m_Bar.onTweenComplete_AegisHUD_Saved = undefined;
+		else if( pb.onTweenComplete_AegisHUD_Saved != undefined ) {
+			pb.onTweenComplete = pb.onTweenComplete_AegisHUD_Saved;
+			pb.onTweenComplete_AegisHUD_Saved = undefined;
 		}
 	}
 	
@@ -1777,20 +1784,18 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		_root.passivebar.m_Bar.onTweenComplete_AegisHUD_Saved();
 		MoveToDefaultPosition(true);
 	}
-
 	
 	// apply a bundle of settings all at once
 	public function ApplySettingsPack(pack:Object) {
 		
-		_suspendVisualUpdates = true;
+		visualUpdatesSuspended = true;
 		
 		for ( var s:String in pack ) {
 			// TODO : implement something equivalent to AS3's .hasOwnProperty(name)
 			this[s] = pack[s];
 		}
 		
-		_suspendVisualUpdates = false;
-		invalidate();
+		visualUpdatesSuspended = false;
 	}
 
 	/**
@@ -1813,7 +1818,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		var direction:String = parts[1];
 		
 		if ( bar && (direction == "next" || direction == "prev") ) {
-			SwapToAegisSlot( bar.selectedAegisSlot[direction], _dualSelectByDefault && _dualSelectFromHotkey);
+			SwapToAegisSlot( bar.selectedAegisSlot[direction], dualSelectByDefault && dualSelectFromHotkey);
 		}
 	}
 	
@@ -1826,62 +1831,57 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	
 	public function get showWeapons():Boolean { return _showWeapons; }
 	public function set showWeapons(value:Boolean) {
-		if( _showWeapons != value) {
-			_showWeapons = value;
-			LayoutBars();
-		}
+		_showWeapons = value;
+		if ( _configured ) LayoutBars();
 	}
 
 	public function get showShield():Boolean { return _showShield; }
 	public function set showShield(value:Boolean) {
-		if( _showShield != value) {
-			_showShield = value;
-			LayoutBars();
-		}
+		_showShield = value;
+		if ( _configured ) LayoutBars();
 	}
 	
 	public function get showBarBackground():Boolean { return _showBarBackground; }
 	public function set showBarBackground(value:Boolean) {
-		if( _showBarBackground != value) {
-			_showBarBackground = value;
-			invalidate();
-		}
+		_showBarBackground = value;
+		invalidate();
 	}
 
 	public function get barBackgroundThin():Boolean { return _barBackgroundThin; }
 	public function set barBackgroundThin(value:Boolean) {
-		if( _barBackgroundThin != value) {
-			_barBackgroundThin = value;
+		_barBackgroundThin = value;
+
+		if ( _configured ) {
 			LayoutBars();
-			invalidate();
 		}
+		
+		invalidate();
 	}
 	
 	public function get showXP():Boolean { return _showXP; }
 	public function set showXP(value:Boolean) {
-		if( _showXP != value ) {
-			_showXP = value;
-			
-			if (_showXP) UpdateAegisXP();
-			
-			invalidate();
-		}
+		_showXP = value;
+		if (_showXP) UpdateAegisXP();
+		invalidate();
 	}
 	
-	public function get showTooltips():Boolean { return _showTooltips; }
-	public function set showTooltips(value:Boolean) { _showTooltips = value; }
-	
-	public function get primaryPosition():Point { return new Point(m_Primary._x, m_Primary._y); }
+	public function get primaryPosition():Point {
+		return attachToPassiveBar ? _primaryPosition : new Point(m_Primary._x, m_Primary._y);
+	}
 	public function set primaryPosition(value:Point) {
 		_primaryPosition = setBarPosition( m_Primary, value );
 	}
 
-	public function get secondaryPosition():Point { return new Point(m_Secondary._x, m_Secondary._y); }
+	public function get secondaryPosition():Point {
+		return attachToPassiveBar ? _secondaryPosition : new Point(m_Secondary._x, m_Secondary._y);
+	}
 	public function set secondaryPosition(value:Point) {
 		_secondaryPosition = setBarPosition( m_Secondary, value );
 	}
 
-	public function get shieldPosition():Point { return new Point(m_Shield._x, m_Shield._y); }
+	public function get shieldPosition():Point {
+		return attachToPassiveBar ? _shieldPosition : new Point(m_Shield._x, m_Shield._y);
+	}
 	public function set shieldPosition(value:Point) {
 		_shieldPosition = setBarPosition( m_Shield, value );
 	}
@@ -1900,294 +1900,287 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			bar._y = position.y;
 		}
 
-		Layout();
-		
 		return position;
 	}
 	
 	// overall hud scale
 	public function get hudScale():Number { return _hudScale; }
 	public function set hudScale(value:Number) {
-		if ( _hudScale == value ) return;
-
 		if ( value < minHUDScale ) _hudScale = minHUDScale;
 		else if ( value > maxHUDScale ) _hudScale = maxHUDScale;
 		else if ( value == Number.NaN ) _hudScale = 100;
 		else _hudScale = value;
 		
 		// apply actual scale to bars
-		Layout();
+		if ( _configured ) {
+			Layout();
+		}
 	}
 	
 
 	public function get primaryItemFirst():Boolean { return _primaryItemFirst; }
 	public function set primaryItemFirst(value:Boolean) {
-		if( _primaryItemFirst != value ) {
-			_primaryItemFirst = value;
+		_primaryItemFirst = value;
+
+		if ( _configured ) {
 			LayoutBars();
 		}
 	}
 
 	public function get secondaryItemFirst():Boolean { return _secondaryItemFirst; }
 	public function set secondaryItemFirst(value:Boolean) {
-		if( _secondaryItemFirst != value ) {
-			_secondaryItemFirst = value;
+		_secondaryItemFirst = value;
+
+		if ( _configured ) {
 			LayoutBars();
 		}
 	}
 
 	public function get shieldItemFirst():Boolean { return _shieldItemFirst; }
 	public function set shieldItemFirst(value:Boolean) {
-		if( _shieldItemFirst != value ) {
-			_shieldItemFirst = value;
+		_shieldItemFirst = value;
+
+		if ( _configured ) {
 			LayoutBars();
 		}
 	}
 	
-	public function get lockBars():Boolean { return _lockBars; }
-	public function set lockBars(value:Boolean) { _lockBars = value; }
-		
 	public function get neonGlowEntireBar():Boolean { return _neonGlowEntireBar; }
 	public function set neonGlowEntireBar(value:Boolean):Void {
-		if ( _neonGlowEntireBar != value ) {
-			_neonGlowEntireBar = value;
-			invalidate();
-		}
+		_neonGlowEntireBar = value;
+		invalidate();
 	}
 	
 	public function get attachToPassiveBar():Boolean { return _attachToPassiveBar; }
 	public function set attachToPassiveBar(value:Boolean):Void {
 		_attachToPassiveBar = value;
-		AttachToPassiveBar(_attachToPassiveBar);
+		HookPassiveBarToggle( value );
 	}
 	
 	public function get tintBarBackgroundByActiveAegis():Boolean { return _tintBarBackgroundByActiveAegis; }
 	public function set tintBarBackgroundByActiveAegis(value:Boolean):Void {
-		if ( _tintBarBackgroundByActiveAegis != value ) {
-			_tintBarBackgroundByActiveAegis = value;
-			invalidate();
-		}
+		_tintBarBackgroundByActiveAegis = value;
+		invalidate();
 	}
 	
 	public function get neonGlowBarBackground():Boolean { return _neonGlowBarBackground; }
 	public function set neonGlowBarBackground(value:Boolean):Void {
-		if ( _neonGlowBarBackground != value ) {
-			_neonGlowBarBackground = value;
-			invalidate();
-		}
+		_neonGlowBarBackground = value;
+		invalidate();
 	}
 	
 	public function get tintWeaponIconByActiveAegis():Boolean { return _tintWeaponIconByActiveAegis; }
 	public function set tintWeaponIconByActiveAegis(value:Boolean):Void {
-		if( _tintWeaponIconByActiveAegis != value ) {
-			_tintWeaponIconByActiveAegis = value;
-			invalidate();
-		}
+		_tintWeaponIconByActiveAegis = value;
+		invalidate();
 	}
 	
 	public function get neonGlowWeapon():Boolean { return _neonGlowWeapon; }
 	public function set neonGlowWeapon(value:Boolean):Void {
-		if( _neonGlowWeapon != value ) {
-			_neonGlowWeapon = value;
-			invalidate();
-		}
+		_neonGlowWeapon = value;
+		invalidate();
 	}
 	
 	public function get showActiveAegisBackground():Boolean { return _showActiveAegisBackground; }
 	public function set showActiveAegisBackground(value:Boolean):Void {
-		if( _showActiveAegisBackground != value ) {
-			_showActiveAegisBackground = value;
-			invalidate();
-		}
+		_showActiveAegisBackground = value;
+		invalidate();
 	}
 
 	public function get tintActiveAegisBackground():Boolean { return _tintActiveAegisBackground; }
 	public function set tintActiveAegisBackground(value:Boolean):Void {
-		if( _tintActiveAegisBackground != value ) {
-			_tintActiveAegisBackground = value;
-			invalidate();
-		}
+		_tintActiveAegisBackground = value;
+		invalidate();
 	}
 	
 	public function get neonGlowActiveAegisBackground():Boolean { return _neonGlowActiveAegisBackground; }
 	public function set neonGlowActiveAegisBackground(value:Boolean):Void {
-		if( _neonGlowActiveAegisBackground != value ) {
-			_neonGlowActiveAegisBackground = value;
-			invalidate();
-		}
+		_neonGlowActiveAegisBackground = value;
+		invalidate();
 	}
 	
 	public function get neonGlowAegis():Boolean { return _neonGlowAegis; }
 	public function set neonGlowAegis(value:Boolean):Void {
-		if( _neonGlowAegis != value ) {
-			_neonGlowAegis = value;
-			invalidate();
-		}
+		_neonGlowAegis = value;
+		invalidate();
 	}
 	
 	public function get neonEnabled():Boolean { return _neonEnabled; }
 	public function set neonEnabled(value:Boolean):Void {
-		if( _neonEnabled != value ) {
-			_neonEnabled = value;
-			invalidate();
-		}
+		_neonEnabled = value;
+		invalidate();
 	}
-
-	public function get animateMovementsToDefaultPosition():Boolean { return _animateMovementsToDefaultPosition; }
-	public function set animateMovementsToDefaultPosition(value:Boolean):Void {
-		_animateMovementsToDefaultPosition = value;
-	}
-
-	public function get dualSelectByDefault():Boolean { return _dualSelectByDefault; }
-	public function set dualSelectByDefault(value:Boolean):Void { _dualSelectByDefault = value; }
-
-	public function get dualSelectFromHotkey():Boolean { return _dualSelectFromHotkey; }
-	public function set dualSelectFromHotkey(value:Boolean):Void { _dualSelectFromHotkey = value; }
 
 	public function get tintAegisIconByType():Boolean { return _tintAegisIconByType; }
 	public function set tintAegisIconByType(value:Boolean):Void {
-		if ( _tintAegisIconByType != value ) {
-			_tintAegisIconByType = value;
-			invalidate();
-		}
+		_tintAegisIconByType = value;
+		invalidate();
 	}
 
 	public function get aegisTypeIcons():Boolean { return _aegisTypeIcons; }
 	public function set aegisTypeIcons(value:Boolean):Void {
-		if ( _aegisTypeIcons != value ) {
-			_aegisTypeIcons = value;
-			
+		_aegisTypeIcons = value;
+		
+		if ( _configured ) {
 			updateIcons();
 		}
 	}
 	
-	public function get autoSwap():Boolean { return _autoSwap; }
-	public function set autoSwap(value:Boolean):Void {
-		if( _autoSwap != value ) {
-			_autoSwap = value;
+	public function get autoSwapEnabled():Boolean { return _autoSwapEnabled; }
+	public function set autoSwapEnabled(value:Boolean):Void {
+		_autoSwapEnabled = value;
+		
+		if ( _configured ) {
 			manageAutoSwap();
 		}
+	}
+
+	public function get hudEnabled():Boolean { return _hudEnabled; }
+	public function set hudEnabled(value:Boolean):Void {
+		_hudEnabled = value;
+		
+		if ( _configured ) {
+			CheckState();
+		}
+	}
+	
+	public function get hideWhenAutoSwapEnabled():Boolean { return _hideWhenAutoSwapEnabled; }
+	public function set hideWhenAutoSwapEnabled(value:Boolean):Void {
+		_hideWhenAutoSwapEnabled = value;
+
+		if ( _configured ) {
+			CheckVisibility();
+		}
+	}
+	
+	public function get hideWhenNotInCombat():Boolean { return _hideWhenNotInCombat; }
+	public function set hideWhenNotInCombat(value:Boolean):Void {
+		_hideWhenNotInCombat = value;
+			
+		var fn:String = _hideWhenNotInCombat ? "Connect" : "Disconnect";
+
+		_character.SignalToggleCombat[fn]( CheckVisibility, this );
+		CheckVisibility();
 	}
 	
 	public function get slotSize():Number { return _slotSize; }
 	public function set slotSize(value:Number):Void {
-		if( _slotSize != value ) {
-			_slotSize = value;
+		_slotSize = value;
+		
+		if ( _configured ) {
 			LayoutBars();
 		}
 	}
 	public function get barPadding():Number { return _barPadding; }
 	public function set barPadding(value:Number):Void {
-		if( _barPadding != value ) {
-			_barPadding = value;
+		_barPadding = value;
+
+		if ( _configured ) {
 			LayoutBars();
 		}
 	}
 	public function get slotSpacing():Number { return _slotSpacing; }
 	public function set slotSpacing(value:Number):Void {
-		if ( _slotSpacing != value ) {
-			_slotSpacing = value;
+		_slotSpacing = value;
+
+		if ( _configured ) {
 			LayoutBars();
 		}
 	}
 
+	/**
+	 * validates a tint number to ensure it is RGB
+	 * 
+	 * @param	tint		the tint number to validate
+	 * @param	ifInvalid	the value to return if the tint is invalid
+	 * 
+	 * @return	either the tint value, or the value of tintIfInvalid
+	 */
+	private function validateTint( tint:Number, ifInvalid:Number ) : Number {
+		return AddonUtils.isRGB( tint ) ? tint : ifInvalid;
+	}
+	
 	public function get tintAegisPsychic():Number { return _tints.psychic };
 	public function set tintAegisPsychic(value:Number):Void {
-		if ( _tints.psychic != value && AddonUtils.isRGB(value)) {
-			_tints.psychic = value;
-			invalidate();
-		}
+		_tints.psychic = validateTint( value );
+		invalidate();
 	}
 	
 	public function get tintAegisCybernetic():Number { return _tints.cyber };
 	public function set tintAegisCybernetic(value:Number):Void {
-		if ( _tints.cyber != value && AddonUtils.isRGB(value)) {
-			_tints.cyber = value;
-			invalidate();
-		}
+		_tints.cyber = validateTint( value );
+		invalidate();
 	}
 
 	public function get tintAegisDemonic():Number { return _tints.demonic };
 	public function set tintAegisDemonic(value:Number):Void {
-		if ( _tints.demonic != value && AddonUtils.isRGB(value)) {
-			_tints.demonic = value;
-			invalidate();
-		}
+		_tints.demonic = validateTint( value );
+		invalidate();
 	}
 
 	public function get tintAegisEmpty():Number { return _tints.empty };
 	public function set tintAegisEmpty(value:Number):Void {
-		if ( _tints.empty != value && AddonUtils.isRGB(value)) {
-			_tints.empty = value;
-			invalidate();
-		}
+		_tints.empty = validateTint( value );
+		invalidate();
 	}
 
 	public function get tintAegisStandard():Number { return _tints.standard };
 	public function set tintAegisStandard(value:Number):Void {
-		if ( _tints.standard != value && AddonUtils.isRGB(value)) {
-			_tints.standard = value;
-			invalidate();
-		}
+		_tints.standard = validateTint( value );
+		invalidate();
 	}
 	
 	public function get tintXPProgress():Number { return _tints.xpProgress };
 	public function set tintXPProgress(value:Number):Void {
-		if ( _tints.xpProgress != value && AddonUtils.isRGB(value)) {
-			_tints.xpProgress = value;
-			invalidate();
-		}
+		_tints.xpProgress = validateTint( value );
+		invalidate();
 	}
 
 	public function get tintXPFull():Number { return _tints.xpFull };
 	public function set tintXPFull(value:Number):Void {
-		if ( _tints.xpFull != value && AddonUtils.isRGB(value)) {
-			_tints.xpFull = value;
-			invalidate();
-		}
+		_tints.xpFull = validateTint( value );
+		invalidate();
 	}
 
 	public function get tintBarStandard():Number { return _tints.barStandard };
 	public function set tintBarStandard(value:Number):Void {
-		if ( _tints.barStandard != value && AddonUtils.isRGB(value)) {
-			_tints.barStandard = value;
-			invalidate();
-		}
+		_tints.barStandard = validateTint( value );
+		invalidate();
 	}
 
 	public function get hideXPWhenFull():Boolean { return _hideXPWhenFull; }
 	public function set hideXPWhenFull(value:Boolean):Void {
-		if ( _hideXPWhenFull != value ) {
-			_hideXPWhenFull = value;
+		_hideXPWhenFull = value;
 			
-			if ( showXP ) invalidate();
-		}
+		if ( _configured && showXP ) invalidate();
 	}
 
 	public function get hideDefaultDisruptorSwapUI():Boolean { return _hideDefaultDisruptorSwapUI; }
 	public function set hideDefaultDisruptorSwapUI(value:Boolean):Void {
-		if ( _hideDefaultDisruptorSwapUI != value ) {
-			_hideDefaultDisruptorSwapUI = value;
-			
+		_hideDefaultDisruptorSwapUI = value;
+
+		if ( _configured ) {
 			hideDefaultSwapButtons(_hideDefaultDisruptorSwapUI);
 		}
 	}
 
 	public function get hideDefaultShieldSwapUI():Boolean { return _hideDefaultShieldSwapUI; }
 	public function set hideDefaultShieldSwapUI(value:Boolean):Void {
-		if ( _hideDefaultShieldSwapUI != value ) {
-			_hideDefaultShieldSwapUI = value;
-			
+		_hideDefaultShieldSwapUI = value;
+		
+		if ( _configured ) {
 			hideDefaultShieldButton(_hideDefaultShieldSwapUI);
 		}
 	}
 	
-	public function get active():Boolean { return _active; }
-	public function set active(value:Boolean):Void {
-		if ( _active != value ) {
-			_active = value;
-			
-			_active ? Activate() : Deactivate();
+	public function get visualUpdatesSuspended() : Boolean { return _visualUpdatesSuspended; }
+	public function set visualUpdatesSuspended(value:Boolean) : Void {
+		_visualUpdatesSuspended = value;
+		
+		// redraw if coming out of a suspended period
+		if ( !value && _configured ) {
+			LayoutBars();
+			invalidate();
 		}
 	}
 	

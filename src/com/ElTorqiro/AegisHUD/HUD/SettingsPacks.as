@@ -18,9 +18,10 @@ class com.ElTorqiro.AegisHUD.HUD.SettingsPacks {
 		
 			settingsVersion: 3000,
 			
-			active: true,
+			hudEnabled: true,
 			
-			playfieldMemoryEnabled: true,
+			hideWhenAutoSwapEnabled: false,
+			hideWhenNotInCombat: false,
 			
 			slotSize: 24,
 			barPadding: 3,
@@ -32,7 +33,7 @@ class com.ElTorqiro.AegisHUD.HUD.SettingsPacks {
 			hideDefaultDisruptorSwapUI: true,
 			hideDefaultShieldSwapUI: true,
 			
-			autoSwap: true,
+			autoSwapEnabled: true,
 			autoSwapPrimaryEnabled: true,
 			autoSwapSecondaryEnabled: true,
 			autoSwapShieldEnabled: true,

@@ -1,8 +1,10 @@
 3.1.1 +develop -- ????-??-??
 
-
-
-
+ + add option to automatically hide HUD when autoswap is enabled or when not in combat
+ 
+ * changed mod icon graphics
+ 
+ 
 3.1.1 -- 2015-05-08
 
  * fixed game completely freezing when switching from a character with AEGIS to one without

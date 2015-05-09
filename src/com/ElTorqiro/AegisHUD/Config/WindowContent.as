@@ -56,46 +56,33 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 			}
 		};
 		
-		AddHeading("Global Reset");
-		_uiControls.ApplyDefaultSettings = {
-			ui:	AddButton("ApplyDefaultSettings", "Reset settings to defaults"),
-			tooltip: "Clicking this button will reset every setting to defaults.  The only information that will not be overwritten is the playfield memory for visibility and autoswap.",
-			event:		"click",
-			context:	this,
-			fn: 		function(e:Object) {
-				_hud.ApplyDefaultSettings();
-				LoadValues();
-			}
-		};
-		
+
 		// options section
 		AddHeading("Options");
 
-		_uiControls.active = {
-			ui:	AddCheckbox( "active", "HUD enabled" ),
-			tooltip: "When on, the AegisHUD is active and will be visible on the screen.  This setting is remembered on a per-playfield basis.",
+		_uiControls.hudEnabled = {
+			ui:	AddCheckbox( "hudEnabled", "HUD enabled (per playfield)" ),
+			tooltip: "When on, the AegisHUD is enabled and will be visible on the screen.  This setting is remembered on a per-playfield basis.",
 			event:		"click",
 			context:	this,
 			fn: 		function(e:Object) {
-				_hud.active = e.target.selected;
-				HUDEnabledHandler();
+				_hud.hudEnabled = e.target.selected;
 			},
 			init:		function(e:Object) {
-				e.control.ui.selected = _hud.active;
+				e.control.ui.selected = _hud.hudEnabled;
 			}
 		};
 		
-		_uiControls.autoSwap = {
-			ui:	AddCheckbox( "autoSwap", "AutoSwap system enabled" ),
-			tooltip: "When on, the AutoSwap system is active and will swap AEGIS controllers based on your offensive target.  This setting is remembered on a per-playfield basis.",
+		_uiControls.autoSwapEnabled = {
+			ui:	AddCheckbox( "autoSwapEnabled", "AutoSwap system enabled" ),
+			tooltip: "When on, the AutoSwap system will swap AEGIS controllers based on your offensive target.",
 			event:		"click",
 			context:	this,
 			fn: 		function(e:Object) {
-				_hud.autoSwap = e.target.selected;
-				HUDEnabledHandler();
+				_hud.autoSwapEnabled = e.target.selected;
 			},
 			init:		function(e:Object) {
-				e.control.ui.selected = _hud.autoSwap;
+				e.control.ui.selected = _hud.autoSwapEnabled;
 			}
 		};
 		AddIndent(10);
@@ -136,31 +123,6 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 			}
 		};
 		AddIndent( -10);
-		AddVerticalSpace(10);
-		_uiControls.hideDefaultDisruptorSwapUI = {
-			ui:	AddCheckbox( "hideDefaultDisruptorSwapUI", "Hide default AEGIS Disruptor swap UI" ),
-			tooltip: "When on, will remove the default TSW AEGIS Disruptor swap buttons from the UI.",
-			event:		"click",
-			context:	this,
-			fn: 		function(e:Object) {
-				_hud.hideDefaultDisruptorSwapUI = e.target.selected;
-			},
-			init:		function(e:Object) {
-				e.control.ui.selected = _hud.hideDefaultDisruptorSwapUI;
-			}
-		};
-		_uiControls.hideDefaultShieldSwapUI = {
-			ui:	AddCheckbox( "hideDefaultShieldSwapUI", "Hide default AEGIS Shield swap UI" ),
-			tooltip: "When on, will remove the default TSW AEGIS Shield swap button from the UI (next to the player health bar).",
-			event:		"click",
-			context:	this,
-			fn: 		function(e:Object) {
-				_hud.hideDefaultShieldSwapUI = e.target.selected;
-			},
-			init:		function(e:Object) {
-				e.control.ui.selected = _hud.hideDefaultShieldSwapUI;
-			}
-		};
 
 		
 		// dual select section
@@ -216,7 +178,60 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 		};
 		AddIndent( -10);
 
+		
+		// visibility options
+		AddHeading("Visibility");
+		_uiControls.hideDefaultDisruptorSwapUI = {
+			ui:	AddCheckbox( "hideDefaultDisruptorSwapUI", "Hide default AEGIS Disruptor swap UI" ),
+			tooltip: "When on, will remove the default TSW AEGIS Disruptor swap buttons from the UI.",
+			event:		"click",
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.hideDefaultDisruptorSwapUI = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.hideDefaultDisruptorSwapUI;
+			}
+		};
+		_uiControls.hideDefaultShieldSwapUI = {
+			ui:	AddCheckbox( "hideDefaultShieldSwapUI", "Hide default AEGIS Shield swap UI" ),
+			tooltip: "When on, will remove the default TSW AEGIS Shield swap button from the UI (next to the player health bar).",
+			event:		"click",
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.hideDefaultShieldSwapUI = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.hideDefaultShieldSwapUI;
+			}
+		};
+		AddVerticalSpace(10);
+		_uiControls.hideWhenAutoSwapEnabled = {
+			ui:	AddCheckbox( "hideWhenAutoSwapEnabled", "Hide HUD when AutoSwap is enabled" ),
+			tooltip: "When on, will keep the HUD invisible, but active, when AutoSwap is enabled.",
+			event:		"click",
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.hideWhenAutoSwapEnabled = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.hideWhenAutoSwapEnabled;
+			}
+		};
+		_uiControls.hideWhenNotInCombat = {
+			ui:	AddCheckbox( "hideWhenNotInCombat", "Hide HUD when not in combat" ),
+			tooltip: "When on, will keep the HUD invisible when there are no enemies engaging you.",
+			event:		"click",
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.hideWhenNotInCombat = e.target.selected;
+			},
+			init:		function(e:Object) {
+				e.control.ui.selected = _hud.hideWhenNotInCombat;
+			}
+		};
 
+		
 		// position section
 		AddHeading("HUD Position");
 		_uiControls.MoveToDefaultPosition = {
@@ -703,6 +718,20 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 			}
 		};
 
+
+		// global reset section
+		AddHeading("Global Reset");
+		_uiControls.ApplyDefaultSettings = {
+			ui:	AddButton("ApplyDefaultSettings", "Reset all settings to defaults"),
+			tooltip: "Clicking this button will reset every setting to defaults.  The only information that will not be overwritten is the per-playfield memory for the HUD Enabled setting.",
+			event:		"click",
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.ApplyDefaultSettings();
+				LoadValues();
+			}
+		};
+		
 		
 		SetSize( Math.round(Math.max(m_Content._width, 200)), Math.round(Math.max(m_Content._height, 200)) );
 		
