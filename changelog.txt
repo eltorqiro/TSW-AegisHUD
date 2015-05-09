@@ -3,6 +3,8 @@
  + added option to automatically hide HUD when autoswap is enabled or when not in combat
  + added option to enable/disable Disruptor swap hotkeys when HUD is disabled
  
+ - AutoSwap is no longer a per-playfield setting as it penalises players without 1s swap times
+ 
  * improved handling of the moment the shield system becomes unlocked
  * improved save/restore of hud position when not attached to passivebar
  
