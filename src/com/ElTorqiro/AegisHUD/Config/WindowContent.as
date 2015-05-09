@@ -59,10 +59,9 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 
 		// options section
 		AddHeading("Options");
-
 		_uiControls.hudEnabled = {
 			ui:	AddCheckbox( "hudEnabled", "HUD enabled (per playfield)" ),
-			tooltip: "When on, the AegisHUD is enabled and will be visible on the screen.  This setting is remembered on a per-playfield basis.",
+			tooltip: "Enables the AegisHUD.  It may not be visible on the screen, depending on other settings, but it will still be active.<br><br>This setting is remembered on a per-playfield basis.",
 			event:		"click",
 			context:	this,
 			fn: 		function(e:Object) {
