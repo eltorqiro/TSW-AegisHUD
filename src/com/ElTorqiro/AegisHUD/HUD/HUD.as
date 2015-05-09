@@ -56,7 +56,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	// aegis unlock achivement id
 	public static var e_AegisUnlockAchievement:Number = 6817;				// The Lore number that unlocks the AEGIS system
 	public static var e_UltimateAbilityUnlockAchievement:Number = 7783;		// the Lore number that unlocks the Ultimate Ability
-
+	public static var e_AegisShieldUnlockAchievement:Number = 6818;			// The Lore number that unlocks the AEGIS Shield system
+	
 	private var _configured:Boolean;
 	
 	private var _active:Boolean;
@@ -594,7 +595,12 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		_aegisItemProps[114] = { id: 114, itemType: e_ItemTypeAegisShield, aegisType: e_AegisTypeRed, tint: "demonic", icon: "shield-demonic" };
 
 		// if the toon doesn't have the AEGIS system or Ultimate Ability unlocked already, listen in case of unlocks during session
-		if ( Lore.IsLocked(e_AegisUnlockAchievement) || Lore.IsLocked(e_UltimateAbilityUnlockAchievement) )  Lore.SignalTagAdded.Connect(SlotTagAdded, this);
+		if (	Lore.IsLocked(e_AegisUnlockAchievement)
+			||	Lore.IsLocked(e_UltimateAbilityUnlockAchievement)
+			||	Lore.IsLocked(e_AegisShieldUnlockAchievement)
+			)  {
+				Lore.SignalTagAdded.Connect(SlotTagAdded, this);
+		}
 		
 		// handle the TSW user config option for showing/hiding AEGIS HUD UI
 		_showAegisSwapUI.SignalChanged.Connect( CheckState, this);
@@ -639,9 +645,14 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 				CheckState();
 			break;
 			
-			
 			// ultimate ability has become unlocked
 			case e_UltimateAbilityUnlockAchievement:
+				Lore.SignalTagAdded.Disconnect( SlotTagAdded, this );
+				updatePositions();
+			break;
+			
+			// shield system has become unlocked
+			case e_AegisShieldUnlockAchievement:
 				Lore.SignalTagAdded.Disconnect( SlotTagAdded, this );
 				updatePositions();
 			break;
