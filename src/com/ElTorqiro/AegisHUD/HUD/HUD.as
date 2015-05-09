@@ -1109,8 +1109,6 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		UpdateActiveAegis();
 		
 		if ( handled ) {
-		UtilsBase.PrintChatText("pos: " + position);
-			
 			invalidate();
 		}
 		
