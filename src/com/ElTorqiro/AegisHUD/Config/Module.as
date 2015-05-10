@@ -244,7 +244,7 @@ function CreateTooltipData() : TooltipData {
 
 		status += "<font face=\'_StandardFont\' size=\'11\' color=\'#c8c8c8\'><b>&nbsp;&nbsp;&nbsp;&nbsp;AutoSwap: </b></font>";
 		status += state == "autoswap"
-			? "<font face=\'_StandardFont\' size=\'11\' color=\'#00ffff\'><b>Active</b></font>"
+			? "<font face=\'_StandardFont\' size=\'11\' color=\'#ffff00\'><b>Active</b></font>"
 			: "<font face=\'_StandardFont\' size=\'11\' color=\'#ff3333\'><b>Inactive</b></font>"
 		;
 	}
