@@ -61,7 +61,6 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	private var _configured:Boolean;
 	
 	private var _active:Boolean;
-	private var _lockedOut:Boolean;
 	private var _hudEnabled:Boolean;
 	
 	private var _hideWhenAutoSwapEnabled:Boolean;
@@ -262,10 +261,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	
 	public function CheckState() : Void {
 		
-		_lockedOut = !_showAegisSwapUI.GetValue() || Lore.IsLocked(e_AegisUnlockAchievement);
-		
 		// determine whether to activate
-		!hudEnabled || _lockedOut ? Deactivate() : Activate();
+		!hudEnabled || lockedOut ? Deactivate() : Activate();
 
 		CheckVisibility();
 		
@@ -275,7 +272,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			state = "disabled";
 		}
 		
-		else if ( _lockedOut ) {
+		else if ( lockedOut ) {
 			state = "locked";
 		}
 		
@@ -292,7 +289,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	
 	private function CheckVisibility() : Void {
 		// determine if HUD should be visible
-		visible = _active && !(_lockedOut || (autoSwapEnabled && hideWhenAutoSwapEnabled) || (!_character.IsThreatened() && hideWhenNotInCombat));
+		visible = _active && !(!_showAegisSwapUI.GetValue() || (autoSwapEnabled && hideWhenAutoSwapEnabled) || (!_character.IsThreatened() && hideWhenNotInCombat));
 		invalidate();
 	}
 	
@@ -641,19 +638,16 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		switch( tag ) {
 			// aegis system has become unlocked
 			case e_AegisUnlockAchievement:
-				Lore.SignalTagAdded.Disconnect( SlotTagAdded, this );	// assume aegis unlock and ultimate ability unlock cannot happen in a single playfield
 				CheckState();
 			break;
 			
 			// ultimate ability has become unlocked
 			case e_UltimateAbilityUnlockAchievement:
-				Lore.SignalTagAdded.Disconnect( SlotTagAdded, this );
 				updatePositions();
 			break;
 			
 			// shield system has become unlocked
 			case e_AegisShieldUnlockAchievement:
-				Lore.SignalTagAdded.Disconnect( SlotTagAdded, this );
 				updatePositions();
 			break;
 		}
@@ -888,6 +882,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 			var primaryDefaultPosition = new Point( globalPassiveBarPos.x - m_Primary._width - 3 - 9 - m_Shield._width / 2, globalPassiveBarPos.y - m_Primary._height - 3 );
 			var secondaryDefaultPosition = new Point( primaryDefaultPosition.x + m_Primary._width + 6, primaryDefaultPosition.y );
+			
 			var shieldDefaultPosition = new Point( secondaryDefaultPosition.x + m_Secondary._width + 18, primaryDefaultPosition.y );
 			
 			// userTriggered parameter needed to prevent the annoying pop-in when first loading into an area
@@ -948,7 +943,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 
 		// this is based on the trio: GUI resolution, GUI hud scale, this hud scale
 		var guiResolutionScale:Number = _guiResolutionScale.GetValue();
-		var guiHUDScale:Number = _guiHUDScale.GetValue();
+		var guiHUDScale:Number = 100;// _guiHUDScale.GetValue();
 		
 		// some sanity checks in case somehow the game isn't providing these
 		if ( guiResolutionScale == undefined ) guiResolutionScale = 1;
@@ -961,32 +956,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		m_Secondary._xscale = m_Secondary._yscale = realScale;
 		m_Shield._xscale = m_Shield._yscale = realScale;
 		
-		// if attached to passivebar, reset position
-		if ( attachToPassiveBar ) {
-			MoveToDefaultPosition();
-		}
-		
-		else {
-
-			if ( _primaryPosition ) {
-				// Despite Point.x being a number, the +0 below is a quick way to ensure the ._x accepts the Point.x property.
-				// If not doing this, then the number prints out as "xxx", but seems to get sent to the _x property as "xxx.0000000000"
-				// which the _x setter fails to interpret for some reason and does not set.
-				m_Primary._x = _primaryPosition.x + 0;
-				m_Primary._y = _primaryPosition.y + 0;
-				
-				m_Secondary._x = _secondaryPosition.x + 0;
-				m_Secondary._y = _secondaryPosition.y + 0;
-				
-				m_Shield._x = _shieldPosition.x + 0;
-				m_Shield._y = _shieldPosition.y + 0;
-			}
-			
-			// set default positions to simulate the default buttons
-			else {
-				MoveToDefaultPosition();
-			}
-		}
+		// update positions in case scaling has changed
+		updatePositions();
 	}
 	
 
@@ -2211,5 +2182,9 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		
 		manageHotkeys();
 	}
-	
+
+	public function get aegisSystemUnlocked() : Boolean { return !Lore.IsLocked(e_AegisUnlockAchievement); }
+	public function get shieldSystemUnlocked() : Boolean { return !Lore.IsLocked(e_AegisShieldUnlockAchievement); }
+
+	public function get lockedOut() : Boolean { return !aegisSystemUnlocked; }	
 }

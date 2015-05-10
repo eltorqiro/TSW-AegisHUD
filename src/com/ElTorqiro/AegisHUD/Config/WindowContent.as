@@ -72,8 +72,8 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 			}
 		};
 		_uiControls.enableDefaultHotkeysWhenHUDInactive = {
-			ui:	AddCheckbox( "enableDefaultHotkeysWhenHUDInactive", "Enable default hotkey behaviour when HUD inactive" ),
-			tooltip: "Enables the default AEGIS Disruptor swap hotkey behaviour when the AegisHUD is not active.<br><br>This setting is best left <i>off</i>, as it helps prevent accidental hotkey-swap events in playfields that do not have AEGIS mobs, thus avoiding the ability lockout period.",
+			ui:	AddCheckbox( "enableDefaultHotkeysWhenHUDInactive", "Enable standard hotkey behaviour when HUD inactive" ),
+			tooltip: "Enables the standard AEGIS swap hotkey behaviour when the AegisHUD is not active.<br><br>This setting is best left <b>OFF</b>, so that in playfields that do not have AEGIS mobs you can avoid accidental AEGIS swaps (and thus the deadly ability lockout period).",
 			event:		"click",
 			context:	this,
 			fn: 		function(e:Object) {
@@ -246,7 +246,7 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 
 		
 		// position section
-		AddHeading("HUD Position");
+		AddHeading("HUD Position & Scale");
 		_uiControls.MoveToDefaultPosition = {
 			ui:	AddButton("MoveToDefaultPosition", "Reset to default position"),
 			tooltip: "Clicking this button will position the HUD in its default position just above the passive ability bar.",
@@ -256,9 +256,10 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 				_hud.MoveToDefaultPosition();
 			}
 		};
+		AddVerticalSpace(3);
 		_uiControls.lockBars = {
-			ui:	AddCheckbox( "lockBars", "Lock bar position and scale" ),
-			tooltip: "Prevents the HUD from being moved or scaled.  Recommended to enable once you have positioned and scaled the HUD where you want, so there are no accidental moves.",
+			ui:	AddCheckbox( "lockBars", "Prevent bar positioning and scaling from the UI" ),
+			tooltip: "Prevents the HUD from being moved or scaled via the UI.  Recommended to enable once you have positioned and scaled the HUD where you want, so there are no accidental moves.<br><br>This does not prevent the scale being adjusted in the config window.",
 			event:		"click",
 			context:	this,
 			fn: 		function(e:Object) {
@@ -295,7 +296,23 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 			}
 		};
 		AddIndent( -10);
-
+		
+		AddVerticalSpace(10);
+		_uiControls.hudScale = {
+			ui:	AddSlider( "hudScale", "HUD Scale", 50, 150 ),
+			tooltip: "Adjusts the size of the HUD bars, the same as using CTRL-mousewheel up/down on the HUD itself.",
+			event:		"change",
+			context:	this,
+			fn: 		function(e:Object) {
+				_hud.hudScale = e.target.value;
+			},
+			init:		function(e:Object) {
+				//e.control.ui.value = _hud.hudScale;
+				e.control.ui.setValue( _hud.hudScale );
+			}
+		};
+		AddIndent( -10);
+		
 
 		AddColumn();
 		
@@ -916,7 +933,6 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 		o["tooltipTitle"] = text;
 		o.textField.autoSize = "left";
 		o.textField.text = text;
-//		o._y = y;
 
 		if ( _layoutCursor.y > 0 )  _layoutCursor.y += 15;
 
@@ -926,26 +942,63 @@ class com.ElTorqiro.AegisHUD.Config.WindowContent extends com.Components.WindowC
 		_layoutCursor.y += o._height;
 	}
 	
-	private function AddSlider(name:String, label:String, minValue:Number, maxValue:Number):FCSlider
-	{
-		var y:Number = m_Content._height;
+	private function clearFocus(e:Object) : Void {
+		e.target.focused = false;
+	}
+	
+	private function updateSliderText(e:Object) : Void {
+		e.target.valueLabel.textField.text = e.target.value;
 
-		var o:FCSlider = FCSlider(m_Content.attachMovie( "Slider", "m_" + name, m_Content.getNextHighestDepth() ));
+	}
+	
+	private function AddSlider(name:String, label:String, minValue:Number, maxValue:Number, snap:Number):Slider {
+
+		var leftOffset:Number = 3;
+		
+		// add label for the name of the control
+		var l = m_Content.attachMovie( "ConfigLabel", "m_" + name + "_Label", m_Content.getNextHighestDepth() );
+		l.textField.autoSize = "left";
+		l.textField.text = label;
+		l._y = _layoutCursor.y;
+		l._x = _layoutCursor.x + leftOffset;
+
+		_layoutCursor.y += l.textField._height;// textHeight;
+		
+		var o:Slider = Slider(m_Content.attachMovie( "Slider", "m_" + name, m_Content.getNextHighestDepth() ));
 		o["tooltipTitle"] = text;
 		o["controlName"] = name;
 		o["eventValue"] = "e.value";
 		o.width = 200;
-		o._x = 100;
+
+		o.addEventListener( "focusIn", this, "clearFocus" );
+		o.addEventListener( "change", this, "updateSliderText" );
+
+		// since we're building a composite control, this is essentially a glorified setter
+		// to make sure the label text can be updated
+		// -- use this instead of "value = x;" in property setting
+		o["setValue"] = Delegate.create( o, function(value:Number) {
+			this.value = value;
+			this["valueLabel"].textField.text = value;
+		});
 		
 		o.minimum = minValue;
 		o.maximum = maxValue;
-		o.snapInterval = 1;
+		o.snapInterval = snap == undefined ? 1 : snap;
 		o.snapping = true;
 		o.liveDragging = true;
-//		o._y = y;
+		o.value = minValue;
 
 		o._y = _layoutCursor.y;
-		o._x = _layoutCursor.x;
+		o._x = _layoutCursor.x + leftOffset;
+
+		// add label for the value
+		var l = m_Content.attachMovie( "ConfigLabel", "m_" + name + "_Value", m_Content.getNextHighestDepth() );
+		l.textField.autoSize = "left";
+		l.textField.text = o.value;
+		l._y = o._y - 5;
+		l._x = o._x + o._width + 6;
+		
+		o["valueLabel"] = l;
 
 		_layoutCursor.y += o._height;
 		

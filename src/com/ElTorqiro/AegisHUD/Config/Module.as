@@ -29,7 +29,6 @@ var g_isRegisteredWithVTIO:Boolean = false;
 
 // icon objects
 var g_icon:MovieClip;
-var g_iconTooltipData:TooltipData;
 var g_tooltip:TooltipInterface;
 
 // config settings
@@ -131,7 +130,6 @@ function CreateIcon():Void
 	
 	// load config icon & tooltip
 	g_icon = this.attachMovie("com.ElTorqiro.AegisHUD.Config.Icon", "m_Icon", this.getNextHighestDepth() );
-	CreateTooltipData();
 
 	// restore location
 	g_icon._x = g_settings.iconPosition.x;
@@ -167,11 +165,15 @@ function CreateIcon():Void
 			else {
 				_root["eltorqiro_aegishud\\hud"].g_HUD.autoSwapEnabled = !_root["eltorqiro_aegishud\\hud"].g_HUD.autoSwapEnabled;
 			}
+			
+			OpenTooltip();
 		}
 		
 		// right mouse click, toggle hud enabled/disabled
 		else if ( buttonID == 2 ) {
 			_root["eltorqiro_aegishud\\hud"].g_HUD.hudEnabled = !_root["eltorqiro_aegishud\\hud"].g_HUD.hudEnabled;
+			
+			OpenTooltip();
 		}
 		
 		// reset icon scale, only if VTIO not present
@@ -201,10 +203,8 @@ function CreateIcon():Void
 	};
 	
 	// mouse hover, show tooltip
-	g_icon.onRollOver = function()
-	{
-		CloseTooltip();
-		g_tooltip = TooltipManager.GetInstance().ShowTooltip(g_Icon, TooltipInterface.e_OrientationVertical, 0, g_iconTooltipData);
+	g_icon.onRollOver = function() {
+		OpenTooltip();
 	};
 
 	// mouse out, hide tooltip
@@ -214,28 +214,64 @@ function CreateIcon():Void
 	};
 }
 
-function CreateTooltipData():Void
-{
+function OpenTooltip() : Void {
+	CloseTooltip();
+	g_tooltip = TooltipManager.GetInstance().ShowTooltip( undefined, TooltipInterface.e_OrientationVertical, 0, CreateTooltipData() );
+}
+
+function CreateTooltipData() : TooltipData {
+	
+	var state:String = g_HUDState.GetValue();
+	
 	// create icon tooltip data
-	g_iconTooltipData = new TooltipData();
-	g_iconTooltipData.AddAttribute("","<font face=\'_StandardFont\' size=\'14\' color=\'#00ccff\'><b>" + AddonInfo.Name + " v" + AddonInfo.Version + "</b></font>");
-	g_iconTooltipData.AddAttributeSplitter();
-	g_iconTooltipData.AddAttribute("","");
-	g_iconTooltipData.AddAttribute("", "<font face=\'_StandardFont\' size=\'11\' color=\'#BFBFBF\'><b>Left Click</b> Open/Close configuration window.\n<b>Right Click</b> Toggle HUD visibility.\n<b>SHIFT + Right Click</b> Toggle AutoSwap.</font>");
+	var td:TooltipData = new TooltipData();
+	td.AddAttribute("","<font face=\'_StandardFont\' size=\'14\' color=\'#00ccff\'><b>" + AddonInfo.Name + " v" + AddonInfo.Version + "</b></font>");
+	td.AddAttributeSplitter();
+	td.AddAttribute("", "");
+	
+	var status:String = "";
+	
+	if ( state == "locked" ) {
+		status += "<font face=\'_StandardFont\' size=\'11\' color=\'#c8c8c8\'><b>AEGIS System Locked</b></font>";
+	}
+	
+	else {
+		status += "<font face=\'_StandardFont\' size=\'11\' color=\'#c8c8c8\'><b>HUD: </b></font>";
+		status += state == "locked" || (state != "autoswap" && state != "enabled")
+			? "<font face=\'_StandardFont\' size=\'11\' color=\'#ff3333\'><b>Inactive</b></font>"
+			: "<font face=\'_StandardFont\' size=\'11\' color=\'#00ff00\'><b>Active</b></font>"
+		;
+
+		status += "<font face=\'_StandardFont\' size=\'11\' color=\'#c8c8c8\'><b>&nbsp;&nbsp;&nbsp;&nbsp;AutoSwap: </b></font>";
+		status += state == "autoswap"
+			? "<font face=\'_StandardFont\' size=\'11\' color=\'#00ffff\'><b>Active</b></font>"
+			: "<font face=\'_StandardFont\' size=\'11\' color=\'#ff3333\'><b>Inactive</b></font>"
+		;
+	}
+
+	
+	td.AddAttribute( "", status );
+	
+	td.AddAttributeSplitter();
+	
+	td.AddAttribute("","");
+	td.AddAttribute("", "<font face=\'_StandardFont\' size=\'11\' color=\'#BFBFBF\'><b>Left Click</b> Open/Close configuration window.\n<b>Right Click</b> Enable/Disable HUD.\n<b>SHIFT + Right Click</b> Enable/Disable AutoSwap.</font>");
 	
 	// show icon handling control instructions if VTIO has not hijacked the icon
 	if ( !g_isRegisteredWithVTIO )
 	{
-		g_iconTooltipData.AddAttributeSplitter();
-		g_iconTooltipData.AddAttribute("","");		
-		g_iconTooltipData.AddAttribute("", "<font face=\'_StandardFont\' size=\'12\' color=\'#FFFFFF\'><b>Icon</b>\n</font><font face=\'_StandardFont\' size=\'11\' color=\'#BFBFBF\'><b>CTRL + Left Drag</b> Move icon.\n<b>CTRL + Roll Mousewheel</b> Resize icon.\n<b>CTRL + Right Click</b> Reset icon size to 100%.</font>");
+		td.AddAttributeSplitter();
+		td.AddAttribute("","");		
+		td.AddAttribute("", "<font face=\'_StandardFont\' size=\'12\' color=\'#FFFFFF\'><b>Icon</b>\n</font><font face=\'_StandardFont\' size=\'11\' color=\'#BFBFBF\'><b>CTRL + Left Drag</b> Move icon.\n<b>CTRL + Roll Mousewheel</b> Resize icon.\n<b>CTRL + Right Click</b> Reset icon size to 100%.</font>");
 	}
 
-	g_iconTooltipData.AddAttributeSplitter();
-	g_iconTooltipData.AddAttribute("","");	
-	g_iconTooltipData.AddAttribute("", "<font face=\'_StandardFont\' size=\'12\' color=\'#FFFFFF\'><b>HUD Bars</b>\n<font face=\'_StandardFont\' size=\'11\' color=\'#BFBFBF\'><b>CTRL + Left Drag</b> Move both HUD bars at once.\n<b>CTRL + Right Drag</b> Move an individual bar.\n<b>CTRL + Mouse Wheel roll</b> Scale HUD bars.\n<b>Shift + Mouse Wheel roll</b> Reset HUD scale.</font>");
-	g_iconTooltipData.m_Padding = 8;
-	g_iconTooltipData.m_MaxWidth = 256;	
+	td.AddAttributeSplitter();
+	td.AddAttribute("","");	
+	td.AddAttribute("", "<font face=\'_StandardFont\' size=\'12\' color=\'#FFFFFF\'><b>HUD Bars</b>\n<font face=\'_StandardFont\' size=\'11\' color=\'#BFBFBF\'><b>CTRL + Left Drag</b> Move all HUD bars at once.\n<b>CTRL + Right Drag</b> Move a single bar.\n<b>CTRL + Mouse Wheel roll</b> Scale HUD bars.\n<b>Shift + Mouse Wheel roll</b> Reset HUD scale.</font>");
+	td.m_Padding = 8;
+	td.m_MaxWidth = 256;
+	
+	return td;
 }
 
 function CloseTooltip():Void
