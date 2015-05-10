@@ -1,7 +1,7 @@
-3.1.1 +develop -- ????-??-??
+3.2.0 beta -- 2015-05-10
 
- + added option to automatically hide HUD when autoswap is enabled or when not in combat
- + added option to enable/disable Disruptor swap hotkeys when HUD is disabled
+ + added options to automatically hide HUD when autoswap is enabled or when not in combat
+ + added option to enable/disable standard AEGIS swap hotkeys when HUD is disabled
  + added slider for HUD scale in the config window
  + added state information to icon tooltip
  
@@ -10,6 +10,7 @@
  
  * improved handling of the moment the shield system becomes unlocked
  * improved save/restore of hud position when not attached to passivebar
+ * fixed HUD resetting to default position when changing scale
  
  * changed mod icon graphics
  
