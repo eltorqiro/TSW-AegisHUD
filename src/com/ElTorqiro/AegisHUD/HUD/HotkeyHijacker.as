@@ -7,10 +7,10 @@ import com.ElTorqiro.AegisHUD.AddonInfo;
 class com.ElTorqiro.AegisHUD.HUD.HotkeyHijacker {
 	
 	// hotkey constants
-	public static var e_Hotkey_PrimaryAegisNext:Number = 	133;
-	public static var e_Hotkey_PrimaryAegisPrev:Number = 	135;
-	public static var e_Hotkey_SecondaryAegisNext:Number = 	134;
-	public static var e_Hotkey_SecondaryAegisPrev:Number = 	136;
+	public static var e_Hotkey_PrimaryAegisNext:Number = 	_global.Enums.InputCommand.e_InputCommand_LockTarget + 4;
+	public static var e_Hotkey_PrimaryAegisPrev:Number = 	_global.Enums.InputCommand.e_InputCommand_LockTarget + 6;
+	public static var e_Hotkey_SecondaryAegisNext:Number = 	_global.Enums.InputCommand.e_InputCommand_LockTarget + 5;
+	public static var e_Hotkey_SecondaryAegisPrev:Number = 	_global.Enums.InputCommand.e_InputCommand_LockTarget + 7;
 	
 	// key state for hotkey interaction
 	public static var e_HotkeyDown:Number = _global.Enums.Hotkey.eHotkeyDown;	

@@ -1,3 +1,13 @@
+3.2.2 beta -- 2015-06-04
+ 
+ * updated official build to include hotkey changes for TSW update 1.11.3
+ 
+ 
+3.2.1 beta -- 2015-06-03
+
+ * updated hotkey mapping for compatibility with new hotkey ids (The009)
+ 
+ 
 3.2.0 beta -- 2015-05-10
 
  + added options to automatically hide HUD when autoswap is enabled or when not in combat
