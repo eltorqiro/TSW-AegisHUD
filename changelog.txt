@@ -1,3 +1,14 @@
+4.0.0 alpha 2 -- 2015-09-05
+
+ * closed alpha test release (invite only) for the 4.x branch
+ * configuration panel disabled for this version
+ 
+ 
+4.0.0 alpha 1 -- 2015-08-30
+
+ * rewritten from scratch to make code easier to maintain, the architecture more modular, and to establish better control over bug hunting with a debug system
+ 
+ 
 3.2.2 beta -- 2015-06-04
  
  * updated official build to include hotkey changes for TSW update 1.11.3
@@ -23,8 +34,8 @@
  * fixed HUD resetting to default position when changing scale
  
  * changed mod icon graphics
- 
- 
+
+
 3.1.1 -- 2015-05-08
 
  * fixed game completely freezing when switching from a character with AEGIS to one without

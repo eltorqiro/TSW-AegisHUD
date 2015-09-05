@@ -5,8 +5,11 @@ import com.GameInterface.Game.Character;
 import com.ElTorqiro.AegisHUD.HUD.HUD;
 import com.ElTorqiro.AegisHUD.AddonInfo;
 import com.ElTorqiro.AegisHUD.HUD.SettingsPacks;
+import com.ElTorqiro.AegisHUD.HUD.Host;
 
 import com.GameInterface.UtilsBase;
+
+var g_Host:Host;
 
 // the HUD instance
 var g_HUD:HUD;
@@ -71,6 +74,8 @@ function OnModuleActivated() : Void {
 	
 	// instantiate hud
 	g_HUD = HUD(attachMovie( "com.ElTorqiro.AegisHUD.HUD.HUD", "m_HUD", getNextHighestDepth(), { settings: settings } ));
+	
+	g_Host = new Host( this );
 }
 
 
