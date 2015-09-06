@@ -321,12 +321,12 @@ class com.ElTorqiro.AegisHUD.App {
 			
 			if ( !configWindowClip ) {
 				debug("App: loading config window");
-				//configWindowClip = SFClipLoader.LoadClip( Const.ConfigWindowClipPath, Const.AppID + "_ConfigWindow", false, _global.Enums.ViewLayer.e_ViewLayerTop, 0, [] );
+				configWindowClip = SFClipLoader.LoadClip( Const.ConfigWindowClipPath, Const.AppID + "_ConfigWindow", false, _global.Enums.ViewLayer.e_ViewLayerTop, 0, [] );
 			}
 		}
 		
 		else if ( configWindowClip ) {
-			//SFClipLoader.UnloadClip( Const.AppID + "_ConfigWindow" );
+			SFClipLoader.UnloadClip( Const.AppID + "_ConfigWindow" );
 			configWindowClip = null;
 			
 			debug("App: config window clip unloaded");
@@ -368,7 +368,7 @@ class com.ElTorqiro.AegisHUD.App {
 	 */
 	private static function manageHud() : Void {
 		
-		if ( active && prefs.getVal( "hud.enabled" ) ) {
+		if ( active && prefs.getVal( "hud.enabled" ) && AegisServer.aegisSystemUnlocked ) {
 			
 			if ( !hudClip ) {
 				debug("App: loading hud");

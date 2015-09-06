@@ -1,3 +1,8 @@
+4.0.0 beta -- 2015-??-??
+ 
+ * 
+ 
+ 
 4.0.0 alpha 2 -- 2015-09-05
 
  * closed alpha test release (invite only) for the 4.x branch

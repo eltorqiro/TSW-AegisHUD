@@ -2,7 +2,7 @@ import com.Components.WinComp;
 import flash.geom.Point;
 import com.GameInterface.DistributedValue;
 
-import com.ElTorqiro.AegisHUD.Preferences;
+import com.ElTorqiro.AegisHUD.Const;
 import com.ElTorqiro.AegisHUD.App;
 
 
@@ -18,10 +18,10 @@ var m_Window:WinComp;
 function onLoad() : Void {
 	App.debug("Config Window: onLoad");
 	
-	attachMovie( "com.ElTorqiro.AegisHUD.ConfigWindow.Window", "m_Window", getNextHighestDepth() );
+	m_Window = attachMovie( "com.ElTorqiro.AegisHUD.ConfigWindow.Window", "m_Window", getNextHighestDepth() );
 
 	// position window
-	var position:Point = Preferences.getValue( "configwindow.position" );
+	var position:Point = App.prefs.getVal( "configWindow.positionn" );
 	if ( position == undefined ) {
 		position = new Point( 300, 150 );
 	}
@@ -30,13 +30,13 @@ function onLoad() : Void {
 	m_Window._y = position.y;
 	
 	// set window properties
-	m_Window.SetTitle(App.Name + " v" + App.Version);
+	m_Window.SetTitle(Const.AppName + " v" + Const.AppVersion);
 	m_Window.ShowStroke(false);
 	m_Window.ShowFooter(false);
 	m_Window.ShowResizeButton(false);
 	
 	m_Window.SignalClose.Connect( this, function() {
-		DistributedValue.SetDValue( App.ID + "_ShowConfigWindow", false );
+		DistributedValue.SetDValue( Const.ShowConfigWindowDV, false );
 	});
 	
 	m_Window.SetContent("com.ElTorqiro.AegisHUD.Config.Content");
@@ -51,7 +51,7 @@ function OnUnload() : Void {
 	App.debug("Config Window: OnUnload");
 	
 	// save position of config window
-	Preferences.setValue( "configwindow.position", new Point(m_Window._x, m_Window._y) );
+	App.prefs.setVal( "configWindow.position", new Point( m_Window._x, m_Window._y ) );
 }
 
 /**

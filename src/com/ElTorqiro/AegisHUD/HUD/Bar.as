@@ -66,8 +66,6 @@ class com.ElTorqiro.AegisHUD.HUD.Bar extends UIComponent {
 		
 		m_Background._width = lastSlot._x + lastSlot._width + 3;
 
-		App.prefs.setVal( "hud.bar.background.type", Const.e_BarTypeThin );
-		
 		var showBackground:Number = App.prefs.getVal( "hud.bar.background.type" );
 		
 		if ( showBackground == Const.e_BarTypeNone ) {
