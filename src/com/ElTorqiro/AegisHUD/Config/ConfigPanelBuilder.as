@@ -1,10 +1,12 @@
+import mx.utils.Delegate;
+
 import flash.geom.Point;
+
 import gfx.controls.CheckBox;
 import gfx.controls.DropdownMenu;
 import gfx.controls.Slider;
+import gfx.controls.TextInput;
 import com.Utils.Format;
-
-import mx.utils.Delegate;
 
 import com.GameInterface.UtilsBase;
 
@@ -54,6 +56,11 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 			var id:String = "component_" + (element.id ? element.id : + i);
 		
 			var component:MovieClip = container.createEmptyMovieClip( id, container.getNextHighestDepth() );
+			component.data = element.data;
+			component.loader = element.loader;
+			component.saver = element.saver;
+			component.onChange = element.onChange;
+
 			component._x = controlCursor.x;
 			component._y = controlCursor.y;
 			
@@ -64,15 +71,19 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 				break;
 				
 				case "checkbox":
-					createCheckbox( component, id, element.label, element.data, element.loader, element.saver, element.onClick );
+					createCheckbox( component, id, element.label );
 				break;
 				
 				case "dropdown":
-					createDropdown( component, id, element.label, element.list, element.data, element.loader, element.saver, element.onChange );
+					createDropdown( component, id, element.label, element.list );
 				break;
 				
 				case "slider":
 					createSlider( component, id, element.label, element.min, element.max, element.valueLabelFormat );
+				break;
+				
+				case "textInput":
+					createTextInput( component, id, element.label, element.maxChars );
 				break;
 				
 				case "indent":
@@ -154,17 +165,12 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 		return el;
 	}
 	
-	private function createCheckbox( component:MovieClip, id:String, label:String, data:Object, loader:Function, saver:Function, onClick:Function ) : MovieClip {
+	private function createCheckbox( component:MovieClip, id:String, label:String ) : MovieClip {
 
-		component.data = data;
-		component.loader = loader;
-		component.saver = saver;
-		component.onClick = onClick;
-		
 		component.checkboxClickHandler = function( event:Object ) {
-			this.component.onClick( { component: this.component, value: this.component.getValue() } );
+			this.onChange( { component: this, value: this.getValue() } );
 			
-			this.component.saver();
+			this.saver();
 		};
 
 		component.getValue = function () {
@@ -179,36 +185,30 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 		
 		// create checkbox subcomponent
 		var checkbox:CheckBox = CheckBox( component.attachMovie( "checkbox", "checkbox", component.getNextHighestDepth() ) );
-		component.checkbox = checkbox;
+		checkbox[ "component" ] = component;
 		
 		checkbox.label = label;
 		checkbox.disableFocus = true;
 		checkbox.textField.autoSize = "left";
 		
-		controlCursor.y += checkbox._height - 1;
-
-		checkbox[ "component" ] = component;
-		checkbox.addEventListener( "click", component.checkboxClickHandler );
+		checkbox.addEventListener( "click", component, "checkboxClickHandler" );
 
 		// initial load of value
 		component.loader();
 		
+		controlCursor.y += checkbox._height - 1;
+		
 		return component;
 	}
 	
-	private function createDropdown( component:MovieClip, id:String, label:String, list:Array, data:Object, loader:Function, saver:Function, onChange:Function ) : MovieClip {
-
-		component.data = data;
-		component.loader = loader;
-		component.saver = saver;
-		component.onChange = onChange;
+	private function createDropdown( component:MovieClip, id:String, label:String, list:Array ) : MovieClip {
 
 		component.list = list;
 		
 		component.dropdownChangeHandler = function( event:Object ) {
-			this.component.onChange( { component: this.component, value: this.component.getValue() } );
+			this.onChange( { component: this, value: this.getValue() } );
 			
-			this.component.saver();
+			this.saver();
 		};
 
 		component.getValue = function () {
@@ -247,82 +247,143 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 		dropdown.width = dropdownWidth;
 		dropdown._x = columnWidth - indent - dropdownWidth;
 		
-		controlCursor.y += dropdown.height + 3;
-		
 		dropdown.dropdown.addEventListener( "focusIn", this, "clearFocus" );
-		dropdown.addEventListener( "change", component.dropdownChangeHandler );
+		dropdown.addEventListener( "change", component, "dropdownChangeHandler" );
 
 		// initial load of value
 		component.loader();
+
+		controlCursor.y += dropdown.height + 3;
 		
 		return component;
 	}
 
-	private function createSlider( componentContainer:MovieClip, id:String, label:String, min:Number, max:Number, valueLabelFormat:String ) : MovieClip {
+	private function createSlider( component:MovieClip, id:String, label:String, min:Number, max:Number, valueLabelFormat:String ) : MovieClip {
 
-		/**
-		 * to avoid an infinite loop of slider change => pref change => slider change
-		 * 
-		 * on the setValue for the component, check if the new value is different to the old value before updating
-		 * 
-		 */
-		
-		
-		var leftOffset:Number = 3;
-		
-		var elLabel:MovieClip = componentContainer.attachMovie( "label", "label", componentContainer.getNextHighestDepth() );
-		elLabel.textField.autoSize = "left";
-		elLabel.textField.text = label;
-		elLabel._x = leftOffset;
-		
-		var el:Slider = Slider( componentContainer.attachMovie( "slider", "el", componentContainer.getNextHighestDepth() ) );
-
-		el[ "container" ] = componentContainer;
-		
-		el[ "valueLabelFormat" ] = valueLabelFormat;
-		el.width = columnWidth - 50;
-
-		el.addEventListener( "focusIn", this, "clearFocus" );
-		el.addEventListener( "change", el, "updateValueLabel" );
-		
-
-		// since we're building a composite control, this is essentially a glorified setter
-		// to make sure the label text can be updated
-		// -- use this instead of "value = x;" in property setting
-		el["setValue"] = Delegate.create( el, function(value:Number) {
-			this.value = value;
+		component.sliderChangeHandler = function( event:Object ) {
+			this.onChange( { component: this, value: this.getValue() } );
+			
 			this.updateValueLabel();
-		});
-		
-		el["updateValueLabel"] = Delegate.create( el, function() {
-			this["valueLabel"].textField.text = Format.Printf( this.valueLabelFormat, this.value );
-		});
-		
-		el.minimum = min;
-		el.maximum = max;
-		el.snapInterval = 1;
-		el.snapping = true;
-		el.liveDragging = true;
-		el.value = min;
+			
+			this.saver();
+		};
 
-		el._x = 6;
-		el._y = elLabel.textField._height + 2;
+		component.getValue = function () {
+			return this.slider.value;
+		};
+		
+		component.setValue = function ( value ) {
+			
+			if ( this.slider.value == value || Number(value) == Number.NaN ) return;
+
+			this.slider.value = Number( value );
+			this.updateValueLabel();
+		};
+
+		component.updateValueLabel = function ( event:Object ) {
+			this.valueLabel.textField.text = Format.Printf( this.valueLabel.format, this.getValue() );
+		};
+		
+		// add label
+		var sliderLabel:MovieClip = component.attachMovie( "label", "label", component.getNextHighestDepth() );
+		sliderLabel.textField.autoSize = "left";
+		sliderLabel.textField.text = label;
+		sliderLabel._x = 3;
+		
+		// add slider control
+		var slider:Slider = Slider( component.attachMovie( "slider", "slider", component.getNextHighestDepth() ) );
+		slider[ "component" ] = component;
+		
+		slider.minimum = min;
+		slider.maximum = max;
+		slider.snapInterval = 1;
+		slider.snapping = true;
+		slider.liveDragging = true;
+		slider.value = min;
+
+		slider.width = columnWidth - 50;
+		slider._x = 6;
+		slider._y = sliderLabel.textField._height + 2;
+
+		slider.addEventListener( "focusIn", this, "clearFocus" );
+		slider.addEventListener( "change", component, "sliderChangeHandler" );
 		
 		// add value label
-		var valueLabel = componentContainer.attachMovie( "label", "valueLabel", componentContainer.getNextHighestDepth() );
+		var valueLabel = component.attachMovie( "label", "valueLabel", component.getNextHighestDepth() );
+		valueLabel.format = valueLabelFormat;
 		valueLabel.textField.autoSize = "left";
-		valueLabel.textField.text = el.value;
-
-		valueLabel._y = el._y - 5;
+		valueLabel._y = slider._y - 5;
 		valueLabel._x = columnWidth - 37;
 		
-		el["valueLabel"] = valueLabel;
+		component[ "updateValueLabel" ]();
+		
+		// initial load of value
+		component.loader();
+		
+		controlCursor.y += component._height;
+		
+		return component;
+	}
 
-		el[ "updateValueLabel" ]();
+	private function createTextInput( component:MovieClip, id:String, label:String, maxChars:Number ) : MovieClip {
 		
-		controlCursor.y += componentContainer._height;
+		component.textChangeHandler = function( event:Object ) {
+			this.onChange( { component: this, value: this.getValue() } );
+			
+			this.saver();
+		};
+
+		component.getValue = function () {
+			return this.textInput.text;
+		};
 		
-		return el;
+		component.setValue = function ( value ) {
+			
+			if ( this.textInput.text == value || value.length > this.textInput.maxChars ) return;
+
+			this.textInput.text = value;
+		};
+
+		// add label
+		var textInputLabel:MovieClip = component.attachMovie( "label", "label", component.getNextHighestDepth(), { actAsButton: true } );
+		textInputLabel.textField.autoSize = "left";
+		textInputLabel.textField.text = label;
+		textInputLabel._x = 3;
+		
+		// add textinput
+		var textInput:TextInput = TextInput( component.attachMovie( "textInput", "textInput", component.getNextHighestDepth() ) );
+		textInput[ "component" ] = component;
+		
+		textInput.maxChars = maxChars == undefined ? 0 : maxChars;
+		
+		var fieldWidth:Number = 70;
+		
+		textInput.width = fieldWidth;
+		//textInput._x = columnWidth - indent - fieldWidth;
+		textInput._x = columnWidth - indent - fieldWidth - 80;
+		textInput._y = 1;
+		
+		// the TextInput class isn't issuing "focusOut" events when clicking outside the box, as it thinks the focus hasn't changed, so this trickery is necessary
+		textInput.textField.onKillFocus = function( newFocus:Object ) {
+			if ( newFocus != this && newFocus != this._parent ) {
+				this._parent.focused = false;
+			}
+		};
+		
+		textInput.textField.onSetFocus = function( oldFocus:Object ) {
+			if ( oldFocus != this && oldFocus != this._parent ) {
+				this._parent.focused = true;
+			}
+		}
+		
+		textInput.addEventListener( "textChange", component.textChangeHandler );
+		
+		// initial load of value
+		component.loader();
+		
+		controlCursor.y += component._height + 2;
+		
+		return component;
 	}
 
 	

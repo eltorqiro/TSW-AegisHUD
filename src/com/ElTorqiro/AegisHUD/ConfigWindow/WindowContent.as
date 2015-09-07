@@ -60,8 +60,8 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					label: "HUD enabled (per playfield)",
 					tooltip: "Enables the AegisHUD.  It may not be visible on the screen, depending on other settings, but it will still be active.<br><br>This setting is remembered on a per-playfield basis.",
 					data: { pref: "hud.enabled" },
-					loader: checkboxLoadHandler,
-					saver: checkboxSaveHandler
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
 				},
 
 				{ type: "block"
@@ -72,8 +72,8 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					label: "Hide HUD when out of combat",
 					tooltip: "Hides the HUD when you are not engaged in combat.  This is not the same as disabling the HUD, it is merely hidden from view.",
 					data: { pref: "hud.hide.whenNotInCombat" },
-					loader: checkboxLoadHandler,
-					saver: checkboxSaveHandler
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
 				},
 				
 				{ type: "block"
@@ -97,8 +97,8 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					label: "Hide default UI shield button",
 					tooltip: "Hides the default UI shield selection button.",
 					data: { pref: "defaultUI.shieldSelector.hide" },
-					loader: checkboxLoadHandler,
-					saver: checkboxSaveHandler
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
 				},
 				
 				{	type: "heading",
@@ -110,8 +110,8 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					label: "AutoSwap system enabled",
 					tooltip: "Enables the AutoSwap system.  Your Aegis controllers will be swapped to match the target controllers specified below.",
 					data: { pref: "autoSwap.enabled" },
-					loader: checkboxLoadHandler,
-					saver: checkboxSaveHandler
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
 				},
 				
 				{	type: "indent"
@@ -122,8 +122,8 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					label: "Hide HUD when AutoSwap enabled",
 					tooltip: "Hides the HUD when the AutoSwap system is enabled.  This is not the same as disabling the HUD, it is merely hidden from view.",
 					data: { pref: "hud.hide.whenAutoswapEnabled" },
-					loader: checkboxLoadHandler,
-					saver: checkboxSaveHandler
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
 				},
 				
 				{	type: "heading",
@@ -141,8 +141,8 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 						{ label: "Enemy Shield", value: Const.e_AutoSwapOffensiveShield },
 						{ label: "Friendly Shield", value: Const.e_AutoSwapDefensiveShield }
 					],
-					loader: dropdownLoadHandler,
-					saver: dropdownSaveHandler
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
 				},
 				
 				{	id: "autoSwap.type.secondary",
@@ -155,8 +155,8 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 						{ label: "Enemy Shield", value: Const.e_AutoSwapOffensiveShield },
 						{ label: "Friendly Shield", value: Const.e_AutoSwapDefensiveShield }
 					],
-					loader: dropdownLoadHandler,
-					saver: dropdownSaveHandler
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
 				},
 				
 				{	id: "autoSwap.type.shield",
@@ -168,8 +168,8 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 						{ label: "No AutoSwap", value: Const.e_AutoSwapNone },
 						{ label: "Enemy Disruptor", value: Const.e_AutoSwapOffensiveDisruptor }
 					],
-					loader: dropdownLoadHandler,
-					saver: dropdownSaveHandler
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
 				},
 				
 				{	type: "indent", size: "reset"
@@ -183,33 +183,39 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					type: "dropdown",
 					label: "Left Button",
 					tooltip: "Selection behaviour when clicking an Aegis slot with the Left mouse button.",
-					pref: "hud.click.multiSelectType.leftButton",
+					data: { pref: "hud.click.multiSelectType.leftButton" },
 					list: [
 						{ label: "Single Select", value: Const.e_SelectSingle },
 						{ label: "Multi Select", value: Const.e_SelectMulti }
-					]
+					],
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
 				},
 
 				{	id: "hud.click.multiSelectType.rightButton",
 					type: "dropdown",
 					label: "Right Button",
 					tooltip: "Selection behaviour when clicking an Aegis slot with the Right mouse button.",
-					pref: "hud.click.multiSelectType.rightButton",
+					data: { pref: "hud.click.multiSelectType.rightButton" },
 					list: [
 						{ label: "Single Select", value: Const.e_SelectSingle },
 						{ label: "Multi Select", value: Const.e_SelectMulti }
-					]
+					],
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
 				},
 
 				{	id: "hud.click.multiSelectType.shiftLeftButton",
 					type: "dropdown",
 					label: "Shift+Left Button",
 					tooltip: "Selection behaviour when clicking an Aegis slot with Shift+Left Button.",
-					pref: "hud.click.multiSelectType.shiftLeftButton",
+					data: { pref: "hud.click.multiSelectType.shiftLeftButton" },
 					list: [
 						{ label: "Single Select", value: Const.e_SelectSingle },
 						{ label: "Multi Select", value: Const.e_SelectMulti }
-					]
+					],
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
 				},
 				
 				{	type: "heading",
@@ -220,22 +226,26 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					type: "dropdown",
 					label: "Primary",
 					tooltip: "Selection behaviour when using the Primary Disruptor hotkeys [<variable name='hotkey:Combat_NextPrimaryAEGIS'/ > / <variable name='hotkey:Combat_PreviousPrimaryAEGIS'/ >].",
-					pref: "hotkeys.multiSelectType.primary",
+					data: { pref: "hotkeys.multiSelectType.primary" },
 					list: [
 						{ label: "Single Select", value: Const.e_SelectSingle },
 						{ label: "Multi Select", value: Const.e_SelectMulti }
-					]
+					],
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
 				},
 
 				{	id: "hotkeys.multiSelectType.secondary",
 					type: "dropdown",
 					label: "Secondary",
 					tooltip: "Selection behaviour when using the Secondary Disruptor hotkeys [<variable name='hotkey:Combat_NextSecondaryAEGIS'/ > / <variable name='hotkey:Combat_PreviousSecondaryAEGIS'/ >].",
-					pref: "hotkeys.multiSelectType.secondary",
+					data: { pref: "hotkeys.multiSelectType.secondary" },
 					list: [
 						{ label: "Single Select", value: Const.e_SelectSingle },
 						{ label: "Multi Select", value: Const.e_SelectMulti }
-					]
+					],
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
 				},
 
 				{ type: "block"
@@ -246,8 +256,8 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					label: "Prevent hotkey swaps when HUD is disabled",
 					tooltip: "Disables the Aegis selection hotkeys when the AegisHUD is disabled.  This helps prevent accidental swaps (and the accompanying ability lockout) in areas without Aegis content.",
 					data: { pref: "hotkeys.lockoutWhenHudDisabled" },
-					loader: checkboxLoadHandler,
-					saver: checkboxSaveHandler
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
 				},
 				
 				{ type: "column"
@@ -262,8 +272,8 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					label: "Show tooltips",
 					tooltip: "Enables tooltips when hovering the mouse over items in the HUD.",
 					data: { pref: "hud.tooltips.enabled" },
-					loader: checkboxLoadHandler,
-					saver: checkboxSaveHandler
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
 				},
 
 				{ type: "indent"
@@ -274,8 +284,8 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					label: "Suppress in combat",
 					tooltip: "Prevents tooltips from being shown when you are engaged in combat.",
 					data: { pref: "hud.tooltips.suppressInCombat" },
-					loader: checkboxLoadHandler,
-					saver: checkboxSaveHandler
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
 				},
 				
 				{ type: "indent", size: "reset"
@@ -289,36 +299,42 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					type: "dropdown",
 					label: "Primary Weapon",
 					tooltip: "Placement of the Primary Weapon item slot on the Primary bar in the HUD.",
-					pref: "hud.bars.primary.itemSlotPlacement",
+					data: { pref: "hud.bars.primary.itemSlotPlacement" },
 					list: [
 						{ label: "Do not show", value: Const.e_BarItemPlaceNone },
 						{ label: "First on bar", value: Const.e_BarItemPlaceFirst },
 						{ label: "Last on  bar", value: Const.e_BarItemPlaceLast }
-					]
+					],
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
 				},
 				
 				{	id: "hud.bars.secondary.itemSlotPlacement",
 					type: "dropdown",
 					label: "Secondary Weapon",
 					tooltip: "Placement of the Secondary Weapon item slot on the Secondary bar in the HUD.",
-					pref: "hud.bars.secondary.itemSlotPlacement",
+					data: { pref: "hud.bars.secondary.itemSlotPlacement" },
 					list: [
 						{ label: "Do not show", value: Const.e_BarItemPlaceNone },
 						{ label: "First on bar", value: Const.e_BarItemPlaceFirst },
 						{ label: "Last on  bar", value: Const.e_BarItemPlaceLast }
-					]
+					],
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
 				},
 				
 				{	id: "hud.bars.shield.itemSlotPlacement",
 					type: "dropdown",
 					label: "Shield symbol",
 					tooltip: "Placement of the Shield symbol on the Shield bar in the HUD.",
-					pref: "hud.bars.shield.itemSlotPlacement",
+					data: { pref: "hud.bars.shield.itemSlotPlacement" },
 					list: [
 						{ label: "Do not show", value: Const.e_BarItemPlaceNone },
 						{ label: "First on bar", value: Const.e_BarItemPlaceFirst },
 						{ label: "Last on  bar", value: Const.e_BarItemPlaceLast }
-					]
+					],
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
 				},
 				
 				{ type: "block"
@@ -329,8 +345,8 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					label: "Glow icon per active Aegis type",
 					tooltip: "Adds a glow to item slot icons per their currently selected Aegis type.",
 					data: { pref: "hud.slots.item.neon" },
-					loader: checkboxLoadHandler,
-					saver: checkboxSaveHandler
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
 				},
 				
 				{	id: "hud.slots.item.tint",
@@ -349,11 +365,13 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					type: "dropdown",
 					label: "Icon style",
 					tooltip: "The style of icons to use for Aegis controllers.",
-					pref: "hud.icons.type",
+					data: { pref: "hud.icons.type" },
 					list: [
 						{ label: "AegisHUD themed icons", value: Const.e_IconTypeAegisHUD },
 						{ label: "Default game icons", value: Const.e_IconTypeRDB }
-					]
+					],
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
 				},
 				
 				{	id: "hud.slots.aegis.tint",
@@ -361,8 +379,8 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					label: "Tint icon per Aegis type",
 					tooltip: "Tint Aegis slot icons per their Aegis type.",
 					data: { pref: "hud.slots.aegis.tint" },
-					loader: checkboxLoadHandler,
-					saver: checkboxSaveHandler
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
 				},
 
 				{	type: "block"
@@ -373,8 +391,8 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					label: "Show Analysis %",
 					tooltip: "Shows the analysis percentage (i.e. \"Aegis XP\") on Aegis controllers.",
 					data: { pref: "hud.slots.aegis.xp.enabled" } ,
-					loader: checkboxLoadHandler,
-					saver: checkboxSaveHandler
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
 				},
 				
 				{	type: "indent"
@@ -385,8 +403,8 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					label: "Hide at 100%",
 					tooltip: "Hides the analysis percentage when a controller reaches 100%.",
 					data: { pref: "hud.slots.aegis.xp.hideWhenFull" },
-					loader: checkboxLoadHandler,
-					saver: checkboxSaveHandler
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
 				},
 				
 				{	type: "indent", size: "reset"
@@ -401,41 +419,43 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					label: "Glow icon per Aegis type",
 					tooltip: "Adds a glow to selected Aegis slots per their Aegis type.",
 					data: { pref: "hud.slots.selectedAegis.neon" },
-					loader: checkboxLoadHandler,
-					saver: checkboxSaveHandler
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
 				},
 
 				{	type: "block"
 				},
 				
+				{	id: "hud.slots.selectedAegis.background.neon",
+					type: "checkbox",
+					label: "Glow background box per Aegis type",
+					tooltip: "Adds a glow to the background box of selected Aegis slots per their Aegis type.",
+					data: { pref: "hud.slots.selectedAegis.background.neon" },
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
+				},
+
+				{	id: "hud.slots.selectedAegis.background.tint",
+					type: "checkbox",
+					label: "Tint background box per Aegis type",
+					tooltip: "Tint the background box of selected Aegis slots per their Aegis type.",
+					data: { pref: "hud.slots.selectedAegis.background.tint" },
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
+				},
+
 				{	id: "hud.slots.selectedAegis.background.transparency",
 					type: "slider",
 					min: 0,
 					max: 100,
 					valueLabelFormat: "%i%%",
-					label: "Selection box transparency",
+					label: "Background box transparency",
 					tooltip: "The transparency level of the background box that appears behind selected Aegis slots.  A value of zero disables the background box.",
-					pref: "hud.slots.selectedAegis.background.transparency"
+					data: { pref: "hud.slots.selectedAegis.background.transparency" },
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
 				},
 				
-				{	id: "hud.slots.selectedAegis.background.neon",
-					type: "checkbox",
-					label: "Glow box per Aegis type",
-					tooltip: "Adds a glow to the background box of selected Aegis slots per their Aegis type.",
-					data: { pref: "hud.slots.selectedAegis.background.neon" },
-					loader: checkboxLoadHandler,
-					saver: checkboxSaveHandler
-				},
-
-				{	id: "hud.slots.selectedAegis.background.tint",
-					type: "checkbox",
-					label: "Tint box per Aegis type",
-					tooltip: "Tint the background box of selected Aegis slots per their Aegis type.",
-					data: { pref: "hud.slots.selectedAegis.background.tint" },
-					loader: checkboxLoadHandler,
-					saver: checkboxSaveHandler
-				},
-
 				{	type: "column"
 				},
 				
@@ -447,40 +467,63 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					type: "dropdown",
 					label: "Bar Style",
 					tooltip: "The style of the bar background boxes.",
-					pref: "hud.bar.background.type",
+					data: { pref: "hud.bar.background.type" },
 					list: [
 						{ label: "None", value: Const.e_BarTypeNone },
 						{ label: "Thin Strip", value: Const.e_BarTypeThin },
 						{ label: "Full Box", value: Const.e_BarTypeFull }
-					]
+					],
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
 				},
 				
+				{	id: "hud.bar.background.neon",
+					type: "checkbox",
+					label: "Glow bar per Aegis type",
+					tooltip: "Adds a glow to the background bars per their group selected Aegis type.",
+					data: { pref: "hud.bar.background.neon" },
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
+				},
+
+				{	id: "hud.bar.background.tint",
+					type: "checkbox",
+					label: "Tint bar per Aegis type",
+					tooltip: "Tint bar backgrounds per their group selected Aegis type.",
+					data: { pref: "hud.bar.background.tint" },
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
+				},
+
 				{	id: "hud.bar.background.transparency",
 					type: "slider",
 					min: 0,
 					max: 100,
 					valueLabelFormat: "%i%%",
-					label: "Transparency",
+					label: "Bar transparency",
 					tooltip: "The transparency level of the bar backgrounds.  A value of zero effectively disables the background box.",
-					pref: "hud.bar.background.transparency"
+					data: { pref: "hud.bar.background.transparency" },
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
 				},
 				
-				{	id: "hud.bar.background.neon",
-					type: "checkbox",
-					label: "Glow background per Aegis type",
-					tooltip: "Adds a glow to the background bars per their group selected Aegis type.",
-					data: { pref: "hud.bar.background.neon" },
-					loader: checkboxLoadHandler,
-					saver: checkboxSaveHandler
+				{	type: "heading",
+					text: "Tints"
 				},
-
-				{	id: "hud.bar.background.tint",
-					type: "checkbox",
-					label: "Tint background per Aegis type",
-					tooltip: "Tint bar backgrounds per their group selected Aegis type.",
-					data: { pref: "hud.bar.background.tint" },
-					loader: checkboxLoadHandler,
-					saver: checkboxSaveHandler
+				
+				{	id: "hud.tints.aegis.psychic",
+					type: "textInput",
+					label: "Psychic",
+					maxChars: 6,
+					data: { pref: "hud.tints.aegis.psychic" },
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
+				},
+				
+				{	id: "hud.tints.aegis.cybernetic",
+					type: "textInput",
+					label: "Cybernetic",
+					maxChars: 6
 				}
 
 				
@@ -500,45 +543,14 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 		SignalSizeChanged.Emit();
 	}
 
-	private function checkboxLoadHandler() : Void {
+	private function componentLoadHandler() : Void {
 		this.setValue( App.prefs.getVal( this.data.pref ) );
 	}
 
-	private function checkboxSaveHandler() : Void {
+	private function componentSaveHandler() : Void {
 		App.prefs.setVal( this.data.pref, this.getValue() );
 	}
 
-	private function dropdownLoadHandler() : Void {
-		this.setValue( App.prefs.getVal( this.data.pref ) );
-	}
-	
-	private function dropdownSaveHandler() : Void {
-		App.prefs.setVal( this.data.pref, this.getValue() );
-	}
-	
-	private function loadValues() : Void {
-
-		for ( var s:String in m_Panel ) {
-			
-			// handle controls that use the pref shortcut
-			if ( m_Panel[s].data.pref ) {
-				//loadValue( s, App.prefs.getVal( m_Panel[s].data.pref ) );
-				m_Panel[s].loader();
-			}
-			
-			// handle controls that use a custom value loader
-			else if ( m_Panel[s].data.loader ) {
-				//m_Panel[[s].data.loader( 
-			}
-			
-		}
-		
-	}
-	
-	private function loadValue( controlName:String, value ) : Void {
-		m_Panel[ controlName ].setValue( value );
-	}
-	
 	/**
 	 * listener for pref value changes, to update the config ui
 	 * 

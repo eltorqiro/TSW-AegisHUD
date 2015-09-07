@@ -5,6 +5,9 @@ import flash.geom.Point;
 import gfx.events.EventDispatcher;
 import mx.utils.Delegate;
 
+import com.GameInterface.UtilsBase;
+import com.GameInterface.LogBase;
+
 
 /**
  * Preferences storage, usage and change event class for TSW
@@ -92,9 +95,10 @@ class com.ElTorqiro.AegisHUD.Preferences {
 
 		var equivalentCheckTypes:Object = { string: true, number: true, boolean: true };
 		
-		// if pref has not been added, add it
+		// if pref has not been added, report an error
 		if ( prefs[name] == undefined ) { 
-			add( name, value );
+			debug( "attempt to set value on nonexistent pref: " + name );
+			return;
 		}
 
 		var oldValue = prefs[name].value;
@@ -326,6 +330,18 @@ class com.ElTorqiro.AegisHUD.Preferences {
 		SignalValueChanged = null;
 	}
 	
+	/**
+	 * prints a message to the chat window and the ClientLog.txt file if debug is enabled
+	 * 
+	 * @param	msg
+	 */
+	public static function debug( msg:String ) : Void {
+		
+		var message:String = msg;
+		
+		UtilsBase.PrintChatText( "Preferences: " + message );
+		LogBase.Print( 3, "Preferences", message );
+	}
 
 	/*
 	 * internal variables

@@ -21,9 +21,7 @@ function onLoad() : Void {
 	m_Window = attachMovie( "com.ElTorqiro.AegisHUD.ConfigWindow.Window", "m_Window", getNextHighestDepth() );
 
 	// position window
-	var position:Point = App.prefs.getVal( "configWindow.positionn" );
-	App.debug( "point: " + position);
-	
+	var position:Point = App.prefs.getVal( "configWindow.position" );
 	if ( position == undefined ) {
 		position = new Point( 300, 150 );
 	}
