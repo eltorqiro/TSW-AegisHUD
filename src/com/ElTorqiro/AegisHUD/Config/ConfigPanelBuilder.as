@@ -47,39 +47,36 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 		indentSpacing = def.indentSpacing ? def.indentSpacing : 10;
 		groupSpacing = def.groupSpacing ? def.groupSpacing : 20;
 
-		var control:Object;
-		var clip:MovieClip;
+		for ( var i:Number = 0; i < def.layout.length; i++ ) {
+			
+			var element:Object = def.layout[ i ];
+			
+			var id:String = "component_" + (element.id ? element.id : + i);
 		
-		for ( var element:Number = 0; element < def.layout.length; element++ ) {
+			var component:MovieClip = container.createEmptyMovieClip( id, container.getNextHighestDepth() );
+			component._x = controlCursor.x;
+			component._y = controlCursor.y;
 			
-			control = def.layout[ element ];
-			
-			var id:String = control.id ? control.id : element;
-		
-			clip = container.createEmptyMovieClip( id, container.getNextHighestDepth() );
-			clip._x = controlCursor.x;
-			clip._y = controlCursor.y;
-			
-			switch ( control.type ) {
+			switch ( element.type ) {
 				
 				case "heading":
-					createHeading( clip, id, control.subType, control.text );
+					createHeading( component, id, element.subType, element.text );
 				break;
 				
 				case "checkbox":
-					createCheckbox( clip, id, control.label, control.data, control.getFn, control.setFn );
+					createCheckbox( component, id, element.label, element.data, element.loader, element.saver, element.onClick );
 				break;
 				
 				case "dropdown":
-					createDropdown( clip, id, control.label, control.list );
+					createDropdown( component, id, element.label, element.list, element.data, element.loader, element.saver, element.onChange );
 				break;
 				
 				case "slider":
-					createSlider( clip, id, control.label, control.min, control.max, control.valueLabelFormat );
+					createSlider( component, id, element.label, element.min, element.max, element.valueLabelFormat );
 				break;
 				
 				case "indent":
-					if ( control.size == "reset" ) {
+					if ( element.size == "reset" ) {
 						controlCursor.x -= indent;
 						indent = 0;
 					}
@@ -157,60 +154,120 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 		return el;
 	}
 	
-	private function createCheckbox( componentContainer:MovieClip, id:String, label:String, data:Object, getFn:Function, setFn:Function ) : MovieClip {
+	private function createCheckbox( component:MovieClip, id:String, label:String, data:Object, loader:Function, saver:Function, onClick:Function ) : MovieClip {
+
+		component.data = data;
+		component.loader = loader;
+		component.saver = saver;
+		component.onClick = onClick;
 		
-		var el:CheckBox = CheckBox( componentContainer.attachMovie( "checkbox", "el", componentContainer.getNextHighestDepth() ) );
+		component.checkboxClickHandler = function( event:Object ) {
+			this.component.onClick( { component: this.component, value: this.component.getValue() } );
+			
+			this.component.saver();
+		};
+
+		component.getValue = function () {
+			return this.checkbox.selected;
+		}
 		
-		el.label = label;
-		el.disableFocus = true;
-		el.textField.autoSize = "left";
+		component.setValue = function ( value:Boolean ) {
+			if ( Boolean( value ) != this.checkbox.selected ) {
+				this.checkbox.selected = Boolean( value );
+			}
+		}
 		
-		controlCursor.y += el._height - 1;
+		// create checkbox subcomponent
+		var checkbox:CheckBox = CheckBox( component.attachMovie( "checkbox", "checkbox", component.getNextHighestDepth() ) );
+		component.checkbox = checkbox;
 		
-		el[ "container" ] = componentContainer;
+		checkbox.label = label;
+		checkbox.disableFocus = true;
+		checkbox.textField.autoSize = "left";
 		
-		el[ "configData" ] = data;
+		controlCursor.y += checkbox._height - 1;
+
+		checkbox[ "component" ] = component;
+		checkbox.addEventListener( "click", component.checkboxClickHandler );
+
+		// initial load of value
+		component.loader();
 		
-		el[ "getFn" ] = getFn;
-		el[ "setFn" ] = setFn;
-		
-		el.addEventListener( "click", el[ "setFn" ] );
-		
-		el[ "getFn" ]();
-		
-		return el;
+		return component;
 	}
 	
-	private function createDropdown( componentContainer:MovieClip, id:String, label:String, list:Array ) : MovieClip {
+	private function createDropdown( component:MovieClip, id:String, label:String, list:Array, data:Object, loader:Function, saver:Function, onChange:Function ) : MovieClip {
+
+		component.data = data;
+		component.loader = loader;
+		component.saver = saver;
+		component.onChange = onChange;
+
+		component.list = list;
 		
+		component.dropdownChangeHandler = function( event:Object ) {
+			this.component.onChange( { component: this.component, value: this.component.getValue() } );
+			
+			this.component.saver();
+		};
+
+		component.getValue = function () {
+			return this.dropdown.selectedItem.value;
+		}
+		
+		component.setValue = function ( value ) {
+			
+			if ( this.dropdown.selectedItem.value == value ) return;
+			
+			for ( var s:String in this.list ) {
+				if ( this.list[s].value == value ) {
+					this.dropdown.selectedIndex = s;
+				}
+			}
+			
+		}
+		
+		var dropdownLabel:MovieClip = component.attachMovie( "label", "label", component.getNextHighestDepth() );
+		dropdownLabel.textField.autoSize = "left";
+		dropdownLabel.textField.text = label;
+		dropdownLabel._x = 3;
+
+		var dropdown:DropdownMenu = DropdownMenu( component.attachMovie( "dropdown", "dropdown", component.getNextHighestDepth(), { offsetY: 2, margin: 0 } ) );
+
+		dropdown[ "component" ] = component;
+
+		// it is essential that this is set prior to the dropdown being created below, else there is no way to have a "focus-less" dropdown working
+		dropdown.disableFocus = true;
+		
+		dropdown.dropdown = "ScrollingList";
+		dropdown.itemRenderer = "ListItemRenderer";
+		dropdown.dataProvider = list;
+
 		var dropdownWidth:Number = 150;
-		var labelOffset:Number = 3;
+		dropdown.width = dropdownWidth;
+		dropdown._x = columnWidth - indent - dropdownWidth;
 		
-		var elLabel:MovieClip = componentContainer.attachMovie( "label", "label", componentContainer.getNextHighestDepth() );
-		elLabel.textField.autoSize = "left";
-		elLabel.textField.text = label;
-		elLabel._x = labelOffset;
-
-		var el:DropdownMenu = DropdownMenu( componentContainer.attachMovie( "dropdown", "el", componentContainer.getNextHighestDepth() ) );
-
-		el[ "container" ] = componentContainer;
+		controlCursor.y += dropdown.height + 3;
 		
-		el.dropdown = "ScrollingList";
-		el.itemRenderer = "ListItemRenderer";
-		el.dataProvider = list;
+		dropdown.dropdown.addEventListener( "focusIn", this, "clearFocus" );
+		dropdown.addEventListener( "change", component.dropdownChangeHandler );
 
-		el.addEventListener("focusIn", this, "clearFocus");
-
-		el.width = dropdownWidth;
-		el._x = columnWidth - indent - dropdownWidth;
+		// initial load of value
+		component.loader();
 		
-		controlCursor.y += el.height + 3;
-		
-		return el;
+		return component;
 	}
 
 	private function createSlider( componentContainer:MovieClip, id:String, label:String, min:Number, max:Number, valueLabelFormat:String ) : MovieClip {
 
+		/**
+		 * to avoid an infinite loop of slider change => pref change => slider change
+		 * 
+		 * on the setValue for the component, check if the new value is different to the old value before updating
+		 * 
+		 */
+		
+		
 		var leftOffset:Number = 3;
 		
 		var elLabel:MovieClip = componentContainer.attachMovie( "label", "label", componentContainer.getNextHighestDepth() );
@@ -257,7 +314,7 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 		valueLabel.textField.text = el.value;
 
 		valueLabel._y = el._y - 5;
-		valueLabel._x = columnWidth - 40;
+		valueLabel._x = columnWidth - 37;
 		
 		el["valueLabel"] = valueLabel;
 
@@ -270,8 +327,9 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 
 	
 	private function clearFocus( event:Object ) : Void {
-		//event.target.focused = false;
-		Selection.setFocus( null );
+		
+		event.target.focused = false;
+		//Selection.setFocus( null );
 	}
 	
 	/*

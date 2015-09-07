@@ -22,6 +22,8 @@ function onLoad() : Void {
 
 	// position window
 	var position:Point = App.prefs.getVal( "configWindow.positionn" );
+	App.debug( "point: " + position);
+	
 	if ( position == undefined ) {
 		position = new Point( 300, 150 );
 	}

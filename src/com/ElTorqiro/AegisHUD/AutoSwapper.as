@@ -29,10 +29,31 @@ class com.ElTorqiro.AegisHUD.AutoSwapper {
 		character.SignalOffensiveTargetChanged.Connect( attachCurrentTargets, this );
 		character.SignalDefensiveTargetChanged.Connect( attachCurrentTargets, this );
 
+		// setup pref change listener
+		App.prefs.SignalValueChanged.Connect( swapFocusPrefChanged, this );
+		
 		// initial trigger for current targets
 		attachCurrentTargets();
 	}
 
+	/**
+	 * ensures new pref focus for autoswap is immediately acted on when pref changes
+	 * 
+	 * @param	name
+	 * @param	newValue
+	 * @param	oldValue
+	 */
+	private function swapFocusPrefChanged( name:String, newValue, oldValue ) : Void {
+
+		if ( name.substr( 0, 14 ) == "autoSwap.type." && newValue != Const.e_AutoSwapNone ) {
+		
+				updateOffensiveDisruptorType( true );
+				updateOffensiveShieldType( true );
+				
+				updateDefensiveShieldType( true );
+		}
+	}
+	
 	/**
 	 * attaches listeners to current targets
 	 */
@@ -98,7 +119,7 @@ class com.ElTorqiro.AegisHUD.AutoSwapper {
 	/**
 	 * checks the current shield type on the target
 	 */
-	private function updateOffensiveShieldType() : Void {
+	private function updateOffensiveShieldType( force:Boolean ) : Void {
 		
 		var targetShieldType:Number;
 		
@@ -111,7 +132,7 @@ class com.ElTorqiro.AegisHUD.AutoSwapper {
 		}
 
 		// if it is different to our last known shield type, update
-		if ( targetShieldType != offensiveShield ) {
+		if ( targetShieldType != offensiveShield || force ) {
 			offensiveShield = targetShieldType;
 			swapDisruptors( targetShieldType, Const.e_AutoSwapOffensiveShield );
 		}
@@ -121,13 +142,13 @@ class com.ElTorqiro.AegisHUD.AutoSwapper {
 	/**
 	 * checks the current disruptor type on the offensive target
 	 */
-	private function updateOffensiveDisruptorType() : Void {
+	private function updateOffensiveDisruptorType( force:Boolean ) : Void {
 		
 		// discover the aegis damage type the target deals out
 		var targetDisruptorType:Number = offensiveTarget.GetStat(_global.Enums.Stat.e_ColorCodedDamageType, 2);
 
 		// if it is different to our last known disruptor type, update
-		if ( targetDisruptorType != offensiveDisruptor ) {
+		if ( targetDisruptorType != offensiveDisruptor || force ) {
 			offensiveDisruptor = targetDisruptorType;
 			swapShield( targetDisruptorType, Const.e_AutoSwapOffensiveDisruptor );
 		}
@@ -160,13 +181,13 @@ class com.ElTorqiro.AegisHUD.AutoSwapper {
 	/**
 	 * checks the current shield type on the defensive target
 	 */
-	private function updateDefensiveShieldType() : Void {
+	private function updateDefensiveShieldType( force:Boolean ) : Void {
 		
 		// fetch current shield type
 		var targetShieldType:Number = defensiveTarget.GetStat( _global.Enums.Stat.e_PlayerAegisShieldType, 2 );
 
 		// if it is different to our last known shield type, update
-		if ( targetShieldType != defensiveShield ) {
+		if ( targetShieldType != defensiveShield || force ) {
 			defensiveShield = targetShieldType;
 			swapDisruptors( targetShieldType, Const.e_AutoSwapDefensiveShield );
 		}

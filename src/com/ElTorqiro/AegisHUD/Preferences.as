@@ -89,13 +89,19 @@ class com.ElTorqiro.AegisHUD.Preferences {
 	 * @return	the new value of the preference
 	 */
 	public function setVal( name:String, value ) {
+
+		var equivalentCheckTypes:Object = { string: true, number: true, boolean: true };
 		
 		// if pref has not been added, add it
 		if ( prefs[name] == undefined ) { 
 			add( name, value );
 		}
-		
+
 		var oldValue = prefs[name].value;
+
+		// only update if new value is different to old value
+		if ( equivalentCheckTypes[ typeof(value) ] && oldValue == value ) return value;
+		
 		prefs[name].value = value;
 		
 		dispatchEvent( { type: name, value: value, oldValue: oldValue } );
