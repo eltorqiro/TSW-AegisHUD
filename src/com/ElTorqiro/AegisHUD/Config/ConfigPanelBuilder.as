@@ -6,7 +6,10 @@ import gfx.controls.CheckBox;
 import gfx.controls.DropdownMenu;
 import gfx.controls.Slider;
 import gfx.controls.TextInput;
+import gfx.controls.Button;
+
 import com.Utils.Format;
+import flash.geom.ColorTransform;
 
 import com.GameInterface.UtilsBase;
 
@@ -60,6 +63,7 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 			component.loader = element.loader;
 			component.saver = element.saver;
 			component.onChange = element.onChange;
+			component.onClick = element.onClick;
 
 			component._x = controlCursor.x;
 			component._y = controlCursor.y;
@@ -68,6 +72,10 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 				
 				case "heading":
 					createHeading( component, id, element.subType, element.text );
+				break;
+				
+				case "button":
+					createButton( component, id, element.text );
 				break;
 				
 				case "checkbox":
@@ -82,8 +90,8 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 					createSlider( component, id, element.label, element.min, element.max, element.valueLabelFormat );
 				break;
 				
-				case "textInput":
-					createTextInput( component, id, element.label, element.maxChars );
+				case "colourRGB":
+					createColourRGB( component, id, element.label );
 				break;
 				
 				case "indent":
@@ -163,6 +171,26 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 		controlCursor.y += el._height;
 		
 		return el;
+	}
+
+	private function createButton( component:MovieClip, id:String, text:String ) : MovieClip {
+		
+		var button:Button = Button( component.attachMovie( "button", "button", component.getNextHighestDepth() ) );
+		button.label = text;
+		button.autoSize = "left";
+		button.disableFocus = true;
+
+		button.addEventListener( "click", component, "onClick" );
+
+		// offset by a small amount if not at top of column
+		if ( controlCursor.y != 0 ) {
+			controlCursor.y += 3;
+			component._y += 3;
+		}
+		
+		controlCursor.y += component._height;
+		
+		return component;
 	}
 	
 	private function createCheckbox( component:MovieClip, id:String, label:String ) : MovieClip {
@@ -325,68 +353,165 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 		return component;
 	}
 
-	private function createTextInput( component:MovieClip, id:String, label:String, maxChars:Number ) : MovieClip {
+	private function createColourRGB( component:MovieClip, id:String, label:String ) : MovieClip {
+		
+		component.value = 0;
 		
 		component.textChangeHandler = function( event:Object ) {
-			this.onChange( { component: this, value: this.getValue() } );
+
+			if ( event.target.textField.text.length > 2 ) {
+				event.target.textField.text = event.target.textField.text.substr( 0, 2 );
+			}
+
+			var fullString:String = "";
+			var pad:Array = [ "00", "0" ];
 			
-			this.saver();
+			var fields:Array = [ "R", "G", "B" ];
+			for ( var i:Number = 0; i < fields.length; i++ ) {
+				var fieldText:String = this[ fields[i] + "TextInput" ].text;
+				if ( pad[ fieldText.length ] ) fullString += pad[ fieldText.length ];
+				fullString += fieldText;
+			}
+			
+			var oldValue:Number = this.value;
+			this.value = parseInt( "0x" + fullString );
+			
+			if ( this.value == Number.NaN ) this.value = 0;
+			
+			if ( oldValue != this.value ) {
+				this.updatePreview( parseInt( "0x" + fullString ) );
+				this.onChange( { component: this, value: this.getValue() } );
+				this.saver();
+			}
 		};
 
+		component.fieldFocusInHandler = function( event:Object ) {
+			Selection.setSelection( 0, event.target.text.length );
+		}
+		
+		component.fieldFocusOutHandler = function( event:Object ) {
+			event.target.text = event.target.text.toUpperCase();
+		}
+		
 		component.getValue = function () {
-			return this.textInput.text;
+			return this.value;
 		};
 		
 		component.setValue = function ( value ) {
 			
-			if ( this.textInput.text == value || value.length > this.textInput.maxChars ) return;
+			// only set if there is a different value
+			if ( value == this.value ) return;
 
-			this.textInput.text = value;
+			this.value = value;
+			
+			// convert number into hex string
+			var colArr:Array = value.toString(16).toUpperCase().split('');
+			var numChars:Number = colArr.length;
+			for ( var i:Number = 0; i < ( 6 - numChars ); i++ ) {
+				colArr.unshift("0");
+			}
+			
+			var fields:Array = [ "R", "G", "B" ];
+			var texts:Array = [ colArr[0] + colArr[1], colArr[2] + colArr[3], colArr[4] + colArr[5] ];
+			
+			for ( var i:Number = 0; i < fields.length; i++ ) {
+				if ( !this[ fields[i] + "TextInput" ].focused ) {
+					this[ fields[i] + "TextInput" ].text = texts[ i ];
+				}
+			}
+			
+			this.updatePreview( value );
 		};
 
 		// add label
-		var textInputLabel:MovieClip = component.attachMovie( "label", "label", component.getNextHighestDepth(), { actAsButton: true } );
-		textInputLabel.textField.autoSize = "left";
-		textInputLabel.textField.text = label;
-		textInputLabel._x = 3;
+		var pickerLabel:MovieClip = component.attachMovie( "label", "label", component.getNextHighestDepth(), { actAsButton: true } );
+		pickerLabel.textField.autoSize = "left";
+		pickerLabel.textField.text = label;
+		pickerLabel._x = 3;
+
+		// add colour fields
+		var fieldWidth:Number = 30;
+		var fieldTop:Number = 1;
+		var fieldLabelWidth:Number = 13;
+		var fields:Array = [ "R", "G", "B" ];
 		
-		// add textinput
-		var textInput:TextInput = TextInput( component.attachMovie( "textInput", "textInput", component.getNextHighestDepth() ) );
-		textInput[ "component" ] = component;
-		
-		textInput.maxChars = maxChars == undefined ? 0 : maxChars;
-		
-		var fieldWidth:Number = 70;
-		
-		textInput.width = fieldWidth;
-		//textInput._x = columnWidth - indent - fieldWidth;
-		textInput._x = columnWidth - indent - fieldWidth - 80;
-		textInput._y = 1;
-		
-		// the TextInput class isn't issuing "focusOut" events when clicking outside the box, as it thinks the focus hasn't changed, so this trickery is necessary
-		textInput.textField.onKillFocus = function( newFocus:Object ) {
+		var onKillFocus = function( newFocus:Object ) {
 			if ( newFocus != this && newFocus != this._parent ) {
 				this._parent.focused = false;
-			}
+			}			
 		};
 		
-		textInput.textField.onSetFocus = function( oldFocus:Object ) {
+		var onSetFocus = function( oldFocus:Object ) {
 			if ( oldFocus != this && oldFocus != this._parent ) {
 				this._parent.focused = true;
 			}
+		};
+		
+		for ( var i:Number = 0; i < fields.length; i++ ) {
+
+			// add "blue" field
+			var field:TextInput = TextInput( component.attachMovie( "textInput", fields[i] + "TextInput", component.getNextHighestDepth() ) );
+			field[ "component" ] = component;
+			field.maxChars = 2;
+			field.width = fieldWidth;
+			field._x = columnWidth - indent - (3 * (fieldWidth + fieldLabelWidth) + 10) + ( i * (fieldWidth + fieldLabelWidth + 10) );
+			field._y = fieldTop;
+			
+			field.text = "00";
+			
+			field.textField.onKillFocus = onKillFocus;
+			field.textField.onSetFocus = onSetFocus;
+			
+			field.addEventListener( "textChange", component, "textChangeHandler" );
+			field.addEventListener( "focusIn", component, "fieldFocusInHandler" );
+			field.addEventListener( "focusOut", component, "fieldFocusOutHandler" );
+
+			var fieldLabel:MovieClip = component.attachMovie( "label", fields[i] + "Label", component.getNextHighestDepth() );
+			fieldLabel.textField.autoSize = "left";
+			fieldLabel.textField.text = fields[i];
+			fieldLabel.textField._width = 13;
+			fieldLabel._x = field._x - fieldLabel.textField._width;
+
 		}
 		
-		textInput.addEventListener( "textChange", component.textChangeHandler );
+		// add colour preview
+		var preview:MovieClip = component.attachMovie( "colourPreview", "preview", component.getNextHighestDepth() );
+		preview._width = 10;
+		preview._height = field._height - 4;
+		preview._x = component.RLabel._x - preview._width - 10;
+		preview._y = fieldTop + 2;
 		
+		/**
+		 * Colorize movieclip using color multiply method rather than flat color
+		 * 
+		 * Courtesy of user "bummzack" at http://gamedev.stackexchange.com/a/51087
+		 * 
+		 * @param	color Color to apply
+		 */	
+		component.updatePreview = function ( color:Number ) {
+			// get individual color components 0-1 range
+			var r:Number = ((color >> 16) & 0xff) / 255;
+			var g:Number = ((color >> 8) & 0xff) / 255;
+			var b:Number = ((color) & 0xff) / 255;
+
+			// get the color transform and update its color multipliers
+			var ct:ColorTransform = this.preview.box.transform.colorTransform;
+			ct.redMultiplier = r;
+			ct.greenMultiplier = g;
+			ct.blueMultiplier = b;
+
+			// assign transform back to sprite/movieclip
+			this.preview.box.transform.colorTransform = ct;
+		}	
+
 		// initial load of value
 		component.loader();
-		
+
 		controlCursor.y += component._height + 2;
 		
 		return component;
 	}
 
-	
 	private function clearFocus( event:Object ) : Void {
 		
 		event.target.focused = false;

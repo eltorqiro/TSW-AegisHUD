@@ -45,12 +45,6 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 			
 			layout: [
 				
-				{	id: "visitForumsButton",
-					type: "button",
-					label: "Visit forum thread",
-					tooltip: "Click to open the in-game browser and visit the forum thread for the addon."
-				},
-				
 				{	type: "heading",
 					text: "General"
 				},
@@ -64,6 +58,18 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					saver: componentSaveHandler
 				},
 
+				{ type: "block"
+				},
+				
+				{	id: "hud.abilityBarIntegration.enable",
+					type: "checkbox",
+					label: "Integrate and lock position to Ability Bar",
+					tooltip: "Integrates and locks the position of the HUD to the Ability Bar.",
+					data: { pref: "hud.abilityBarIntegration.enable" },
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
+				},
+				
 				{ type: "block"
 				},
 				
@@ -100,7 +106,7 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					loader: componentLoadHandler,
 					saver: componentSaveHandler
 				},
-				
+
 				{	type: "heading",
 					text: "AutoSwap"
 				},
@@ -460,7 +466,7 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 				},
 				
 				{	type: "heading",
-					text: "Bar Backgrounds"
+					text: "Background Bars"
 				},
 				
 				{	id: "hud.bar.background.type",
@@ -512,21 +518,108 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 				},
 				
 				{	id: "hud.tints.aegis.psychic",
-					type: "textInput",
+					type: "colourRGB",
 					label: "Psychic",
-					maxChars: 6,
 					data: { pref: "hud.tints.aegis.psychic" },
 					loader: componentLoadHandler,
 					saver: componentSaveHandler
 				},
 				
 				{	id: "hud.tints.aegis.cybernetic",
-					type: "textInput",
+					type: "colourRGB",
 					label: "Cybernetic",
-					maxChars: 6
+					data: { pref: "hud.tints.aegis.cybernetic" },
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
+				},
+
+				{	id: "hud.tints.aegis.demonic",
+					type: "colourRGB",
+					label: "Demonic",
+					data: { pref: "hud.tints.aegis.demonic" },
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
+				},
+
+				{	type: "block"
+				},
+				
+				{	id: "hud.tints.aegis.empty",
+					type: "colourRGB",
+					label: "Empty Slot",
+					data: { pref: "hud.tints.aegis.empty" },
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
+				},
+				
+				{	type: "block"
+				},
+				
+				{	id: "hud.tints.selectedAegis.background",
+					type: "colourRGB",
+					label: "Selection Box",
+					data: { pref: "hud.tints.selectedAegis.background" },
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
+				},
+				
+				{	id: "hud.tints.bar.background",
+					type: "colourRGB",
+					label: "Background Bar",
+					data: { pref: "hud.tints.bar.background" },
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
+				},
+				
+				{	type: "block"
+				},
+				
+				{	id: "hud.tints.xp.notFull",
+					type: "colourRGB",
+					label: "Analysis (0-99)",
+					data: { pref: "hud.tints.xp.notFull" },
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
+				},
+				
+				{	id: "hud.tints.xp.full",
+					type: "colourRGB",
+					label: "Analysis (100)",
+					data: { pref: "hud.tints.xp.full" },
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
+				},
+				
+				{	type: "block"
+				},
+				
+				{	type: "button",
+					text: "Reset tints to defaults",
+					onClick: Delegate.create( this, resetTintDefaults )
+				},
+				
+				{	type: "heading",
+					text: "Actions"
+				},
+				
+				{	type: "button",
+					text: "Visit forum thread",
+					tooltip: "Click to open the in-game browser and visit the forum thread for the addon.",
+					onClick: function() {
+						DistributedValue.SetDValue("web_browser", false);
+						DistributedValue.SetDValue("WebBrowserStartURL", "https://forums.thesecretworld.com/showthread.php?80429-MOD-ElTorqiro_AegisHUD");
+						DistributedValue.SetDValue("web_browser", true);
+					}
+				},
+
+				{	type: "block"
+				},
+				
+				{	type: "button",
+					text: "Reset all to defaults",
+					onClick: Delegate.create( this, resetAllDefaults )
 				}
 
-				
 			]
 
 		};
@@ -568,6 +661,99 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 			UtilsBase.PrintChatText( "pref changed handler: " + name + " = " + newValue );
 			
 			m_Panel[ componentName ].loader();
+		}
+		
+	}
+
+	/**
+	 * resets most settings to defaults, with a few exceptions
+	 */
+	private function resetAllDefaults() : Void {
+
+		var prefs:Array = [
+		
+			"widget.position",
+			"widget.scale",
+			
+			"hud.enabled",
+
+			"autoSwap.enabled",
+			
+			"autoSwap.type.primary",
+			"autoSwap.type.secondary",
+			"autoSwap.type.shield",
+
+			"defaultUI.disruptorSelectors.hide",
+			"defaultUI.shieldSelector.hide",
+
+			"hud.hide.whenAutoswapEnabled",
+			"hud.hide.whenNotInCombat",
+			
+			"hud.scale",
+			
+			"hud.icons.type",
+			
+			"hud.abilityBarIntegration.enable",
+
+			"hud.layout.type",
+			
+			"hud.bars.primary.position",
+			"hud.bars.primary.itemSlotPlacement",
+			
+			"hud.bars.secondary.position",
+			"hud.bars.secondary.itemSlotPlacement",
+
+			"hud.bars.shield.position",
+			"hud.bars.shield.itemSlotPlacement",
+
+			"hud.bar.background.type",
+			"hud.bar.background.tint",
+			"hud.bar.background.neon",
+			"hud.bar.background.transparency",
+
+			"hud.slots.item.tint",
+			"hud.slots.item.neon",
+
+			"hud.slots.aegis.xp.enabled",
+			"hud.slots.aegis.xp.hideWhenFull",
+			
+			"hud.tooltips.enabled",
+			"hud.tooltips.suppressInCombat",
+			
+			"hud.slots.aegis.tint",
+			"hud.slots.selectedAegis.neon",
+			"hud.slots.selectedAegis.background.transparency",
+			"hud.slots.selectedAegis.background.tint",
+			"hud.slots.selectedAegis.background.neon",
+
+			"hud.click.multiSelectType.leftButton",
+			"hud.click.multiSelectType.rightButton",
+			"hud.click.multiSelectType.shiftLeftButton",
+			
+			"hotkeys.enabled",
+			"hotkeys.lockoutWhenHudDisabled",
+			"hotkeys.multiSelectType.primary",
+			"hotkeys.multiSelectType.secondary"
+		];
+		
+		for ( var s:String in prefs ) {
+			App.prefs.reset( prefs[s] );
+		}
+		
+		resetTintDefaults();
+	}
+	
+	/**
+	 * resets all tings to default values
+	 */
+	private function resetTintDefaults() : Void {
+		
+		for ( var s:String in App.prefs.list ) {
+			
+			if ( s.substr( 0, 10 ) == "hud.tints." ) {
+				App.prefs.reset( s );
+			}
+			
 		}
 		
 	}

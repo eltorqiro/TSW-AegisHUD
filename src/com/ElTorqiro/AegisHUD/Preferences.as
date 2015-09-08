@@ -153,7 +153,7 @@ class com.ElTorqiro.AegisHUD.Preferences {
 	 * @param	name
 	 */
 	public function reset( name:String ) : Void {
-		prefs[name].value = prefs[name].defaultValue;
+		setVal( name, prefs[name].defaultValue );
 	}
 	
 	/**
@@ -355,5 +355,9 @@ class com.ElTorqiro.AegisHUD.Preferences {
 	 * properties
 	 */
 	
+	public function get list() : Object {
+		return prefs;
+	}
+	 
 	public var SignalValueChanged:Signal;
 }
