@@ -111,7 +111,7 @@ class com.ElTorqiro.AegisHUD.App {
 		showConfigWindowMonitor.SignalChanged.Connect( manageConfigWindow );
 
 		// listen for pref changes and route to appropriate behaviour
-		prefs.SignalValueChanged.Connect( prefChanged );
+		prefs.SignalValueChanged.Connect( prefChangeHandler );
 		
 	}
 	
@@ -131,7 +131,7 @@ class com.ElTorqiro.AegisHUD.App {
 		showConfigWindowMonitor = null;
 		
 		// stop listening for pref value changes
-		prefs.SignalValueChanged.Disconnect( prefChanged );
+		prefs.SignalValueChanged.Disconnect( prefChangeHandler );
 		
 		// update playfield hud enabled memory
 		var playfield:Number = Character.GetClientCharacter().GetPlayfieldID();
@@ -256,7 +256,7 @@ class com.ElTorqiro.AegisHUD.App {
 	 * @param	newValue
 	 * @param	oldValue
 	 */
-	private static function prefChanged( name:String, newValue, oldValue ) : Void {
+	private static function prefChangeHandler( name:String, newValue, oldValue ) : Void {
 		
 		switch ( name ) {
 			

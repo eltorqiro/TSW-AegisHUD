@@ -67,26 +67,20 @@ class com.ElTorqiro.AegisHUD.HUD.Bar extends UIComponent {
 		m_Background._width = lastSlot._x + lastSlot._width + 3;
 
 		var showBackground:Number = App.prefs.getVal( "hud.bar.background.type" );
-		
-		if ( showBackground == Const.e_BarTypeNone ) {
-			m_Background._visible = false;
-		}
-		
-		else {
-			switch( showBackground ) {
-				case Const.e_BarTypeThin:
-					m_Background._y = 12;
-					m_Background._height = 6;
-				break;
 
-				case Const.e_BarTypeFull:
-					m_Background._y = 0;
-					m_Background._height = 30;
-				break;
-			}
-			
-			m_Background._visible = true;
+		switch( showBackground ) {
+			case Const.e_BarTypeThin:
+				m_Background._y = 12;
+				m_Background._height = 6;
+			break;
+
+			case Const.e_BarTypeFull:
+				m_Background._y = 0;
+				m_Background._height = 30;
+			break;
 		}
+
+		m_Background._visible = showBackground != Const.e_BarTypeNone;
 		
 	}
 	

@@ -11,6 +11,8 @@ import com.GameInterface.Tooltip.TooltipDataProvider;
 
 import mx.transitions.easing.Bounce;
 
+import flash.geom.ColorTransform;
+
 import gfx.core.UIComponent;
 import flash.geom.Point;
 
@@ -441,6 +443,30 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		bars[ groupID ].slots[ slotID ].loadXP();
 	}
 
+	/**
+	 * Colorize movieclip using color multiply method rather than flat color
+	 * 
+	 * Courtesy of user "bummzack" at http://gamedev.stackexchange.com/a/51087
+	 * 
+	 * @param	object The object to colorizee
+	 * @param	color Color to apply
+	 */	
+	public static function colorize( object:MovieClip, color:Number) : Void {
+		// get individual color components 0-1 range
+		var r:Number = ((color >> 16) & 0xff) / 255;
+		var g:Number = ((color >> 8) & 0xff) / 255;
+		var b:Number = ((color) & 0xff) / 255;
+
+		// get the color transform and update its color multipliers
+		var ct:ColorTransform = object.transform.colorTransform;
+		ct.redMultiplier = r;
+		ct.greenMultiplier = g;
+		ct.blueMultiplier = b;
+
+		// assign transform back to sprite/movieclip
+		object.transform.colorTransform = ct;
+	}	
+	
 	/*
 	 * internal variables
 	 */

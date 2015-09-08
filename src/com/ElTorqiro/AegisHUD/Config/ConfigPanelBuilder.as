@@ -400,7 +400,10 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 		component.setValue = function ( value ) {
 			
 			// only set if there is a different value
-			if ( value == this.value ) return;
+			if ( value == this.value ) {
+				this.updatePreview( value );
+				return;
+			}
 
 			this.value = value;
 			

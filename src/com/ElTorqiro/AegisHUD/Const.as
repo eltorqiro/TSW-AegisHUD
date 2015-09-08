@@ -100,4 +100,6 @@ class com.ElTorqiro.AegisHUD.Const {
 	public static var e_LayoutDefault:Number = 1;
 	public static var e_LayoutCustom:Number = 2;
 	
+	// hud "no tint" tint
+	public static var e_TintNone:Number = 0xffffff;
 }

@@ -18,6 +18,8 @@ import com.GameInterface.Tooltip.TooltipDataProvider;
 import com.GameInterface.Tooltip.TooltipData;
 import com.GameInterface.Game.Character;
 
+import com.ElTorqiro.AegisHUD.HUD.HUD;
+
 
 /**
  * 
@@ -49,23 +51,47 @@ class com.ElTorqiro.AegisHUD.HUD.Slot extends UIComponent {
 	}
 	
 	private function draw() : Void {
+
+		var tint:Number = App.prefs.getVal( "hud.tints.aegis." + (slot.item ? slot.aegisTypeName : "empty") );
 		
 		// if slot is selected, highlight it
-		if ( slot == group.selectedSlot ) {
+		if ( selected ) {
 			
-			var tint:Number = App.prefs.getVal( "hud.tints.aegis." + (slot.item ? slot.aegisTypeName : "empty") );
-
 			// background box
 			var backgroundTransparency:Number = App.prefs.getVal( "hud.slots.selectedAegis.background.transparency" );
 			
 			if ( backgroundTransparency > 0 ) {
-				m_Background.filters = App.prefs.getVal( "hud.slots.selectedAegis.background.neon" ) ? [ new GlowFilter( tint, 0.8, 6, 6, 2, 3, false, false ) ] : [];
-				m_Background._visible = true;
+
+				m_Background.filters = [];
+				
+				// glow effect
+				if ( App.prefs.getVal( "hud.slots.selectedAegis.background.neon" ) ) {
+					m_Background.gotoAndStop( "black" );
+					m_Background.filters =  [ new GlowFilter( tint, 0.8, 8, 8, 3, 3, false, false ) ]; // [ new GlowFilter( tint, 0.8, 6, 6, 2, 3, false, false ) ];
+				}
+				
+				else {
+					m_Background.gotoAndStop( "white" );
+				}
+				
+				// tint effect
+				if ( App.prefs.getVal( "hud.slots.selectedAegis.background.tint" ) ) {
+					HUD.colorize( m_Background, tint );
+				}
+				
+				else if ( App.prefs.getVal( "hud.slots.selectedAegis.background.neon" ) ) {
+					HUD.colorize( m_Background, Const.e_TintNone );
+				}
+				
+				else {
+					HUD.colorize( m_Background, App.prefs.getVal( "hud.tints.selectedAegis.background" ) );
+				}
+				
+				// alpha setting
+				m_Background._alpha = backgroundTransparency;
 			}
 			
-			else {
-				m_Background._visible = false;
-			}
+			m_Background._visible = backgroundTransparency > 0;
 			
 			// neon highlight of icon
 			m_Icon.filters = App.prefs.getVal( "hud.slots.selectedAegis.neon" ) ? [ new GlowFilter( tint, 0.8, 6, 6, 2, 3, false, false ) ] : [];
@@ -78,19 +104,26 @@ class com.ElTorqiro.AegisHUD.HUD.Slot extends UIComponent {
 			
 		}
 		
+		// common visual features
+		HUD.colorize( m_Icon.m_Item, App.prefs.getVal( "hud.slots.aegis.tint" ) ? tint : Const.e_TintNone );
+		
 	}
 
 	private function itemSlotDraw() : Void {
 		
 		// neon glow item based on selected aegis in group
-		if ( group.selectedSlot ) {
+		if ( group.selectedSlot && group.selectedSlot.item ) {
 			
 			var tint:Number = App.prefs.getVal( "hud.tints.aegis." + group.selectedSlot.aegisTypeName );
-			m_Icon.filters = [ new GlowFilter( tint, 0.8, 6, 6, 2, 3, false, false ) ];
+			m_Icon.filters = App.prefs.getVal( "hud.slots.item.neon" ) ? [ new GlowFilter( tint, 0.8, 6, 6, 2, 3, false, false ) ] : [];
+			
+			HUD.colorize( m_Icon.m_Item, App.prefs.getVal( "hud.slots.item.tint" ) ? tint : Const.e_TintNone );
 		}
 		
+		// otherwise clear highlight markers
 		else {
 			m_Icon.filters = [];
+			HUD.colorize( m_Icon.m_Item, Const.e_TintNone );
 		}
 		
 	}
@@ -99,6 +132,8 @@ class com.ElTorqiro.AegisHUD.HUD.Slot extends UIComponent {
 		
 		// add right click handling
 		this["onPressAux"] = onPress;
+		
+		App.prefs.SignalValueChanged.Connect( prefChangeHandler, this );
 	}
 
 	private function onPress( controllerIdx:Number, keyboardOrMouse:Number, button:Number ) : Void {
@@ -162,7 +197,9 @@ class com.ElTorqiro.AegisHUD.HUD.Slot extends UIComponent {
 	 */
 	public function loadXP() : Void {
 
-		if ( slot.xpRaw == undefined ) {
+		if ( slot.xpRaw == undefined || !App.prefs.getVal( "hud.slots.aegis.xp.enabled" )
+				|| ( slot.xpPercent >= 100 && App.prefs.getVal( "hud.slots.aegis.xp.hideWhenFull" ) )
+			) {
 			t_XP._visible = false;
 		}
 		
@@ -239,6 +276,52 @@ class com.ElTorqiro.AegisHUD.HUD.Slot extends UIComponent {
 		tooltip = null;
     }
 
+	/**
+	 * handles updating slot visuals based on pref changes
+	 * 
+	 * @param	pref
+	 * @param	newValue
+	 * @param	oldValue
+	 */
+	private function prefChangeHandler( pref:String, newValue, oldValue ) : Void {
+		
+		switch ( pref ) {
+			
+			case "hud.icons.type":
+				loadIcon();
+			break;
+			
+			case "hud.slots.item.tint":
+			case "hud.slots.item.neon":
+			case "hud.slots.aegis.tint":
+			case "hud.tints.aegis.psychic":
+			case "hud.tints.aegis.cybernetic":
+			case "hud.tints.aegis.demonic":
+			case "hud.tints.aegis.empty":
+			case "hud.tints.selectedAegis.background":
+			case "hud.tints.bar.background":
+				invalidate();
+			break;
+			
+			case "hud.slots.selectedAegis.neon":
+			case "hud.slots.selectedAegis.background.transparency":
+			case "hud.slots.selectedAegis.background.tint":
+			case "hud.slots.selectedAegis.background.neon":
+				if ( selected ) {
+					invalidate();
+				}
+			break;
+				
+			case "hud.slots.aegis.xp.enabled":
+			case "hud.slots.aegis.xp.hideWhenFull":
+			case "hud.tints.xp.notFull":
+			case "hud.tints.xp.full":
+				loadXP();
+			break;
+			
+		}
+		
+	}
 	
 	/**
 	 * internal variables
@@ -271,5 +354,7 @@ class com.ElTorqiro.AegisHUD.HUD.Slot extends UIComponent {
 			m_Icon.m_Watermark.attachMovie( value, "m_Watermark", 1 );
 		}
 	}
+	
+	public function get selected() : Boolean { return slot == group.selectedSlot; }
 	
 }

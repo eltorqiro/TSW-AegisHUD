@@ -359,7 +359,9 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					type: "checkbox",
 					label: "Tint icon per active Aegis type",
 					tooltip: "Tint item slot icons per their currently selected Aegis type.",
-					pref: "hud.slots.item.tint"
+					data: { pref: "hud.slots.item.tint" },
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
 				},
 				
 				{	type: "heading",
