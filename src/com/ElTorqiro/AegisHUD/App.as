@@ -1,6 +1,8 @@
 import com.Utils.Archive;
 import mx.utils.Delegate;
 
+import com.Utils.GlobalSignal;
+
 import com.Utils.Signal;
 import GUIFramework.ClipNode;
 import GUIFramework.SFClipLoader;
@@ -52,6 +54,9 @@ class com.ElTorqiro.AegisHUD.App {
 		widgetClip = SFClipLoader.LoadClip( Const.AppID + "\\Widget.swf", Const.AppID + "_Widget", false, _global.Enums.ViewLayer.e_ViewLayerTop, 2, [] );
 		widgetClip.SignalLoaded.Connect( widgetLoaded );
 	
+		// listen for GUI edit mode signal, to retain state so the HUD can use it even if the HUD is not enabled when the signal is emitted
+		GlobalSignal.SignalSetGUIEditMode.Connect( guiEditModeChangeHandler );
+		
 	}
 
 	/**
@@ -60,6 +65,8 @@ class com.ElTorqiro.AegisHUD.App {
 	public static function stop() : Void {
 		
 		debug( "App: stop" );
+		
+		GlobalSignal.SignalSetGUIEditMode.Disconnect( guiEditModeChangeHandler );
 		
 		// unload widget
 		SFClipLoader.UnloadClip( Const.AppID + "_Widget" );
@@ -186,6 +193,9 @@ class com.ElTorqiro.AegisHUD.App {
 		prefs.add( "autoSwap.type.secondary", Const.e_AutoSwapOffensiveShield );
 		prefs.add( "autoSwap.type.shield", Const.e_AutoSwapOffensiveDisruptor );
 
+		prefs.add( "autoSwap.match.friendly.self", true );
+		prefs.add( "autoSwap.match.enemy.players", false );
+		
 		prefs.add( "defaultUI.disruptorSelectors.hide", true );
 		prefs.add( "defaultUI.shieldSelector.hide", true );
 
@@ -242,8 +252,8 @@ class com.ElTorqiro.AegisHUD.App {
 		prefs.add( "hud.tints.aegis.cybernetic",		0x00d0ff );
 		prefs.add( "hud.tints.aegis.demonic",			0xff3300 );
 		prefs.add( "hud.tints.aegis.empty",				0x999999 );
-		prefs.add( "hud.tints.selectedAegis.background",0xe8e8e8 );
-		prefs.add( "hud.tints.bar.background",			0x000000 );
+		prefs.add( "hud.tints.selectedAegis.background",0xc0c0c0 );
+		prefs.add( "hud.tints.bar.background",			0x484848 );
 		prefs.add( "hud.tints.xp.notFull",				0xf0f0f0 );	/* 0x00E5A3 */
 		prefs.add( "hud.tints.xp.full",					0x66ff66 );	/* // 0x4EE500 // 0x19FDFF */
 		
@@ -267,6 +277,11 @@ class com.ElTorqiro.AegisHUD.App {
 			
 			case "autoSwap.enabled":
 				manageAutoSwapper();
+				manageHud();
+			break;
+			
+		case "hud.hide.whenAutoswapEnabled":
+				manageHud();
 			break;
 			
 			case "defaultUI.shieldSelector.hide":
@@ -368,7 +383,9 @@ class com.ElTorqiro.AegisHUD.App {
 	 */
 	private static function manageHud() : Void {
 		
-		if ( active && prefs.getVal( "hud.enabled" ) && AegisServer.aegisSystemUnlocked ) {
+		if ( active && prefs.getVal( "hud.enabled" ) && AegisServer.aegisSystemUnlocked 
+			&& ( prefs.getVal( "hud.hide.whenAutoswapEnabled" ) ? !prefs.getVal( "autoSwap.enabled" ) : true )
+		) {
 			
 			if ( !hudClip ) {
 				debug("App: loading hud");
@@ -434,6 +451,15 @@ class com.ElTorqiro.AegisHUD.App {
 		
 		prefs.setVal( "app.installed", true );
 	}
+
+	/**
+	 * handles gui edit mode signal, to keep a constant track of edit mode state
+	 * 
+	 * @param	value
+	 */
+	private static function guiEditModeChangeHandler( edit:Boolean ) : Void {
+		_guiEditMode = edit;
+	}
 	
 	/**
 	 * prints a message to the chat window if debug is enabled
@@ -489,4 +515,6 @@ class com.ElTorqiro.AegisHUD.App {
 		return Boolean(prefs.getVal( "autoSwap.enabled" ));
 	}
 	
+	private static var _guiEditMode:Boolean;
+	public static function get guiEditMode() : Boolean { return _guiEditMode; }
 }

@@ -12,7 +12,7 @@ class com.ElTorqiro.AegisHUD.Const {
 	public static var AppID:String = "ElTorqiro_AegisHUD";
 	public static var AppName:String = "AegisHUD";
 	public static var AppAuthor:String = "ElTorqiro";
-	public static var AppVersion:String = "4.0.0 alpha 2";
+	public static var AppVersion:String = "4.0.0 alpha 3";
 	
 	public static var HudClipPath:String = "ElTorqiro_AegisHUD\\HUD.swf";
 	public static var WidgetClipPath:String = "ElTorqiro_AegisHUD\\Widget.swf";
@@ -95,6 +95,11 @@ class com.ElTorqiro.AegisHUD.Const {
 	public static var e_AutoSwapOffensiveShield:Number = 1;
 	public static var e_AutoSwapDefensiveShield:Number = 2;
 	public static var e_AutoSwapOffensiveDisruptor:Number = 3;
+
+	// autoswap allowable match character types
+	public static var e_AutoSwapTargetTypePlayer:Number = 1;
+	public static var e_AutoSwapTargetTypeNPC:Number = 2;
+	public static var e_AutoSwapTargetTypeSelf:Number = 3;
 	
 	// hud layout types, internally used to track which function did the last layout
 	public static var e_LayoutDefault:Number = 1;

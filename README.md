@@ -21,6 +21,8 @@ You can also toggle the configuration window with the option ElTorqiro_AegisHUD_
 Known Issues and Gotchas
 ------------------------
 * On some rare occasions, when using bulk Aegis XP cannisters the "XP gain" trigger event is not fired by the game API.  This leaves the XP display on the AegisHUD on the old value.  Re-equipping the affected controller, doing a /reloadui, or waiting for a regular XP gain event will fetch the new value.
+
+* If you change shields in a PvP zone, the game treats it like all other gear changes and resets your Equal Footing buff.  This will drop your health down to unbuffed levels (e.g. 13k down to 3k).  If you have AutoSwap enabled, it will try to swap shields every time you're out of combat, which will reset the buff and you will die very quickly as a result :)  Since there is no need for Aegis mechanics in PvP zones, the simplest thing to do is to toggle the AegisHUD off (or at least disable AutoSwap) when you are in a PvP zone to avoid unexpected swaps leaving you "healthless".
    
    
 Installation

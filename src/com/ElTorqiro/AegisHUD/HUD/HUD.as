@@ -18,8 +18,6 @@ import flash.geom.Point;
 
 import com.ElTorqiro.AegisHUD.App;
 import com.ElTorqiro.AegisHUD.Server.AegisServer;
-//import com.ElTorqiro.AegisHUD.Server.AegisServerSlot;
-//import com.ElTorqiro.AegisHUD.HUD.BarSlot;
 import com.ElTorqiro.AegisHUD.Const;
 
 
@@ -40,8 +38,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		
 		// add bars
 		bars = {
-			primary: attachMovie( "bar", "primary", getNextHighestDepth(), { group: AegisServer.groups["primary"], _x: 100, _y: 200 } ),
-			secondary: attachMovie( "bar", "secondary", getNextHighestDepth(), { group: AegisServer.groups["secondary"], _x: 350, _y: 200 } )
+			primary: attachMovie( "bar", "primary", getNextHighestDepth(), { group: AegisServer.groups["primary"] /*, visible: false*/ } ),
+			secondary: attachMovie( "bar", "secondary", getNextHighestDepth(), { group: AegisServer.groups["secondary"] } )
 		};
 		
 		for ( var s:String in bars ) {
@@ -51,7 +49,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		}
 		
 		if ( AegisServer.shieldSystemUnlocked ) {
-			bars.shield = attachMovie( "bar", "shield", getNextHighestDepth(), { group: AegisServer.groups["shield"], _x: 600, _y: 200 } );
+			bars.shield = attachMovie( "bar", "shield", getNextHighestDepth(), { group: AegisServer.groups["shield"] } );
 			
 			bars.shield.slots.item.watermark = "watermark-shield";
 			bars.shield.slots.aegis1.watermark = "watermark-shield-psychic";
@@ -73,8 +71,11 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		
 		// perform initial layout
 		layout();
+
+		// set up listener for combat state changes
+		Character.GetClientCharacter().SignalToggleCombat.Connect( manageVisibility, this );
+		manageVisibility();
 		
-		visible = true;
 	}
 	
 	/**
@@ -83,17 +84,9 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	private function configUI() : Void {
 		App.debug( "HUD: HUD class configUI" );
 		
-		// set up listeners for tooltips on slots
-		for ( var s:String in bars ) {
-			
-			for ( var i:String in bars[s].slots ) {
-				
-				var slot:Slot = bars[s].slots[i];
-					slot.addEventListener( "mouseOver", this, "showSlotTooltip" );
-					slot.addEventListener( "mouseOut", this, "closeTooltip" );
-			}
-		}
-		
+		// listen for pref changes
+		App.prefs.SignalValueChanged.Connect( prefChangeHandler, this );
+
 	}
 	
 	/**
@@ -102,8 +95,6 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	public function dispose() : Void {
 		
 		App.debug( "HUD: HUD class dispose" );
-		
-		closeTooltip();
 		
 		// release passivebar open/close event
 		hookPassiveBarOpenClose( false );
@@ -257,29 +248,44 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		
 		var tweenTime:Number = initialLayoutDone && animate ? 0.8 : 0;
 
-		var barsX:Object = { };
+		var padding:Number = 10;
 		
-		barsX[ "primary" ] = centre.x - bars[ "primary" ]._width - 3;
-		barsX[ "secondary" ] = centre.x + 6;
+		var offsets:Object = { };
 		
-		// adjust for shield bar positioning
+		var totalWidth:Number = 0;
+		offsets[ "primary" ] = totalWidth;
+		
+		totalWidth += bars[ "primary" ]._width + padding;
+		offsets[ "secondary" ] = totalWidth;
+
+		totalWidth += bars[ "secondary" ]._width;
+		
 		if ( bars[ "shield" ] ) {
-			var leftOffset:Number = ( bars[ "shield" ]._width + 18 ) / 2;
+			totalWidth += padding * 2;
+			offsets[ "shield" ] = totalWidth;
 			
-			barsX[ "primary" ] -= leftOffset;
-			barsX[ "secondary" ] -= leftOffset;
-			
-			barsX[ "shield" ] = barsX[ "secondary" ] + bars[ "secondary" ]._width + 18;
+			totalWidth += bars[ "shield" ]._width;
 		}
 
+		var left:Number = centre.x - totalWidth / 2;
+		
 		for ( var s:String in bars ) {
 			
-			bars[s].tweenTo( tweenTime, {
-					_x: barsX[s],
-					_y: centre.y
-				},
-				Bounce.easeOut
-			);
+			if ( tweenTime > 0 ) {
+				
+				bars[s].tweenTo( tweenTime, {
+						_x: left + offsets[s],
+						_y: centre.y
+					},
+					Bounce.easeOut
+				);
+			}
+			
+			else {
+				bars[s]._x = left + offsets[s];
+				bars[s]._y = centre.y;
+				
+			}
 
 		}
 		
@@ -295,44 +301,6 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		}
 
 	}
-
-	/**
-	 * opens aegis item tooltip
-	 * 
-	 * @param	slot
-	 */
-    private function showSlotTooltip( event:Object ) : Void {
-
-		return;
-		
-		closeTooltip();
-		
-		var slot:Slot = event.target;
-		
-		// don't show anything if no item in slot or tooltip setting is disabled
-		if ( !slot.slot.item || !App.prefs.getVal( "hud.tooltips.enabled" ) || ( App.prefs.getVal( "hud.tooltips.suppressInCombat" ) && Character.GetClientCharacter().IsInCombat() ) ) return;
-
-		var tooltipData:TooltipData = TooltipDataProvider.GetInventoryItemTooltip( slot.slot.inventoryID, slot.slot.position );
-		
-		// add raw xp value
-		if ( slot.slot.item.m_AegisItemType ) {
-			tooltipData.AddDescription( 'Research Data: <font color="#ffff00">' + slot.slot.xpRaw + '</font>' );
-		}
-		
-		tooltip = TooltipManager.GetInstance().ShowTooltip( slot, TooltipInterface.e_OrientationVertical, -1, tooltipData );
-		
-    }
-
-	/**
-	 * close and destroy any open tooltip
-	 */
-    private function closeTooltip():Void {
-
-		return;
-		
-		tooltip.Close();
-		tooltip = null;
-    }
 
 	/**
 	 * hooks into passivebar open/close for moving the hud if it is integrated with passivebar
@@ -443,6 +411,53 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		bars[ groupID ].slots[ slotID ].loadXP();
 	}
 
+	/**
+	 * handles visibility of HUD per preferences when prefs or state
+	 */
+	private function manageVisibility() : Void {
+		visible = initialLayoutDone && ( App.prefs.getVal( "hud.hide.whenNotInCombat" ) ? Character.GetClientCharacter().IsThreatened() : true );
+	}
+	
+	/**
+	 * handles updates based on pref changes
+	 * 
+	 * @param	pref
+	 * @param	newValue
+	 * @param	oldValue
+	 */
+	private function prefChangeHandler( pref:String, newValue, oldValue ) : Void {
+		
+		switch ( pref ) {
+			
+			case "hud.hide.whenNotInCombat":
+				manageVisibility();
+			break;
+
+			case "hud.abilityBarIntegration.enable":
+				if( !newValue ) {
+					App.prefs.setVal( "hud.layout.type", Const.e_LayoutCustom );
+				}
+			
+				layout();
+			break;
+			
+			case "hud.bars.primary.itemSlotPlacement":
+			case "hud.bars.secondary.itemSlotPlacement":
+			case "hud.bars.shield.itemSlotPlacement":
+			case "hud.bar.background.type":
+			
+				for ( var s:String in bars ) {
+					bars[s].layout();
+				}
+				
+				layout();
+				
+			break;
+			
+		}
+		
+	}
+	
 	/**
 	 * Colorize movieclip using color multiply method rather than flat color
 	 * 

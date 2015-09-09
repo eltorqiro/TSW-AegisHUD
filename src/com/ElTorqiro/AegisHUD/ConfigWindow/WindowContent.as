@@ -63,8 +63,8 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 				
 				{	id: "hud.abilityBarIntegration.enable",
 					type: "checkbox",
-					label: "Integrate and lock position to Ability Bar",
-					tooltip: "Integrates and locks the position of the HUD to the Ability Bar.",
+					label: "Integrate and lock position with Ability Bar",
+					tooltip: "Integrates and locks the position of the HUD with the Ability Bar.",
 					data: { pref: "hud.abilityBarIntegration.enable" },
 					loader: componentLoadHandler,
 					saver: componentSaveHandler
@@ -178,6 +178,27 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					saver: componentSaveHandler
 				},
 				
+				{	type: "block"
+				},
+				
+				{	id: "autoSwap.match.friendly.self",
+					type: "checkbox",
+					label: "\"Friendly\" targets include self",
+					tooltip: "Includes your character in the category of \"Friendly\" targets for AutoSwap focusing.",
+					data: { pref: "autoSwap.match.friendly.self" },
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
+				},
+				
+				{	id: "autoSwap.match.enemy.players",
+					type: "checkbox",
+					label: "\"Enemy\" targets include PvP opponents",
+					tooltip: "Includes PvP opponents in the category of \"Enemy\" targets for AutoSwap focusing.",
+					data: { pref: "autoSwap.match.enemy.players" },
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
+				},
+				
 				{	type: "indent", size: "reset"
 				},
 				
@@ -270,31 +291,54 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 				},
 				
 				{	type: "heading",
-					text: "Tooltips"
+					text: "Background Bars"
 				},
 				
-				{	id: "hud.tooltips.enabled",
+				{	id: "hud.bar.background.type",
+					type: "dropdown",
+					label: "Bar Style",
+					tooltip: "The style of the bar background boxes.",
+					data: { pref: "hud.bar.background.type" },
+					list: [
+						{ label: "None", value: Const.e_BarTypeNone },
+						{ label: "Thin Strip", value: Const.e_BarTypeThin },
+						{ label: "Full Box", value: Const.e_BarTypeFull }
+					],
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
+				},
+				
+				{	type: "block"
+				},
+				
+				{	id: "hud.bar.background.transparency",
+					type: "slider",
+					min: 0,
+					max: 100,
+					valueLabelFormat: "%i%%",
+					label: "Bar transparency",
+					tooltip: "The transparency level of the bar backgrounds.  A value of zero effectively disables the background box.",
+					data: { pref: "hud.bar.background.transparency" },
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
+				},
+				
+				{	id: "hud.bar.background.neon",
 					type: "checkbox",
-					label: "Show tooltips",
-					tooltip: "Enables tooltips when hovering the mouse over items in the HUD.",
-					data: { pref: "hud.tooltips.enabled" },
+					label: "Glow bar per Aegis type",
+					tooltip: "Adds a glow to the background bars per their group selected Aegis type.",
+					data: { pref: "hud.bar.background.neon" },
 					loader: componentLoadHandler,
 					saver: componentSaveHandler
 				},
 
-				{ type: "indent"
-				},
-				
-				{	id: "hud.tooltips.suppressInCombat",
+				{	id: "hud.bar.background.tint",
 					type: "checkbox",
-					label: "Suppress in combat",
-					tooltip: "Prevents tooltips from being shown when you are engaged in combat.",
-					data: { pref: "hud.tooltips.suppressInCombat" },
+					label: "Tint bar per Aegis type",
+					tooltip: "Tint bar backgrounds per their group selected Aegis type.",
+					data: { pref: "hud.bar.background.tint" },
 					loader: componentLoadHandler,
 					saver: componentSaveHandler
-				},
-				
-				{ type: "indent", size: "reset"
 				},
 				
 				{	type: "heading",
@@ -382,6 +426,9 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					saver: componentSaveHandler
 				},
 				
+				{	type: "block"
+				},
+				
 				{	id: "hud.slots.aegis.tint",
 					type: "checkbox",
 					label: "Tint icon per Aegis type",
@@ -433,6 +480,18 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 
 				{	type: "block"
 				},
+
+				{	id: "hud.slots.selectedAegis.background.transparency",
+					type: "slider",
+					min: 0,
+					max: 100,
+					valueLabelFormat: "%i%%",
+					label: "Background box transparency",
+					tooltip: "The transparency level of the background box that appears behind selected Aegis slots.  A value of zero disables the background box.",
+					data: { pref: "hud.slots.selectedAegis.background.transparency" },
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
+				},
 				
 				{	id: "hud.slots.selectedAegis.background.neon",
 					type: "checkbox",
@@ -452,67 +511,35 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					saver: componentSaveHandler
 				},
 
-				{	id: "hud.slots.selectedAegis.background.transparency",
-					type: "slider",
-					min: 0,
-					max: 100,
-					valueLabelFormat: "%i%%",
-					label: "Background box transparency",
-					tooltip: "The transparency level of the background box that appears behind selected Aegis slots.  A value of zero disables the background box.",
-					data: { pref: "hud.slots.selectedAegis.background.transparency" },
-					loader: componentLoadHandler,
-					saver: componentSaveHandler
-				},
-				
 				{	type: "column"
 				},
 				
 				{	type: "heading",
-					text: "Background Bars"
+					text: "Tooltips"
 				},
 				
-				{	id: "hud.bar.background.type",
-					type: "dropdown",
-					label: "Bar Style",
-					tooltip: "The style of the bar background boxes.",
-					data: { pref: "hud.bar.background.type" },
-					list: [
-						{ label: "None", value: Const.e_BarTypeNone },
-						{ label: "Thin Strip", value: Const.e_BarTypeThin },
-						{ label: "Full Box", value: Const.e_BarTypeFull }
-					],
-					loader: componentLoadHandler,
-					saver: componentSaveHandler
-				},
-				
-				{	id: "hud.bar.background.neon",
+				{	id: "hud.tooltips.enabled",
 					type: "checkbox",
-					label: "Glow bar per Aegis type",
-					tooltip: "Adds a glow to the background bars per their group selected Aegis type.",
-					data: { pref: "hud.bar.background.neon" },
+					label: "Show tooltips",
+					tooltip: "Enables tooltips when hovering the mouse over items in the HUD.",
+					data: { pref: "hud.tooltips.enabled" },
 					loader: componentLoadHandler,
 					saver: componentSaveHandler
 				},
 
-				{	id: "hud.bar.background.tint",
+				{ type: "indent"
+				},
+				
+				{	id: "hud.tooltips.suppressInCombat",
 					type: "checkbox",
-					label: "Tint bar per Aegis type",
-					tooltip: "Tint bar backgrounds per their group selected Aegis type.",
-					data: { pref: "hud.bar.background.tint" },
+					label: "Suppress in combat",
+					tooltip: "Prevents tooltips from being shown when you are engaged in combat.",
+					data: { pref: "hud.tooltips.suppressInCombat" },
 					loader: componentLoadHandler,
 					saver: componentSaveHandler
 				},
-
-				{	id: "hud.bar.background.transparency",
-					type: "slider",
-					min: 0,
-					max: 100,
-					valueLabelFormat: "%i%%",
-					label: "Bar transparency",
-					tooltip: "The transparency level of the bar backgrounds.  A value of zero effectively disables the background box.",
-					data: { pref: "hud.bar.background.transparency" },
-					loader: componentLoadHandler,
-					saver: componentSaveHandler
+				
+				{ type: "indent", size: "reset"
 				},
 				
 				{	type: "heading",
@@ -659,9 +686,6 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 		
 		// only update controls that are using the pref shortcuts
 		if ( m_Panel[ componentName ].data.pref ) {
-			
-			UtilsBase.PrintChatText( "pref changed handler: " + name + " = " + newValue );
-			
 			m_Panel[ componentName ].loader();
 		}
 		
@@ -685,6 +709,9 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 			"autoSwap.type.secondary",
 			"autoSwap.type.shield",
 
+			"autoSwap.match.friendly.self",
+			"autoSwap.match.enemy.players",
+			
 			"defaultUI.disruptorSelectors.hide",
 			"defaultUI.shieldSelector.hide",
 
@@ -696,8 +723,6 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 			"hud.icons.type",
 			
 			"hud.abilityBarIntegration.enable",
-
-			"hud.layout.type",
 			
 			"hud.bars.primary.position",
 			"hud.bars.primary.itemSlotPlacement",

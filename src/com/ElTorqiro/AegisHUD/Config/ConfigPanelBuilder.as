@@ -357,6 +357,8 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 		
 		component.value = 0;
 		
+		component.fields = [ "r", "g", "b" ];
+		
 		component.textChangeHandler = function( event:Object ) {
 
 			if ( event.target.textField.text.length > 2 ) {
@@ -366,9 +368,8 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 			var fullString:String = "";
 			var pad:Array = [ "00", "0" ];
 			
-			var fields:Array = [ "R", "G", "B" ];
-			for ( var i:Number = 0; i < fields.length; i++ ) {
-				var fieldText:String = this[ fields[i] + "TextInput" ].text;
+			for ( var i:Number = 0; i < this.fields.length; i++ ) {
+				var fieldText:String = this[ this.fields[i] + "TextInput" ].text;
 				if ( pad[ fieldText.length ] ) fullString += pad[ fieldText.length ];
 				fullString += fieldText;
 			}
@@ -414,12 +415,11 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 				colArr.unshift("0");
 			}
 			
-			var fields:Array = [ "R", "G", "B" ];
 			var texts:Array = [ colArr[0] + colArr[1], colArr[2] + colArr[3], colArr[4] + colArr[5] ];
 			
-			for ( var i:Number = 0; i < fields.length; i++ ) {
-				if ( !this[ fields[i] + "TextInput" ].focused ) {
-					this[ fields[i] + "TextInput" ].text = texts[ i ];
+			for ( var i:Number = 0; i < this.fields.length; i++ ) {
+				if ( !this[ this.fields[i] + "TextInput" ].focused ) {
+					this[ this.fields[i] + "TextInput" ].text = texts[ i ];
 				}
 			}
 			
@@ -436,7 +436,6 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 		var fieldWidth:Number = 30;
 		var fieldTop:Number = 1;
 		var fieldLabelWidth:Number = 13;
-		var fields:Array = [ "R", "G", "B" ];
 		
 		var onKillFocus = function( newFocus:Object ) {
 			if ( newFocus != this && newFocus != this._parent ) {
@@ -450,10 +449,10 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 			}
 		};
 		
-		for ( var i:Number = 0; i < fields.length; i++ ) {
+		for ( var i:Number = 0; i < component.fields.length; i++ ) {
 
 			// add "blue" field
-			var field:TextInput = TextInput( component.attachMovie( "textInput", fields[i] + "TextInput", component.getNextHighestDepth() ) );
+			var field:TextInput = TextInput( component.attachMovie( "textInput", component.fields[i] + "TextInput", component.getNextHighestDepth() ) );
 			field[ "component" ] = component;
 			field.maxChars = 2;
 			field.width = fieldWidth;
@@ -469,11 +468,11 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 			field.addEventListener( "focusIn", component, "fieldFocusInHandler" );
 			field.addEventListener( "focusOut", component, "fieldFocusOutHandler" );
 
-			var fieldLabel:MovieClip = component.attachMovie( "label", fields[i] + "Label", component.getNextHighestDepth() );
+			var fieldLabel:MovieClip = component.attachMovie( "colourRGBFieldLabel", component.fields[i] + "Label", component.getNextHighestDepth() );
 			fieldLabel.textField.autoSize = "left";
-			fieldLabel.textField.text = fields[i];
-			fieldLabel.textField._width = 13;
-			fieldLabel._x = field._x - fieldLabel.textField._width;
+			fieldLabel.textField.text = component.fields[i];
+			fieldLabel._x = field._x - fieldLabel.textField.textWidth - 5;
+			fieldLabel._y = field._y + (field._height - fieldLabel._height) / 2; // _height;
 
 		}
 		
@@ -481,7 +480,7 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 		var preview:MovieClip = component.attachMovie( "colourPreview", "preview", component.getNextHighestDepth() );
 		preview._width = 10;
 		preview._height = field._height - 4;
-		preview._x = component.RLabel._x - preview._width - 10;
+		preview._x = component[ component.fields[0] + "Label" ]._x - preview._width - 10;
 		preview._y = fieldTop + 2;
 		
 		/**

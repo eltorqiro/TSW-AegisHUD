@@ -48,7 +48,21 @@ class com.ElTorqiro.AegisHUD.HUD.Slot extends UIComponent {
 		// initial load of item icon into slot
 		loadIcon();
 		loadXP();
+
 	}
+	
+	public function onUnload() : Void {
+		closeTooltip();
+	}
+	
+	private function configUI() : Void {
+		// add right click handling
+		this["onPressAux"] = onPress;
+		
+		// listen for pref changes
+		App.prefs.SignalValueChanged.Connect( prefChangeHandler, this );
+	}
+
 	
 	private function draw() : Void {
 
@@ -128,14 +142,6 @@ class com.ElTorqiro.AegisHUD.HUD.Slot extends UIComponent {
 		
 	}
 	
-	private function configUI() : Void {
-		
-		// add right click handling
-		this["onPressAux"] = onPress;
-		
-		App.prefs.SignalValueChanged.Connect( prefChangeHandler, this );
-	}
-
 	private function onPress( controllerIdx:Number, keyboardOrMouse:Number, button:Number ) : Void {
 		dispatchEvent( { type:"click", shift: Key.isDown(Key.SHIFT), ctrl: Key.isDown(Key.CONTROL), button:button } );
 		
@@ -299,7 +305,6 @@ class com.ElTorqiro.AegisHUD.HUD.Slot extends UIComponent {
 			case "hud.tints.aegis.demonic":
 			case "hud.tints.aegis.empty":
 			case "hud.tints.selectedAegis.background":
-			case "hud.tints.bar.background":
 				invalidate();
 			break;
 			

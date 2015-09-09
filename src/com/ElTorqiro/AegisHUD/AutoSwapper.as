@@ -45,13 +45,15 @@ class com.ElTorqiro.AegisHUD.AutoSwapper {
 	 */
 	private function swapFocusPrefChanged( name:String, newValue, oldValue ) : Void {
 
-		if ( name.substr( 0, 14 ) == "autoSwap.type." && newValue != Const.e_AutoSwapNone ) {
-		
+		if ( (name.substr( 0, 14 ) == "autoSwap.type." && newValue != Const.e_AutoSwapNone ) 
+			|| (name.substr( 0, 15 ) == "autoSwap.match." )
+		) {
 				updateOffensiveDisruptorType( true );
 				updateOffensiveShieldType( true );
 				
 				updateDefensiveShieldType( true );
 		}
+
 	}
 	
 	/**
@@ -120,6 +122,8 @@ class com.ElTorqiro.AegisHUD.AutoSwapper {
 	 * checks the current shield type on the target
 	 */
 	private function updateOffensiveShieldType( force:Boolean ) : Void {
+
+		if ( !App.prefs.getVal( "autoSwap.match.enemy.players" ) && !offensiveTarget.IsNPC() ) return;
 		
 		var targetShieldType:Number;
 		
@@ -143,6 +147,8 @@ class com.ElTorqiro.AegisHUD.AutoSwapper {
 	 * checks the current disruptor type on the offensive target
 	 */
 	private function updateOffensiveDisruptorType( force:Boolean ) : Void {
+
+		if ( !App.prefs.getVal( "autoSwap.match.enemy.players" ) && !offensiveTarget.IsNPC() ) return;
 		
 		// discover the aegis damage type the target deals out
 		var targetDisruptorType:Number = offensiveTarget.GetStat(_global.Enums.Stat.e_ColorCodedDamageType, 2);
@@ -182,6 +188,8 @@ class com.ElTorqiro.AegisHUD.AutoSwapper {
 	 * checks the current shield type on the defensive target
 	 */
 	private function updateDefensiveShieldType( force:Boolean ) : Void {
+		
+		if ( !App.prefs.getVal( "autoSwap.match.friendly.self" ) && defensiveTarget.IsClientChar() ) return;
 		
 		// fetch current shield type
 		var targetShieldType:Number = defensiveTarget.GetStat( _global.Enums.Stat.e_PlayerAegisShieldType, 2 );
