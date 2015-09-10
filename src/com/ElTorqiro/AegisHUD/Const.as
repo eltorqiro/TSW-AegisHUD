@@ -14,6 +14,8 @@ class com.ElTorqiro.AegisHUD.Const {
 	public static var AppAuthor:String = "ElTorqiro";
 	public static var AppVersion:String = "4.0.0 alpha 3";
 	
+	public static var PrefsVersion:Number = 40003;
+	
 	public static var HudClipPath:String = "ElTorqiro_AegisHUD\\HUD.swf";
 	public static var WidgetClipPath:String = "ElTorqiro_AegisHUD\\Widget.swf";
 	public static var ConfigWindowClipPath:String = "ElTorqiro_AegisHUD\\ConfigWindow.swf";

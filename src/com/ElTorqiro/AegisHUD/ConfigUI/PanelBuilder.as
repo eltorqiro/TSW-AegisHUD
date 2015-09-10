@@ -18,9 +18,9 @@ import com.GameInterface.UtilsBase;
  * 
  * 
  */
-class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
+class com.ElTorqiro.AegisHUD.ConfigUI.PanelBuilder {
 
-	public function ConfigPanelBuilder( def:Object, container:MovieClip ) {
+	public function PanelBuilder( def:Object, container:MovieClip ) {
 		
 		build( def, container );
 	
@@ -34,23 +34,21 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 	 */
 	private function build( def:Object, container:MovieClip ) : Void {
 		
-		this.container = container;
+		container.panelHeight = 0;
+		container.panelWidth = 0;
 		
-		height = 0;
-		width = 0;
+		container.indent = 0;
+		container.columnCount = 1;
 		
-		indent = 0;
-		columnCount = 1;
+		container.controlCursor = new Point( 0, 0 );
+		container.columnCursor = new Point( 0, 0 );
 		
-		controlCursor = new Point( 0, 0 );
-		columnCursor = new Point( 0, 0 );
-		
-		columnWidth = def.columnWidth ? def.columnWidth : 0;
-		columnPadding = def.columnPadding ? def.columnPadding : 10;
+		container.columnWidth = def.columnWidth != undefined ? def.columnWidth : 0;
+		container.columnPadding = def.columnPadding != undefined ? def.columnPadding : 10;
 
-		blockSpacing = def.blockSpacing ? def.blockSpacing : 10;
-		indentSpacing = def.indentSpacing ? def.indentSpacing : 10;
-		groupSpacing = def.groupSpacing ? def.groupSpacing : 20;
+		container.blockSpacing = def.blockSpacing != undefined ? def.blockSpacing : 10;
+		container.indentSpacing = def.indentSpacing != undefined ? def.indentSpacing : 10;
+		container.groupSpacing = def.groupSpacing != undefined ? def.groupSpacing : 20;
 
 		for ( var i:Number = 0; i < def.layout.length; i++ ) {
 			
@@ -59,14 +57,15 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 			var id:String = "component_" + (element.id ? element.id : + i);
 		
 			var component:MovieClip = container.createEmptyMovieClip( id, container.getNextHighestDepth() );
+			component.panel = container;
 			component.data = element.data;
 			component.loader = element.loader;
 			component.saver = element.saver;
 			component.onChange = element.onChange;
 			component.onClick = element.onClick;
 
-			component._x = controlCursor.x;
-			component._y = controlCursor.y;
+			component._x = container.controlCursor.x;
+			component._y = container.controlCursor.y;
 			
 			switch ( element.type ) {
 				
@@ -96,40 +95,39 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 				
 				case "indent":
 					if ( element.size == "reset" ) {
-						controlCursor.x -= indent;
-						indent = 0;
+						container.controlCursor.x -= container.indent;
+						container.indent = 0;
 					}
 					
 					else {
-						indent += indentSpacing;
-						controlCursor.x += indentSpacing;
+						container.indent += container.indentSpacing;
+						container.controlCursor.x += container.indentSpacing;
 					}
 					
 				break;
 				
 				case "block":
-					controlCursor.y += blockSpacing;
+					container.controlCursor.y += container.blockSpacing;
 				break;
 				
 				case "column":
-					columnCursor.x += columnWidth + columnPadding;
-					columnCursor.y = 0;
+					container.columnCursor.x += container.columnWidth + container.columnPadding;
+					container.columnCursor.y = 0;
 					
-					controlCursor.x = columnCursor.x;
-					controlCursor.y = columnCursor.y;
+					container.controlCursor.x = container.columnCursor.x;
+					container.controlCursor.y = container.columnCursor.y;
 					
-					indent = 0;
-					columnCount++;
+					container.indent = 0;
+					container.columnCount++;
 				break;
 				
 			}
 			
-			height = controlCursor.y > height ? controlCursor.y : height;
+			container.panelHeight = container.controlCursor.y > container.panelHeight ? container.controlCursor.y : container.panelHeight;
 			
 		}
 		
-		container.panelHeight = height;
-		container.panelWidth = (columnCount * columnWidth) + ((columnCount - 1) * columnPadding);
+		container.panelWidth = (container.columnCount * container.columnWidth) + ((container.columnCount - 1) * container.columnPadding);
 		
 	}
 	
@@ -138,7 +136,7 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 	 * component creators
 	 */
 	
-	private function createHeading( componentContainer:MovieClip, id:String, type:String, text:String ) : MovieClip {
+	private function createHeading( component:MovieClip, id:String, type:String, text:String ) : MovieClip {
 		
 		var headingType:String = type ? type + "-heading" : "heading";
 		var extraSpacing:Number = 0;
@@ -148,27 +146,27 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 		switch ( headingType ) {
 			
 			case "heading":
-				el = componentContainer.attachMovie( "heading", id, componentContainer.getNextHighestDepth() );
-				extraSpacing = groupSpacing;
+				el = component.attachMovie( "heading", id, component.getNextHighestDepth() );
+				extraSpacing = component.panel.groupSpacing;
 				
 			break;
 			
 			case "sub-heading":
-				el = componentContainer.attachMovie( "sub-heading", id, componentContainer.getNextHighestDepth() );
-				extraSpacing = blockSpacing;
+				el = component.attachMovie( "sub-heading", id, component.getNextHighestDepth() );
+				extraSpacing = component.panel.blockSpacing;
 				
 			break;
 			
 		}
 		
 		// add extra spacing
-		if ( controlCursor.y != 0 ) controlCursor.y += extraSpacing;
-		componentContainer._y = controlCursor.y;
+		if ( component.panel.controlCursor.y != 0 ) component.panel.controlCursor.y += extraSpacing;
+		component._y = component.panel.controlCursor.y;
 		
 		el.textField.text = text;
 		el.textField.autoSize = "left";
 
-		controlCursor.y += el._height;
+		component.panel.controlCursor.y += el._height;
 		
 		return el;
 	}
@@ -183,12 +181,12 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 		button.addEventListener( "click", component, "onClick" );
 
 		// offset by a small amount if not at top of column
-		if ( controlCursor.y != 0 ) {
-			controlCursor.y += 3;
+		if ( component.panel.controlCursor.y != 0 ) {
+			component.panel.controlCursor.y += 3;
 			component._y += 3;
 		}
 		
-		controlCursor.y += component._height;
+		component.panel.controlCursor.y += component._height;
 		
 		return component;
 	}
@@ -224,7 +222,7 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 		// initial load of value
 		component.loader();
 		
-		controlCursor.y += checkbox._height - 1;
+		component.panel.controlCursor.y += checkbox._height - 1;
 		
 		return component;
 	}
@@ -273,7 +271,7 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 
 		var dropdownWidth:Number = 150;
 		dropdown.width = dropdownWidth;
-		dropdown._x = columnWidth - indent - dropdownWidth;
+		dropdown._x = component.panel.columnWidth - component.panel.indent - dropdownWidth;
 		
 		dropdown.dropdown.addEventListener( "focusIn", this, "clearFocus" );
 		dropdown.addEventListener( "change", component, "dropdownChangeHandler" );
@@ -281,7 +279,7 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 		// initial load of value
 		component.loader();
 
-		controlCursor.y += dropdown.height + 3;
+		component.panel.controlCursor.y += dropdown.height + 3;
 		
 		return component;
 	}
@@ -329,7 +327,7 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 		slider.liveDragging = true;
 		slider.value = min;
 
-		slider.width = columnWidth - 50;
+		slider.width = component.panel.columnWidth - 50;
 		slider._x = 6;
 		slider._y = sliderLabel.textField._height + 2;
 
@@ -341,14 +339,14 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 		valueLabel.format = valueLabelFormat;
 		valueLabel.textField.autoSize = "left";
 		valueLabel._y = slider._y - 5;
-		valueLabel._x = columnWidth - 37;
+		valueLabel._x = component.panel.columnWidth - 37;
 		
 		component[ "updateValueLabel" ]();
 		
 		// initial load of value
 		component.loader();
 		
-		controlCursor.y += component._height;
+		component.panel.controlCursor.y += component._height;
 		
 		return component;
 	}
@@ -456,7 +454,7 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 			field[ "component" ] = component;
 			field.maxChars = 2;
 			field.width = fieldWidth;
-			field._x = columnWidth - indent - (3 * (fieldWidth + fieldLabelWidth) + 10) + ( i * (fieldWidth + fieldLabelWidth + 10) );
+			field._x = component.panel.columnWidth - component.panel.indent - (3 * (fieldWidth + fieldLabelWidth) + 10) + ( i * (fieldWidth + fieldLabelWidth + 10) );
 			field._y = fieldTop;
 			
 			field.text = "00";
@@ -509,7 +507,7 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 		// initial load of value
 		component.loader();
 
-		controlCursor.y += component._height + 2;
+		component.panel.controlCursor.y += component._height + 2;
 		
 		return component;
 	}
@@ -524,28 +522,8 @@ class com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder {
 	 * internal variables
 	 */
 	
-	private var container:MovieClip;
-	 
-	private var controlCursor:Point;
-	private var columnCursor:Point;
-	
-	private var columnWidth:Number;
-	private var columnPadding:Number;
-
-	private var blockSpacing:Number;
-	private var indentSpacing:Number;
-	private var groupSpacing:Number;
-	
-	private var indent:Number;
-	
-	private var columnCount:Number;
-
-	
 	/*
 	 * properties
 	 */
 	
-	public var width:Number;
-	public var height:Number;
-
 }

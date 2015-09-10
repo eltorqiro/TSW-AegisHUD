@@ -58,6 +58,7 @@ class com.ElTorqiro.AegisHUD.HUD.Slot extends UIComponent {
 	private function configUI() : Void {
 		// add right click handling
 		this["onPressAux"] = onPress;
+		this["onReleaseOutsideAux"] = onReleaseOutside;
 		
 		// listen for pref changes
 		App.prefs.SignalValueChanged.Connect( prefChangeHandler, this );
@@ -163,6 +164,10 @@ class com.ElTorqiro.AegisHUD.HUD.Slot extends UIComponent {
 		}
 		
 		AegisServer.selectSlot( group.id, slot.id, multi );
+	}
+	
+	private function onReleaseOutside() : Void {
+		closeTooltip();
 	}
 	
 	/**

@@ -1,6 +1,5 @@
 import com.ElTorqiro.AegisHUD.App;
 
-
 /**
  * standard MovieClip onLoad event handler
  */

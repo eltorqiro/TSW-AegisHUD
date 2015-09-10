@@ -43,13 +43,13 @@ class com.ElTorqiro.AegisHUD.App {
 		prefs = new Preferences( Const.PrefsName );
 		createPrefs();
 		prefs.load();
-		
-		// start aegis server running
-		AegisServer.start();
 
 		// perform initial installation tasks
 		install();
 		
+		// start aegis server running
+		AegisServer.start();
+
 		// attach widget
 		widgetClip = SFClipLoader.LoadClip( Const.AppID + "\\Widget.swf", Const.AppID + "_Widget", false, _global.Enums.ViewLayer.e_ViewLayerTop, 2, [] );
 		widgetClip.SignalLoaded.Connect( widgetLoaded );
@@ -175,7 +175,7 @@ class com.ElTorqiro.AegisHUD.App {
 	 */
 	private static function createPrefs() : Void  {
 		
-		prefs.add( "prefs.version", 40000 );
+		prefs.add( "prefs.version", Const.PrefsVersion );
 		
 		prefs.add( "app.installed", false );
 		
@@ -444,12 +444,20 @@ class com.ElTorqiro.AegisHUD.App {
 	private static function install() : Void {
 		
 		// only "install" once ever
-		if ( prefs.setVal( "app.installed" ) ) return;
+		if ( !prefs.setVal( "app.installed" ) ) {;
 		
-		// hide default disruptor swap ui
-		DistributedValue.SetDValue( "ShowAegisSwapUI", false );
+			// hide default disruptor swap ui
+			DistributedValue.SetDValue( "ShowAegisSwapUI", false );
+
+			prefs.setVal( "app.installed", true );
+		}
 		
-		prefs.setVal( "app.installed", true );
+		
+		// handle upgrades from one version to the next
+		var prefsVersion:Number = prefs.getVal( "prefs.version" );
+		
+		// set prefs version to current version
+		prefs.reset( "prefs.version" );
 	}
 
 	/**

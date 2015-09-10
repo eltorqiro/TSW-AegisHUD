@@ -13,7 +13,7 @@ import com.GameInterface.Tooltip.TooltipManager;
 import com.GameInterface.Tooltip.TooltipData;
 import com.GameInterface.Tooltip.TooltipInterface;
 
-import com.ElTorqiro.AegisHUD.Config.ConfigPanelBuilder;
+import com.ElTorqiro.AegisHUD.ConfigUI.PanelBuilder;
 import com.ElTorqiro.AegisHUD.Const;
 import com.ElTorqiro.AegisHUD.App;
 
@@ -654,7 +654,7 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 		};
 		
 		// build the panel based on definition
-		var panel:ConfigPanelBuilder = new ConfigPanelBuilder( def, m_Panel );
+		var panel:PanelBuilder = new PanelBuilder( def, m_Panel );
 		
 		//loadValues();
 		

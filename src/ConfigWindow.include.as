@@ -1,45 +1,38 @@
-import com.Components.WinComp;
 import flash.geom.Point;
 import com.GameInterface.DistributedValue;
 
 import com.ElTorqiro.AegisHUD.Const;
 import com.ElTorqiro.AegisHUD.App;
+import com.ElTorqiro.AegisHUD.ConfigUI.Window;
 
 
 /**
  * variables
  */
-var m_Window:WinComp;
- 
- 
+
+  
 /**
  * standard MovieClip onLoad event handler
  */
 function onLoad() : Void {
 	App.debug("Config Window: onLoad");
 	
-	m_Window = attachMovie( "com.ElTorqiro.AegisHUD.ConfigWindow.Window", "m_Window", getNextHighestDepth() );
-
-	// position window
+	// opening window position
 	var position:Point = App.prefs.getVal( "configWindow.position" );
 	if ( position == undefined ) {
 		position = new Point( 300, 150 );
 	}
-	
-	m_Window._x = position.x;
-	m_Window._y = position.y;
-	
+
+	var window:Window = Window( attachMovie( "window", "m_Window", getNextHighestDepth(), { openingPosition: position } ) );
+
 	// set window properties
-	m_Window.SetTitle(Const.AppName + " v" + Const.AppVersion);
-	m_Window.ShowStroke(false);
-	m_Window.ShowFooter(false);
-	m_Window.ShowResizeButton(false);
+	window.SetTitle(Const.AppName + " v" + Const.AppVersion);
 	
-	m_Window.SignalClose.Connect( this, function() {
+	window.SignalClose.Connect( this, function() {
 		DistributedValue.SetDValue( Const.ShowConfigWindowDV, false );
 	});
 	
-	m_Window.SetContent("com.ElTorqiro.AegisHUD.Config.Content");
+	window.SetContent("window-content");
 	
 }
 
