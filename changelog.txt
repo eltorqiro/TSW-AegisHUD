@@ -1,3 +1,9 @@
+4.0.0 alpha 4 -- 2015-09-10
+
+ * first 'released' public alpha test for the 4.x branch
+ * fully operational, except for: positioning HUD via GUI Edit Mode, quick change of autoswap focus, and UltimateAbility addon compatibility
+
+
 4.0.0 alpha 3 -- 2015-09-10
  
  * public alpha test release for the 4.x branch

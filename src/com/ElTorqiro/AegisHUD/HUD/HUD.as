@@ -172,7 +172,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		pb._parent.localToGlobal( centre );
 		this.globalToLocal( centre );
 		
-		centre.x = Math.floor( centre.x ) - 5;
+		centre.x = Math.floor( centre.x ) - 3;
 		centre.y = Math.floor( centre.y );
 
 		centre.y -= bars[ "primary" ]._height;
@@ -182,14 +182,6 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		if ( _root.passivebar.m_UltimateProgress._visible ) {
 			centre.y -= 10;
 		}
-		
-		// test random positioning to check for duplicate clip being left behind during OnModuleDeactivated / Activated spam such as when portaling in Agartha
-		/*
-		var min:Number = 400;
-		var max:Number = 800;
-		centre.x = Math.floor(Math.random() * (max - min + 1)) + min;
-		centre.y = Math.floor(Math.random() * (max - min + 1)) + min;
-		*/
 		
 		layoutAtPoint( centre, true );
 	}
@@ -208,7 +200,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			centre.y -= 10;
 		}
 
-		layoutAtPoint( centre );
+		layoutAtPoint( centre, true );
 		saveBarPositions();
 	}
 
