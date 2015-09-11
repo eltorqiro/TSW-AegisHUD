@@ -47,12 +47,14 @@ class com.ElTorqiro.AegisHUD.Preferences {
 	 * 
 	 * @param	name
 	 * @param	defaultvalue
+	 * @param	validate	function that is called on setVal, with signature  validate( newValue, oldValue), must return the validated new value
 	 */
-	public function add( name:String, defaultValue ) : Void {
+	public function add( name:String, defaultValue, validate:Function ) : Void {
 		
 		prefs[ name ] = {
 				value: defaultValue,
-				defaultValue: defaultValue
+				defaultValue: defaultValue,
+				validate: validate
 		};
 		
 	}
@@ -105,11 +107,17 @@ class com.ElTorqiro.AegisHUD.Preferences {
 
 		// only update if new value is different to old value
 		if ( equivalentCheckTypes[ typeof(value) ] && oldValue == value ) return value;
+
+		var newValue = value;
 		
-		prefs[name].value = value;
+		if ( prefs[name].validate ) {
+			newValue = prefs[name].validate( newValue, oldValue );
+		}
 		
-		dispatchEvent( { type: name, value: value, oldValue: oldValue } );
-		SignalValueChanged.Emit( name, value, oldValue );
+		prefs[name].value = newValue;
+		
+		dispatchEvent( { type: name, value: newValue, oldValue: oldValue } );
+		SignalValueChanged.Emit( name, newValue, oldValue );
 		
 		return value;
 		

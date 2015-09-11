@@ -181,7 +181,14 @@ class com.ElTorqiro.AegisHUD.App {
 		
 		prefs.add( "configWindow.position", undefined );
 		prefs.add( "widget.position", undefined );
-		prefs.add( "widget.scale", 100 );
+		prefs.add( "widget.scale", 100,
+			function( newValue, oldValue ) {
+				var value:Number = Math.min( newValue, Const.MaxBarScale );
+				value = Math.max( value, Const.MinBarScale );
+				
+				return value;
+			}
+		);
 		
 		prefs.add( "hud.enabled", true );
 
@@ -202,14 +209,19 @@ class com.ElTorqiro.AegisHUD.App {
 		prefs.add( "hud.hide.whenAutoswapEnabled", false );
 		prefs.add( "hud.hide.whenNotInCombat", false );
 		
-		prefs.add( "hud.scale", 100 );
+		prefs.add( "hud.scale", 100,
+			function( newValue, oldValue ) {
+				var value:Number = Math.min( newValue, Const.MaxBarScale );
+				value = Math.max( value, Const.MinBarScale );
+				
+				return value;
+			}
+		);
 		
 		prefs.add( "hud.icons.type", Const.e_IconTypeAegisHUD );
 		
 		prefs.add( "hud.abilityBarIntegration.enable", true );
 
-		prefs.add( "hud.layout.type", Const.e_LayoutDefault );
-		
 		prefs.add( "hud.bars.primary.position", undefined );
 		prefs.add( "hud.bars.primary.itemSlotPlacement", Const.e_BarItemPlaceFirst );
 		
@@ -220,7 +232,7 @@ class com.ElTorqiro.AegisHUD.App {
 		prefs.add( "hud.bars.shield.itemSlotPlacement", Const.e_BarItemPlaceFirst );
 
 		prefs.add( "hud.bar.background.type", Const.e_BarTypeThin );
-		prefs.add( "hud.bar.background.tint", false );
+		prefs.add( "hud.bar.background.tint", true );
 		prefs.add( "hud.bar.background.neon", true );
 		prefs.add( "hud.bar.background.transparency", 100 );
 
@@ -303,7 +315,7 @@ class com.ElTorqiro.AegisHUD.App {
 		
 		manageWidgetVisibility();
 
-		vtio = new VTIOConnector( Const.AppID, Const.AppAuthor, Const.AppVersion, Const.ShowConfigWindowDV, widgetClip.m_Movie.m_Icon, registeredWithVTIO );
+		//vtio = new VTIOConnector( Const.AppID, Const.AppAuthor, Const.AppVersion, Const.ShowConfigWindowDV, widgetClip.m_Movie.m_Icon, registeredWithVTIO );
 	}
 
 	/**
@@ -389,7 +401,8 @@ class com.ElTorqiro.AegisHUD.App {
 			
 			if ( !hudClip ) {
 				debug("App: loading hud");
-				hudClip = SFClipLoader.LoadClip( Const.HudClipPath, Const.AppID + "_HUD", false, _global.Enums.ViewLayer.e_ViewLayerMiddle, 0, [] );
+				
+				hudClip = SFClipLoader.LoadClip( Const.HudClipPath, Const.AppID + "_HUD", false, Const.HudClipDepthLayer, guiEditMode ? Const.HudClipSubDepthGuiEditMode : Const.HudClipSubDepth, [] );
 			}
 		}
 		
@@ -467,6 +480,17 @@ class com.ElTorqiro.AegisHUD.App {
 	 */
 	private static function guiEditModeChangeHandler( edit:Boolean ) : Void {
 		_guiEditMode = edit;
+		
+		// trigger edit mode on hud
+		if ( !hudClip ) return;
+		
+		var hudClipIndex:Number = SFClipLoader.GetClipIndex( hudClip.m_Movie );
+		var subDepth:Number = edit ? Const.HudClipSubDepthGuiEditMode : Const.HudClipSubDepth;
+		
+		if ( hudClip.m_SubDepth != subDepth ) {
+			SFClipLoader.SetClipLayer( hudClipIndex, hudClip.m_DepthLayer, subDepth );
+		}
+		
 	}
 	
 	/**

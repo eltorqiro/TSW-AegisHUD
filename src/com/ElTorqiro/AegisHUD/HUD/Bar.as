@@ -1,7 +1,15 @@
+import com.Utils.Signal;
+import flash.geom.Point;
 import gfx.core.UIComponent;
 import flash.filters.GlowFilter;
 
+import com.Utils.GlobalSignal;
+
 import com.GameInterface.UtilsBase;
+
+import mx.transitions.easing.Strong;
+import mx.transitions.easing.Regular;
+import mx.transitions.easing.Bounce;
 
 import com.ElTorqiro.AegisHUD.Server.AegisServerSlot;
 import com.ElTorqiro.AegisHUD.Server.AegisServerGroup;
@@ -30,13 +38,32 @@ class com.ElTorqiro.AegisHUD.HUD.Bar extends UIComponent {
 			aegis3: attachMovie( "slot", "m_Aegis3", getNextHighestDepth(), { group: group, slot: group.slots["aegis3"] } )
 		};
 		
-		layout();
+		//attachMovie( "bar-overlay", "m_Overlay", getNextHighestDepth() );
+		m_Overlay._x = m_Overlay._y = -5;
+		
+		scale = App.prefs.getVal( "hud.scale" );
+		
+		//layout();
+		
+		SignalSizeChanged = new Signal();
+		
 	}
 	
 	private function configUI() : Void {
 
+		App.debug( "HUD: HUD: Bar configUI start, " + group.id );
+		
+		layoutIsInvalid = true;
+		
 		// listen for pref changes
 		App.prefs.SignalValueChanged.Connect( prefChangeHandler, this );
+		
+		GlobalSignal.SignalSetGUIEditMode.Connect( manageOverlay, this );
+		
+		manageOverlay();
+
+		App.debug( "HUD: HUD: Bar configUI end, " + group.id );
+		
 	}
 	
 	/**
@@ -45,7 +72,10 @@ class com.ElTorqiro.AegisHUD.HUD.Bar extends UIComponent {
 	public function layout() : Void {
 
 		var showItem:Number = App.prefs.getVal( "hud.bars." + group.id + ".itemSlotPlacement" );
+		var showBackground:Number = App.prefs.getVal( "hud.bar.background.type" );
+		
 		var padding:Number = 3;
+		var itemSlotMargin:Number = 6;
 		
 		var firstSlot:Slot;
 		var lastSlot:Slot;
@@ -55,8 +85,8 @@ class com.ElTorqiro.AegisHUD.HUD.Bar extends UIComponent {
 			case Const.e_BarItemPlaceNone:
 				
 				m_Item.visible = false;
-				m_Item._x = padding;
-				m_Aegis1._x = padding;
+				m_Item._x = 0;
+				m_Aegis1._x = 0;
 				
 				firstSlot = m_Aegis1;
 				lastSlot = m_Aegis3;
@@ -66,8 +96,8 @@ class com.ElTorqiro.AegisHUD.HUD.Bar extends UIComponent {
 			case Const.e_BarItemPlaceFirst:
 			
 				m_Item.visible = true;
-				m_Item._x = padding;
-				m_Aegis1._x = m_Item._x + m_Item._width + padding * 2;
+				m_Item._x = 0;
+				m_Aegis1._x = m_Item._x + m_Item.width + itemSlotMargin;
 				
 				firstSlot = m_Item;
 				lastSlot = m_Aegis3;
@@ -77,8 +107,8 @@ class com.ElTorqiro.AegisHUD.HUD.Bar extends UIComponent {
 			case Const.e_BarItemPlaceLast:
 			
 				m_Item.visible = true;
-				m_Item._x = padding + (m_Aegis1._width * 3) + padding * 2;
-				m_Aegis1._x = padding;
+				m_Item._x = (m_Aegis1.width * 3) + itemSlotMargin;
+				m_Aegis1._x = 0;
 				
 				firstSlot = m_Aegis1;
 				lastSlot = m_Item;
@@ -87,48 +117,67 @@ class com.ElTorqiro.AegisHUD.HUD.Bar extends UIComponent {
 			
 		}
 		
-		m_Aegis2._x = m_Aegis1._x + m_Aegis1._width;
-		m_Aegis3._x = m_Aegis2._x + m_Aegis2._width;
+		m_Aegis2._x = m_Aegis1._x + m_Aegis1.width;
+		m_Aegis3._x = m_Aegis2._x + m_Aegis2.width;
 
-		for ( var s:String in slots ) {
-			slots[s]._y = padding;
-		}
-		
-		m_Background._width = lastSlot._x + lastSlot._width + padding;
-
-		var showBackground:Number = App.prefs.getVal( "hud.bar.background.type" );
-
-		var barHeight:Number = 0;
+		var slotTop:Number = 0;
+		var slotLeft:Number = 0;
 		
 		switch( showBackground ) {
 			
 			case Const.e_BarTypeNone:
-				m_Background._y = 0;
-				m_Background._height = 0;
+				__width = lastSlot._x + lastSlot.width;
+				__height = lastSlot.height;
 				
-				m_Background._visible = false;
 			break;
 			
 			case Const.e_BarTypeThin:
-				m_Background._y = 12;
+				slotLeft = padding;
+			
 				m_Background._height = 6;
+				m_Background._y = (m_Aegis1.height - m_Background._height) / 2;
+				m_Background._width = lastSlot._x + lastSlot.width + padding * 2;
+
+				__width = m_Background._width;
+				__height = lastSlot.height;
 				
-				m_Background._visible = true;
 			break;
 
 			case Const.e_BarTypeFull:
+				slotTop = padding;
+				slotLeft = padding;
+			
 				m_Background._y = 0;
-				m_Background._height = 30;
+				m_Background._height = m_Aegis1.height + padding * 2;
+				m_Background._width = lastSlot._x + lastSlot.width + padding * 2;
 				
-				m_Background._visible = true;
+				__width = m_Background._width;
+				__height = m_Background._height;
+
 			break;
 		}
 
-		invalidate();
+		for ( var s:String in slots ) {
+			slots[s]._y = slotTop;
+			slots[s]._x += slotLeft;
+		}
+		
+		m_Overlay._width = __width + 10;
+		m_Overlay._height = __height + 10;
+		
+		m_Background._visible = showBackground != Const.e_BarTypeNone;
+
+		SignalSizeChanged.Emit();
+		
+		dispatchEvent( { type: "layout" } );
 	}
 	
 	private function draw() : Void {
 
+		if ( layoutIsInvalid ) {
+			layout();
+		}
+		
 		var backgroundType:Number = App.prefs.getVal( "hud.bar.background.type" );
 		var backgroundAlpha:Number = App.prefs.getVal( "hud.bar.background.transparency" );
 		
@@ -171,9 +220,106 @@ class com.ElTorqiro.AegisHUD.HUD.Bar extends UIComponent {
 		else {
 			m_Background._visible = false;
 		}
-		
+
 	}
 
+	public function validateNow() : Void {
+		super.validateNow();
+		
+		layoutIsInvalid = false;
+	}
+	
+	/**
+	 * moves the bar to a new position, optionally with animation
+	 * 
+	 * @param	coords
+	 */
+	public function move( coords:Point, tweenTime:Number ) : Void {
+
+			var overlayCoords:Point = new Point( coords.x - 5, coords.y - 5 );
+		
+			if ( tweenTime > 0 ) {
+				this["tweenTo"]( tweenTime, {
+						_x: coords.x,
+						_y: coords.y
+					},
+					Regular.easeOut
+				);
+				
+				overlay.tweenTo( tweenTime, {
+						_x: overlayCoords.x,
+						_y: overlayCoords.y
+					},
+					Regular.easeOut
+				);
+				
+			}
+			
+			else {
+				_x = coords.x;
+				_y = coords.y;
+				
+				overlay._x = overlayCoords.x;
+				overlay._y = overlayCoords.y;
+			}
+		
+	}
+	
+	/**
+	 * manages the GUI Edit Mode overlay for positioning the bar and scaling the entire hud
+	 * 
+	 * @param	edit
+	 */
+	public function manageOverlay( edit:Boolean ) : Void {
+	
+		if ( ( edit || (edit == undefined && App.guiEditMode) ) && !overlay ) {
+		
+			overlay = _parent.attachMovie( "GEM-overlay", "overlay-" + _name, _parent.getNextHighestDepth() );
+
+			overlay.bar = this;
+			
+			overlay.updateSize = function() {
+				this._x = this.bar._x - 5;
+				this._y = this.bar._y - 5;
+				
+				this._width = this.bar.width + 10;
+				this._height = this.bar.height + 10;
+			}
+
+			overlay.bar.SignalSizeChanged.Connect( overlay.updateSize, overlay );
+			
+			overlay.updateSize();
+			
+			overlay.onPress = function() {
+				
+				App.prefs.setVal( "hud.abilityBarIntegration.enable", false );
+				
+				this.startDrag();
+				
+				this.onMouseMove = function() {
+					this.bar._x = this._x + 5;
+					this.bar._y = this._y + 5;
+				}
+			}
+			
+			overlay.onRelease = function() {
+				this.onMouseMove = undefined;
+				this.stopDrag();
+			}
+			
+			overlay.onMouseWheel = function( delta:Number ) {
+				App.prefs.setVal( "hud.scale", App.prefs.getVal( "hud.scale" ) + delta * 5 );
+			}
+			
+		}
+		
+		else {
+			overlay.removeMovieClip();
+			overlay = null;
+		}
+		
+	}
+		
 	/**
 	 * handles updates based on pref changes
 	 * 
@@ -196,7 +342,20 @@ class com.ElTorqiro.AegisHUD.HUD.Bar extends UIComponent {
 			case "hud.tints.aegis.demonic":
 			case "hud.tints.aegis.empty":
 			case "hud.tints.bar.background":
+				
 				invalidate();
+				
+			break;
+			
+			case "hud.bars.primary.itemSlotPlacement":
+			case "hud.bars.secondary.itemSlotPlacement":
+			case "hud.bars.shield.itemSlotPlacement":
+			case "hud.bar.background.type":
+			case "hud.scale":
+				
+				layoutIsInvalid = true;
+				invalidate();
+
 			break;
 			
 		}
@@ -213,11 +372,36 @@ class com.ElTorqiro.AegisHUD.HUD.Bar extends UIComponent {
 	public var m_Aegis2:Slot;
 	public var m_Aegis3:Slot;
 	
+	private var overlay:MovieClip;
+	
+	public var m_Overlay:MovieClip;
+	
+	private var layoutIsInvalid:Boolean;
+	
 	/**
 	 * properties
 	 */
 
 	public var group:AegisServerGroup;
 	public var slots:Object;
-	 
+	
+	public var SignalSizeChanged:Signal;
+	
+	private var _scale:Number = 100;
+	public function get scale() : Number { return _scale; }
+	public function set scale( value:Number ) {
+		
+		if ( _scale == value || Number(value) == Number.NaN ) return;
+		
+		value = Math.max( value, Const.MinBarScale );
+		value = Math.min( value, Const.MaxBarScale );
+		
+		_xscale = _yscale = _scale = value;
+		
+		SignalSizeChanged.Emit();
+	}
+	
+	public function get width() : Number { return __width * _xscale / 100; }
+	public function get height() : Number { return __height * _yscale / 100; }
+	
 }

@@ -39,6 +39,9 @@ class com.ElTorqiro.AegisHUD.HUD.Slot extends UIComponent {
 			m_Background._visible = false;
 		}
 		
+		__width = m_Background._width;
+		__height = m_Background._height;
+		
 		m_Icon.createEmptyMovieClip( "m_Watermark", 1 );
 		
 		// setup icon loader
@@ -56,12 +59,17 @@ class com.ElTorqiro.AegisHUD.HUD.Slot extends UIComponent {
 	}
 	
 	private function configUI() : Void {
+		
+		App.debug( "HUD: HUD: Slot configUI start, " + group.id + " > " + slot.id );
+		
 		// add right click handling
 		this["onPressAux"] = onPress;
 		this["onReleaseOutsideAux"] = onReleaseOutside;
 		
 		// listen for pref changes
 		App.prefs.SignalValueChanged.Connect( prefChangeHandler, this );
+		
+		App.debug( "HUD: HUD: Slot configUI end, " + group.id + " > " + slot.id );
 	}
 
 	

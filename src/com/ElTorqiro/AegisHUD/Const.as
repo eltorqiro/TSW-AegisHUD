@@ -25,6 +25,14 @@ class com.ElTorqiro.AegisHUD.Const {
 	public static var ShowConfigWindowDV:String = "ElTorqiro_AegisHUD_ShowConfigWindow";
 	public static var DebugModeDV:String = "ElTorqiro_AegisHUD_Debug";
 	
+	public static var HudClipSubDepthGuiEditMode:Number = 50;
+	public static var HudClipSubDepth:Number = 0;
+	
+	public static var HudClipDepthLayer:Number = _global.Enums.ViewLayer.e_ViewLayerMiddle;
+	
+	public static var MinBarScale:Number = 50;
+	public static var MaxBarScale:Number = 200;
+	
 	// item type enum shortcuts
 	public static var e_ItemTypeWeapon:Number = _global.Enums.ItemType.e_ItemType_Weapon;
 	public static var e_ItemTypeAegisShield:Number = _global.Enums.ItemType.e_ItemType_AegisShield;		
@@ -102,10 +110,6 @@ class com.ElTorqiro.AegisHUD.Const {
 	public static var e_AutoSwapTargetTypePlayer:Number = 1;
 	public static var e_AutoSwapTargetTypeNPC:Number = 2;
 	public static var e_AutoSwapTargetTypeSelf:Number = 3;
-	
-	// hud layout types, internally used to track which function did the last layout
-	public static var e_LayoutDefault:Number = 1;
-	public static var e_LayoutCustom:Number = 2;
 	
 	// hud "no tint" tint
 	public static var e_TintNone:Number = 0xffffff;

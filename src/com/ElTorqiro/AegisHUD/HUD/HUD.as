@@ -9,8 +9,6 @@ import com.GameInterface.Tooltip.TooltipData;
 import com.GameInterface.Tooltip.TooltipManager;
 import com.GameInterface.Tooltip.TooltipDataProvider;
 
-import mx.transitions.easing.Bounce;
-
 import flash.geom.ColorTransform;
 
 import gfx.core.UIComponent;
@@ -38,7 +36,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		
 		// add bars
 		bars = {
-			primary: attachMovie( "bar", "primary", getNextHighestDepth(), { group: AegisServer.groups["primary"] /*, visible: false*/ } ),
+			primary: attachMovie( "bar", "primary", getNextHighestDepth(), { group: AegisServer.groups["primary"] } ),
 			secondary: attachMovie( "bar", "secondary", getNextHighestDepth(), { group: AegisServer.groups["secondary"] } )
 		};
 		
@@ -57,36 +55,6 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			bars.shield.slots.aegis3.watermark = "watermark-shield-demonic";
 		}
 		
-		// set up listeners for aegis server slot changes
-		AegisServer.SignalItemChanged.Connect( itemChanged, this );
-		AegisServer.SignalSelectionChanged.Connect( selectionChanged, this );
-		AegisServer.SignalXPChanged.Connect( xpChanged, this );
-
-		// set up listener for ultimate ability progress bar visibility
-		animusBarVisibilityMonitor = DistributedValue.Create( "ShowAnimaEnergyBar" );
-		animusBarVisibilityMonitor.SignalChanged.Connect( layout, this );
-		
-		// hook passive bar open/close event
-		hookPassiveBarOpenClose( true );
-		
-		// perform initial layout
-		layout();
-
-		// set up listener for combat state changes
-		Character.GetClientCharacter().SignalToggleCombat.Connect( manageVisibility, this );
-		manageVisibility();
-		
-	}
-	
-	/**
-	 * configure UI (listeners, handlers etc)
-	 */
-	private function configUI() : Void {
-		App.debug( "HUD: HUD class configUI" );
-		
-		// listen for pref changes
-		App.prefs.SignalValueChanged.Connect( prefChangeHandler, this );
-
 	}
 	
 	/**
@@ -99,38 +67,94 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		// release passivebar open/close event
 		hookPassiveBarOpenClose( false );
 		
-		/**
-		 * save settings
-		 */
+		// clear any timers
+		for ( var s:String in timers ) {
+			clearTimeout( timers[s].id );
+		}
+
+		// save bar positions
+		saveBarPositions();
 		
-		// bar positions
-		if ( !App.prefs.getVal( "hud.abilityBarIntegration.enable" ) ) {
-			saveBarPositions();
+	}
+	
+	/**
+	 * configure sub components, listeners etc
+	 */
+	private function configUI() : Void {
+		
+		// listeners for bar layouts
+		for ( var s:String in bars ) {
+			bars[s].addEventListener( "layout", this, "layout" );
+			bars[s].SignalSizeChanged.Connect( layout, this );
+		}
+
+		// perform initial layout
+		initLayout();
+		
+		// set up listeners for aegis server slot changes
+		AegisServer.SignalItemChanged.Connect( itemChanged, this );
+		AegisServer.SignalSelectionChanged.Connect( selectionChanged, this );
+		AegisServer.SignalXPChanged.Connect( xpChanged, this );
+
+		// set up listener for ultimate ability progress bar visibility
+		animusBarVisibilityMonitor = DistributedValue.Create( "ShowAnimaEnergyBar" );
+		animusBarVisibilityMonitor.SignalChanged.Connect( layout, this );
+		
+		// hook passive bar open/close event
+		hookPassiveBarOpenClose( true );
+		
+		// set up listener for combat state changes
+		Character.GetClientCharacter().SignalToggleCombat.Connect( manageVisibility, this );
+		
+		// listen for pref changes
+		App.prefs.SignalValueChanged.Connect( prefChangeHandler, this );
+		
+		// set initial visible state
+		manageVisibility();
+		
+		// listen for ability bar movement
+		abilityBarXMonitor = DistributedValue.Create( "AbilityBarX" );
+		abilityBarXMonitor.SignalChanged.Connect( layout, this );
+
+		abilityBarYMonitor = DistributedValue.Create( "AbilityBarY" );
+		abilityBarYMonitor.SignalChanged.Connect( layout, this );
+
+		abilityBarScaleMonitor = DistributedValue.Create( "AbilityBarScale" );
+		abilityBarScaleMonitor.SignalChanged.Connect( layout, this );
+
+	}
+	
+	/**
+	 * draw the hud bars in their correct positions
+	 */
+	private function draw() : Void {
+		
+		App.debug( "hud draw" );
+		
+		if ( layoutIsInvalid ) {
+
+			if ( App.prefs.getVal( "hud.abilityBarIntegration.enable" ) ) {
+				layoutWithAbilityBar();			
+			}
+			
 		}
 		
 	}
-	 
+
+	public function validateNow() : Void {
+		super.validateNow();
+		
+		layoutIsInvalid = false;
+	}
+
 	/**
-	 * position the bars in either the restored positions or the default
+	 * trigger hud to layout the bars during next draw
 	 */
 	private function layout() : Void {
+		App.debug( "hud layout" );
 		
-		var doLayout:Number = App.prefs.getVal( "hud.layout.type" );
-		
-		if ( App.prefs.getVal( "hud.abilityBarIntegration.enable" ) ) {
-			layoutWithAbilityBar();
-		}
-		
-		else if ( doLayout == Const.e_LayoutDefault ) {
-			layoutDefault();
-		}
-
-		else if ( doLayout == Const.e_LayoutCustom && !initialLayoutDone ) {
-			layoutCustom();
-		}
-
-		initialLayoutDone = true;
-		
+		layoutIsInvalid = true;
+		invalidate();
 	}
 	
 	/**
@@ -152,7 +176,12 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			else if ( (new Date()) - timers.lwab.start > 2000 ) {
 				App.debug( "lwab timer: giving up, " + ((new Date()) - timers.lwab.start) );
 				delete timers.lwab;
-				layoutDefault();
+				
+				if ( !initialLayoutDone ) {
+					initialLayoutDone = true;
+					manageVisibility();
+				}
+
 			}
 
 			// else if timer is running, just restart it
@@ -175,7 +204,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		centre.x = Math.floor( centre.x ) - 3;
 		centre.y = Math.floor( centre.y );
 
-		centre.y -= bars[ "primary" ]._height;
+		centre.y -= bars[ "primary" ].height + 3;
 		
 		// adjust top for animus charge bar
 		//if ( animusBarVisibilityMonitor.GetValue() ) {
@@ -184,33 +213,49 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		}
 		
 		layoutAtPoint( centre, true );
-	}
-
-	/**
-	 * layout the bars at the default position, without integrating with ability bar
-	 */
-	private function layoutDefault() : Void {
 		
-		App.prefs.setVal( "hud.layout.type", Const.e_LayoutDefault );
-		
-		// find a spot in the centre, near the bottom of the screen
-		var centre:Point = new Point( Stage.visibleRect.width / 2, Stage.visibleRect.bottom - 107 );
-		
-		if ( _root.passivebar.m_UltimateProgress._visible ) {
-			centre.y -= 10;
+		if ( !initialLayoutDone ) {
+			initialLayoutDone = true;
+			manageVisibility();
 		}
-
-		layoutAtPoint( centre, true );
-		saveBarPositions();
 	}
 
 	/**
 	 * layout the bars at their restored positions, or suitable temporary defaults on a per-bar basis if they have never been set
 	 */
-	private function layoutCustom() : Void {
+	private function initLayout() : Void {
+
+		// set to starting defaults
+		layoutAtPoint( new Point( Stage.visibleRect.width / 2, Stage.visibleRect.bottom - 200 ) );
+
+		// only need to restore positions if ability bar integration isn't on as the bars will trigger a relayout of the hud when they layout internally
+		if ( !App.prefs.getVal( "hud.abilityBarIntegration.enable" ) ) {
+		
+			// restore positions from saved values
+			for ( var s:String in bars ) {
+				
+				var pos:Point = App.prefs.getVal( "hud.bars." + s + ".position" );
+				if ( pos ) {
+					bars[s].move( pos );
+				}
+				
+			}
+		
+			initialLayoutDone = true;
+			manageVisibility();
+			
+		}
+		
+		
+		/*
+		if ( App.prefs.getVal( "hud.abilityBarIntegration.enable" ) ) {
+			layout();
+			return;
+		}
 		
 		var left:Number = Stage.visibleRect.width / 2 - 200;
 		var top:Number = Stage.visibleRect.bottom - 200;
+		
 		
 		var defaultX:Object = {
 			primary: left,
@@ -225,11 +270,11 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 				pos = new Point( defaultX[s], top );
 			}
 			
-			bars[ s ]._x = pos.x;
-			bars[ s ]._y = pos.y;
+			bars[s].move( pos );
+			
 		}
-		
-		saveBarPositions();
+		*/
+
 	}
 	
 	/**
@@ -238,7 +283,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	 */
 	private function layoutAtPoint( centre:Point, animate:Boolean ) : Void {
 		
-		var tweenTime:Number = initialLayoutDone && animate ? 0.8 : 0;
+		var tweenTime:Number = initialLayoutDone && animate ? 0.2 : 0;
 
 		var padding:Number = 10;
 		
@@ -247,38 +292,22 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		var totalWidth:Number = 0;
 		offsets[ "primary" ] = totalWidth;
 		
-		totalWidth += bars[ "primary" ]._width + padding;
+		totalWidth += bars[ "primary" ].width + padding;
 		offsets[ "secondary" ] = totalWidth;
 
-		totalWidth += bars[ "secondary" ]._width;
+		totalWidth += bars[ "secondary" ].width;
 		
 		if ( bars[ "shield" ] ) {
 			totalWidth += padding * 2;
 			offsets[ "shield" ] = totalWidth;
 			
-			totalWidth += bars[ "shield" ]._width;
+			totalWidth += bars[ "shield" ].width;
 		}
 
 		var left:Number = centre.x - totalWidth / 2;
 		
 		for ( var s:String in bars ) {
-			
-			if ( tweenTime > 0 ) {
-				
-				bars[s].tweenTo( tweenTime, {
-						_x: left + offsets[s],
-						_y: centre.y
-					},
-					Bounce.easeOut
-				);
-			}
-			
-			else {
-				bars[s]._x = left + offsets[s];
-				bars[s]._y = centre.y;
-				
-			}
-
+			bars[s].move( new Point( left + offsets[s], centre.y ), tweenTime );
 		}
 		
 	}
@@ -426,24 +455,33 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			break;
 
 			case "hud.abilityBarIntegration.enable":
-				if( !newValue ) {
-					App.prefs.setVal( "hud.layout.type", Const.e_LayoutCustom );
+				if( newValue ) {
+					layout();
 				}
-			
-				layout();
+
 			break;
 			
 			case "hud.bars.primary.itemSlotPlacement":
 			case "hud.bars.secondary.itemSlotPlacement":
 			case "hud.bars.shield.itemSlotPlacement":
 			case "hud.bar.background.type":
-			
+			/*
 				for ( var s:String in bars ) {
 					bars[s].layout();
 				}
 				
 				layout();
-				
+			*/	
+			break;
+			
+			case "hud.scale":
+			/*
+				for ( var s:String in bars ) {
+					bars[s].scale = newValue;
+				}
+
+				layout();
+			*/
 			break;
 			
 		}
@@ -486,6 +524,12 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	private var animusBarVisibilityMonitor:DistributedValue;
 	
 	private var initialLayoutDone:Boolean;
+	
+	private var abilityBarXMonitor:DistributedValue;
+	private var abilityBarYMonitor:DistributedValue;
+	private var abilityBarScaleMonitor:DistributedValue;
+
+	private var layoutIsInvalid:Boolean;
 	
 	/*
 	 * properties
