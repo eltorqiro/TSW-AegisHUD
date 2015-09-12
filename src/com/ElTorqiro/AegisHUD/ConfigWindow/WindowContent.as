@@ -63,8 +63,8 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 				
 				{	id: "hud.abilityBarIntegration.enable",
 					type: "checkbox",
-					label: "Integrate and lock position with Ability Bar",
-					tooltip: "Integrates and locks the position of the HUD with the Ability Bar.",
+					label: "Integrate with Ability Bar",
+					tooltip: "Integrates position of the HUD bars with the Ability Bar.  This option is toggled off whenever you move the bars using the GUI Edit Mode.",
 					data: { pref: "hud.abilityBarIntegration.enable" },
 					loader: componentLoadHandler,
 					saver: componentSaveHandler

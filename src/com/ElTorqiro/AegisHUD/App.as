@@ -51,7 +51,7 @@ class com.ElTorqiro.AegisHUD.App {
 		AegisServer.start();
 
 		// attach widget
-		widgetClip = SFClipLoader.LoadClip( Const.AppID + "\\Widget.swf", Const.AppID + "_Widget", false, _global.Enums.ViewLayer.e_ViewLayerTop, 2, [] );
+		widgetClip = SFClipLoader.LoadClip( Const.WidgetClipPath, Const.AppID + "_Widget", false, _global.Enums.ViewLayer.e_ViewLayerTop, 2, [] );
 		widgetClip.SignalLoaded.Connect( widgetLoaded );
 	
 		// listen for GUI edit mode signal, to retain state so the HUD can use it even if the HUD is not enabled when the signal is emitted
@@ -183,8 +183,8 @@ class com.ElTorqiro.AegisHUD.App {
 		prefs.add( "widget.position", undefined );
 		prefs.add( "widget.scale", 100,
 			function( newValue, oldValue ) {
-				var value:Number = Math.min( newValue, Const.MaxBarScale );
-				value = Math.max( value, Const.MinBarScale );
+				var value:Number = Math.min( newValue, Const.MaxWidgetScale );
+				value = Math.max( value, Const.MinWidgetScale );
 				
 				return value;
 			}
@@ -315,7 +315,7 @@ class com.ElTorqiro.AegisHUD.App {
 		
 		manageWidgetVisibility();
 
-		//vtio = new VTIOConnector( Const.AppID, Const.AppAuthor, Const.AppVersion, Const.ShowConfigWindowDV, widgetClip.m_Movie.m_Icon, registeredWithVTIO );
+		vtio = new VTIOConnector( Const.AppID, Const.AppAuthor, Const.AppVersion, Const.ShowConfigWindowDV, widgetClip.m_Movie.m_Icon, registeredWithVTIO );
 	}
 
 	/**

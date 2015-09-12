@@ -1,3 +1,5 @@
+import com.Utils.Signal;
+import flash.filters.DropShadowFilter;
 import flash.geom.Point;
 
 import com.GameInterface.Tooltip.TooltipData;
@@ -5,6 +7,8 @@ import com.GameInterface.Tooltip.TooltipManager;
 import com.GameInterface.Tooltip.TooltipInterface;
 
 import com.GameInterface.DistributedValue;
+
+import com.Utils.GlobalSignal;
 
 import com.ElTorqiro.AegisHUD.Const;
 import com.ElTorqiro.AegisHUD.App;
@@ -25,29 +29,32 @@ class com.ElTorqiro.AegisHUD.IconWidget extends MovieClip {
 
 		isVtioIcon = _name == "Icon";
 		
-		App.prefs.addEventListener( "hud.enabled", this, "refreshState" );
-		App.prefs.addEventListener( "autoSwap.enabled", this, "refreshState" );
 		AegisServer.SignalAegisSystemUnlocked.Connect( refreshState, this );
 		refreshState();
 		
 		// if this is not the duplicate created by VTIO, handle regular setup of icon
 		if ( !isVtioIcon ) {
-			attachMovie( "com.ElTorqiro.AegisHUD.IconWidget.Overlay", "m_Overlay", m_Overlay.getDepth() );
-			m_Overlay._visible = false;
 			
-			this.scale = App.prefs.getVal( "widget.scale" );
+			SignalSizeChanged = new Signal();
+			
+			this.filters = [ new DropShadowFilter( 50, 1, 0, 0.8, 8, 8, 1, 3, false, false, false ) ];
+			
+			scale = App.prefs.getVal( "widget.scale" );
 
-			var position:Point = App.prefs.getVal( "widget.position" );
-			if ( position == undefined ) {
-				position = new Point( Math.floor((Stage.visibleRect.width - this._width) / 2), Math.floor((Stage.visibleRect.height + this._height) / 4) );
+			var pos:Point = App.prefs.getVal( "widget.position" );
+			if ( pos == undefined ) {
+				pos = new Point( Math.floor((Stage.visibleRect.width - this._width) / 2), Math.floor((Stage.visibleRect.height + this._height) / 4) );
 			}
 
-			// update position pref
-			App.prefs.setVal( "widget.position", position );
+			position = pos;
 			
-			this.position = position;
-
+			GlobalSignal.SignalSetGUIEditMode.Connect( manageOverlay, this );
+			manageOverlay();
+			
 		}
+		
+		// listen for pref changes
+		App.prefs.SignalValueChanged.Connect( prefChangeHandler, this );
 		
 	}
 	
@@ -185,12 +192,98 @@ class com.ElTorqiro.AegisHUD.IconWidget extends MovieClip {
 		tooltip = TooltipManager.GetInstance().ShowTooltip( undefined, TooltipInterface.e_OrientationVertical, 0, td );
 		
 	}
+
+	/**
+	 * manages the GUI Edit Mode overlay for positioning the bar and scaling the entire hud
+	 * 
+	 * @param	edit
+	 */
+	public function manageOverlay( edit:Boolean ) : Void {
+	
+		if ( _visible && ( edit || (edit == undefined && App.guiEditMode) ) && !overlay ) {
+		
+			overlay = _parent.attachMovie( "GEM-overlay", "overlay-" + _name, _parent.getNextHighestDepth() );
+
+			overlay.bar = this;
+			
+			overlay.updateSize = function() {
+				this._x = this.bar._x - 5;
+				this._y = this.bar._y - 5;
+				
+				this._width = this.bar.width + 10;
+				this._height = this.bar.height + 10;
+			}
+
+			overlay.bar.SignalSizeChanged.Connect( overlay.updateSize, overlay );
+			
+			overlay.updateSize();
+			
+			overlay.onPress = function() {
+				
+				this.startDrag();
+				
+				this.onMouseMove = function() {
+					this.bar._x = this._x + 5;
+					this.bar._y = this._y + 5;
+				}
+			}
+			
+			overlay.onRelease = function() {
+				this.onMouseMove = undefined;
+				this.stopDrag();
+				
+				// save position of non-vtio icon
+				App.prefs.setVal( "widget.position", new Point( this.bar._x, this.bar._y ) );
+
+			}
+			
+			overlay.onMouseWheel = function( delta:Number ) {
+				App.prefs.setVal( "widget.scale", App.prefs.getVal( "widget.scale" ) + delta * 5 );
+			}
+			
+		}
+		
+		else {
+			overlay.removeMovieClip();
+			overlay = null;
+		}
+		
+	}
+
+	/**
+	 * handles updates based on pref changes
+	 * 
+	 * @param	pref
+	 * @param	newValue
+	 * @param	oldValue
+	 */
+	private function prefChangeHandler( pref:String, newValue, oldValue ) : Void {
+		
+		switch ( pref ) {
+			
+			case "hud.enabled":
+			case "autoSwap.enabled":
+				refreshState();
+			break;
+
+	
+			case "widget.scale":
+				scale = newValue;
+			break;
+			
+			case "widget.position":
+				position = newValue;
+			break;
+			
+		}
+		
+	}
 	
 	/*
 	 * internal variables
 	 */
 
-	public var m_Overlay:MovieClip;
+	private var overlay:MovieClip;
 	
 	private var tooltip:TooltipInterface;
 	private var state:String;
@@ -201,19 +294,28 @@ class com.ElTorqiro.AegisHUD.IconWidget extends MovieClip {
 	 * properties
 	 */
 
+	public var SignalSizeChanged:Signal;
+	 
 	// the position of the moveable icon
 	public function get position() : Point { return new Point( this._x, this._y ); }
 	public function set position( value:Point ) : Void {
-		this._x = value.x;
-		this._y = value.y;
+		
+		if ( !isVtioIcon ) {
+			this._x = value.x;
+			this._y = value.y;
+		}
 	}
 
 	// the scale of the moveable icon
 	public function get scale() : Number { return this._xscale; }
 	public function set scale( value:Number ) : Void {
-		if ( value != undefined ) {
+		if ( value != undefined && !isVtioIcon ) {
 			this._xscale = this._yscale = value;
+			
+			SignalSizeChanged.Emit();
 		}
 	}
 	
+	public function get height() : Number { return _height; }
+	public function get width() : Number { return _width; }
 }

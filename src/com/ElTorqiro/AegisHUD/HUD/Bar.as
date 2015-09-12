@@ -51,19 +51,14 @@ class com.ElTorqiro.AegisHUD.HUD.Bar extends UIComponent {
 	
 	private function configUI() : Void {
 
-		App.debug( "HUD: HUD: Bar configUI start, " + group.id );
-		
 		layoutIsInvalid = true;
 		
 		// listen for pref changes
 		App.prefs.SignalValueChanged.Connect( prefChangeHandler, this );
 		
 		GlobalSignal.SignalSetGUIEditMode.Connect( manageOverlay, this );
-		
 		manageOverlay();
 
-		App.debug( "HUD: HUD: Bar configUI end, " + group.id );
-		
 	}
 	
 	/**
@@ -351,11 +346,14 @@ class com.ElTorqiro.AegisHUD.HUD.Bar extends UIComponent {
 			case "hud.bars.secondary.itemSlotPlacement":
 			case "hud.bars.shield.itemSlotPlacement":
 			case "hud.bar.background.type":
-			case "hud.scale":
 				
 				layoutIsInvalid = true;
 				invalidate();
 
+			break;
+			
+			case "hud.scale":
+				scale = newValue;
 			break;
 			
 		}

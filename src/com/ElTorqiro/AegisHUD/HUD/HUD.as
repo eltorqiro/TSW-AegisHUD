@@ -129,8 +129,6 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	 */
 	private function draw() : Void {
 		
-		App.debug( "hud draw" );
-		
 		if ( layoutIsInvalid ) {
 
 			if ( App.prefs.getVal( "hud.abilityBarIntegration.enable" ) ) {
@@ -151,8 +149,6 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	 * trigger hud to layout the bars during next draw
 	 */
 	private function layout() : Void {
-		App.debug( "hud layout" );
-		
 		layoutIsInvalid = true;
 		invalidate();
 	}

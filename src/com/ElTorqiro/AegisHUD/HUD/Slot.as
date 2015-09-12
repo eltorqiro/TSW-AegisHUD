@@ -60,8 +60,6 @@ class com.ElTorqiro.AegisHUD.HUD.Slot extends UIComponent {
 	
 	private function configUI() : Void {
 		
-		App.debug( "HUD: HUD: Slot configUI start, " + group.id + " > " + slot.id );
-		
 		// add right click handling
 		this["onPressAux"] = onPress;
 		this["onReleaseOutsideAux"] = onReleaseOutside;
@@ -69,7 +67,6 @@ class com.ElTorqiro.AegisHUD.HUD.Slot extends UIComponent {
 		// listen for pref changes
 		App.prefs.SignalValueChanged.Connect( prefChangeHandler, this );
 		
-		App.debug( "HUD: HUD: Slot configUI end, " + group.id + " > " + slot.id );
 	}
 
 	

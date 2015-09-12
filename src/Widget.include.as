@@ -1,5 +1,7 @@
 import com.ElTorqiro.AegisHUD.App;
 
+import flash.geom.Point;
+
 /**
  * standard MovieClip onLoad event handler
  */

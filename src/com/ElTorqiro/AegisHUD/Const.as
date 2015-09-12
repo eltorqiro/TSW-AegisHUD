@@ -12,9 +12,9 @@ class com.ElTorqiro.AegisHUD.Const {
 	public static var AppID:String = "ElTorqiro_AegisHUD";
 	public static var AppName:String = "AegisHUD";
 	public static var AppAuthor:String = "ElTorqiro";
-	public static var AppVersion:String = "4.0.0 alpha 4";
+	public static var AppVersion:String = "4.0.0 alpha 5";
 	
-	public static var PrefsVersion:Number = 40004;
+	public static var PrefsVersion:Number = 40005;
 	
 	public static var HudClipPath:String = "ElTorqiro_AegisHUD\\HUD.swf";
 	public static var WidgetClipPath:String = "ElTorqiro_AegisHUD\\Widget.swf";
@@ -32,6 +32,9 @@ class com.ElTorqiro.AegisHUD.Const {
 	
 	public static var MinBarScale:Number = 50;
 	public static var MaxBarScale:Number = 200;
+	
+	public static var MinWidgetScale:Number = 30;
+	public static var MaxWidgetScale:Number = 200;
 	
 	// item type enum shortcuts
 	public static var e_ItemTypeWeapon:Number = _global.Enums.ItemType.e_ItemType_Weapon;
