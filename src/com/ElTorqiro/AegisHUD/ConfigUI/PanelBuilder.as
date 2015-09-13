@@ -20,11 +20,13 @@ import com.GameInterface.UtilsBase;
  */
 class com.ElTorqiro.AegisHUD.ConfigUI.PanelBuilder {
 
+	/*
 	public function PanelBuilder( def:Object, container:MovieClip ) {
 		
 		build( def, container );
 	
 	}
+	*/
 	
 	/**
 	 * build a configuration panel as defined in a definition object, built within a container movieclip
@@ -32,7 +34,7 @@ class com.ElTorqiro.AegisHUD.ConfigUI.PanelBuilder {
 	 * @param	def
 	 * @param	container
 	 */
-	private function build( def:Object, container:MovieClip ) : Void {
+	public static function build( def:Object, container:MovieClip ) : Void {
 		
 		container.panelHeight = 0;
 		container.panelWidth = 0;
@@ -86,7 +88,7 @@ class com.ElTorqiro.AegisHUD.ConfigUI.PanelBuilder {
 				break;
 				
 				case "slider":
-					createSlider( component, id, element.label, element.min, element.max, element.valueLabelFormat );
+					createSlider( component, id, element.label, element.min, element.max, element.step, element.valueLabelFormat );
 				break;
 				
 				case "colourRGB":
@@ -136,7 +138,7 @@ class com.ElTorqiro.AegisHUD.ConfigUI.PanelBuilder {
 	 * component creators
 	 */
 	
-	private function createHeading( component:MovieClip, id:String, type:String, text:String ) : MovieClip {
+	private static function createHeading( component:MovieClip, id:String, type:String, text:String ) : MovieClip {
 		
 		var headingType:String = type ? type + "-heading" : "heading";
 		var extraSpacing:Number = 0;
@@ -171,7 +173,7 @@ class com.ElTorqiro.AegisHUD.ConfigUI.PanelBuilder {
 		return el;
 	}
 
-	private function createButton( component:MovieClip, id:String, text:String ) : MovieClip {
+	private static function createButton( component:MovieClip, id:String, text:String ) : MovieClip {
 		
 		var button:Button = Button( component.attachMovie( "button", "button", component.getNextHighestDepth() ) );
 		button.label = text;
@@ -186,12 +188,14 @@ class com.ElTorqiro.AegisHUD.ConfigUI.PanelBuilder {
 			component._y += 3;
 		}
 		
+		button._x += 5;
+		
 		component.panel.controlCursor.y += component._height;
 		
 		return component;
 	}
 	
-	private function createCheckbox( component:MovieClip, id:String, label:String ) : MovieClip {
+	private static function createCheckbox( component:MovieClip, id:String, label:String ) : MovieClip {
 
 		component.checkboxClickHandler = function( event:Object ) {
 			this.onChange( { component: this, value: this.getValue() } );
@@ -227,7 +231,7 @@ class com.ElTorqiro.AegisHUD.ConfigUI.PanelBuilder {
 		return component;
 	}
 	
-	private function createDropdown( component:MovieClip, id:String, label:String, list:Array ) : MovieClip {
+	private static function createDropdown( component:MovieClip, id:String, label:String, list:Array ) : MovieClip {
 
 		component.list = list;
 		
@@ -273,7 +277,7 @@ class com.ElTorqiro.AegisHUD.ConfigUI.PanelBuilder {
 		dropdown.width = dropdownWidth;
 		dropdown._x = component.panel.columnWidth - component.panel.indent - dropdownWidth;
 		
-		dropdown.dropdown.addEventListener( "focusIn", this, "clearFocus" );
+		dropdown.dropdown.addEventListener( "focusIn", clearFocus );
 		dropdown.addEventListener( "change", component, "dropdownChangeHandler" );
 
 		// initial load of value
@@ -284,7 +288,7 @@ class com.ElTorqiro.AegisHUD.ConfigUI.PanelBuilder {
 		return component;
 	}
 
-	private function createSlider( component:MovieClip, id:String, label:String, min:Number, max:Number, valueLabelFormat:String ) : MovieClip {
+	private static function createSlider( component:MovieClip, id:String, label:String, min:Number, max:Number, step:Number, valueLabelFormat:String ) : MovieClip {
 
 		component.sliderChangeHandler = function( event:Object ) {
 			this.onChange( { component: this, value: this.getValue() } );
@@ -322,16 +326,16 @@ class com.ElTorqiro.AegisHUD.ConfigUI.PanelBuilder {
 		
 		slider.minimum = min;
 		slider.maximum = max;
-		slider.snapInterval = 1;
+		slider.snapInterval = step == undefined ? 1 : step;
 		slider.snapping = true;
 		slider.liveDragging = true;
 		slider.value = min;
 
 		slider.width = component.panel.columnWidth - 50;
 		slider._x = 6;
-		slider._y = sliderLabel.textField._height + 2;
+		slider._y = sliderLabel.textField._height;
 
-		slider.addEventListener( "focusIn", this, "clearFocus" );
+		slider.addEventListener( "focusIn", clearFocus );
 		slider.addEventListener( "change", component, "sliderChangeHandler" );
 		
 		// add value label
@@ -346,12 +350,12 @@ class com.ElTorqiro.AegisHUD.ConfigUI.PanelBuilder {
 		// initial load of value
 		component.loader();
 		
-		component.panel.controlCursor.y += component._height;
+		component.panel.controlCursor.y += component._height + 3;
 		
 		return component;
 	}
 
-	private function createColourRGB( component:MovieClip, id:String, label:String ) : MovieClip {
+	private static function createColourRGB( component:MovieClip, id:String, label:String ) : MovieClip {
 		
 		component.value = 0;
 		
@@ -512,7 +516,7 @@ class com.ElTorqiro.AegisHUD.ConfigUI.PanelBuilder {
 		return component;
 	}
 
-	private function clearFocus( event:Object ) : Void {
+	private static function clearFocus( event:Object ) : Void {
 		
 		event.target.focused = false;
 		//Selection.setFocus( null );

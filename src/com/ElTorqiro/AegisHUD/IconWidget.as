@@ -29,6 +29,11 @@ class com.ElTorqiro.AegisHUD.IconWidget extends MovieClip {
 
 		isVtioIcon = _name == "Icon";
 		
+		// no point keeping the old icon around if vtio has created a fresh one
+		if ( isVtioIcon ) {
+			_parent.m_Icon.removeMovieClip();
+		}
+		
 		AegisServer.SignalAegisSystemUnlocked.Connect( refreshState, this );
 		refreshState();
 		
@@ -40,14 +45,8 @@ class com.ElTorqiro.AegisHUD.IconWidget extends MovieClip {
 			this.filters = [ new DropShadowFilter( 50, 1, 0, 0.8, 8, 8, 1, 3, false, false, false ) ];
 			
 			scale = App.prefs.getVal( "widget.scale" );
+			loadPosition();
 
-			var pos:Point = App.prefs.getVal( "widget.position" );
-			if ( pos == undefined ) {
-				pos = new Point( Math.floor((Stage.visibleRect.width - this._width) / 2), Math.floor((Stage.visibleRect.height + this._height) / 4) );
-			}
-
-			position = pos;
-			
 			GlobalSignal.SignalSetGUIEditMode.Connect( manageOverlay, this );
 			manageOverlay();
 			
@@ -56,6 +55,19 @@ class com.ElTorqiro.AegisHUD.IconWidget extends MovieClip {
 		// listen for pref changes
 		App.prefs.SignalValueChanged.Connect( prefChangeHandler, this );
 		
+	}
+	
+	/**
+	 * moves icon to loaded position
+	 */
+	private function loadPosition() : Void {
+		
+		var pos:Point = App.prefs.getVal( "widget.position" );
+		if ( pos == undefined ) {
+			pos = new Point( Math.floor((Stage.visibleRect.width - this._width) / 2), Math.floor((Stage.visibleRect.height + this._height) / 4) );
+		}
+		
+		position = pos;
 	}
 	
 	/**
@@ -272,7 +284,7 @@ class com.ElTorqiro.AegisHUD.IconWidget extends MovieClip {
 			break;
 			
 			case "widget.position":
-				position = newValue;
+				loadPosition();
 			break;
 			
 		}

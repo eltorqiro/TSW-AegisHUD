@@ -1,9 +1,17 @@
+4.0.0 alpha 5 -- 2015-09-14
+
+  + restored the ability to move and resize the hud bars and app icon; use the game's GUI Edit Mode to toggle the movement ui
+  
+  * changed the way ability bar integration is managed - it is now always on if the bars are in their default position (you can reset it in the config window), and is toggled off if you manually move the bars
+  * modified config window visual style to (hopefully) be easier to see the controls
+ 
+ 
 4.0.0 alpha 4 -- 2015-09-10
 
  * first 'released' public alpha test for the 4.x branch
  * fully operational, except for: positioning HUD via GUI Edit Mode, quick change of autoswap focus, and UltimateAbility addon compatibility
-
-
+ 
+ 
 4.0.0 alpha 3 -- 2015-09-10
  
  * public alpha test release for the 4.x branch

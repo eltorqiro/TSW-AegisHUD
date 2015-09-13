@@ -1,17 +1,7 @@
-import com.Components.WindowComponentContent;
 import flash.geom.Point;
-import gfx.controls.CheckBox;
-import gfx.controls.DropdownMenu;
-import gfx.controls.Button;
-import gfx.controls.Slider;
-import gfx.controls.TextInput;
 import mx.utils.Delegate;
 import com.GameInterface.UtilsBase;
 import com.GameInterface.DistributedValue;
-
-import com.GameInterface.Tooltip.TooltipManager;
-import com.GameInterface.Tooltip.TooltipData;
-import com.GameInterface.Tooltip.TooltipInterface;
 
 import com.ElTorqiro.AegisHUD.ConfigUI.PanelBuilder;
 import com.ElTorqiro.AegisHUD.Const;
@@ -31,8 +21,6 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 		
 		super.configUI();
 
-		createEmptyMovieClip( "m_Panel", getNextHighestDepth() );
-		
 		// define the config panel to be built
 		var def:Object = {
 			
@@ -57,7 +45,7 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					loader: componentLoadHandler,
 					saver: componentSaveHandler
 				},
-
+				/*
 				{ type: "block"
 				},
 				
@@ -69,7 +57,7 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					loader: componentLoadHandler,
 					saver: componentSaveHandler
 				},
-				
+				*/
 				{ type: "block"
 				},
 				
@@ -628,9 +616,84 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 				},
 				
 				{	type: "heading",
-					text: "Actions"
+					text: "Size & Position"
 				},
 				
+				{	id: "hud.scale",
+					type: "slider",
+					min: Const.MinBarScale,
+					max: Const.MaxBarScale,
+					step: 5,
+					valueLabelFormat: "%i%%",
+					label: "Bar Scale",
+					tooltip: "The scale of the HUD bars.  You can also change this in GUI Edit Mode by scrolling the mouse wheel while hovering over any of the bars.",
+					data: { pref: "hud.scale" },
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
+				},
+
+				{	type: "button",
+					text: "Reset bar position",
+					tooltip: "Reset bar positions to default, which will also integrate them with the ability bar.",
+					onClick: function() {
+						App.prefs.setVal( "hud.abilityBarIntegration.enable", true );
+					}
+				}
+				
+			]
+		};
+		
+		// only add icon related settings if not using VTIO
+		if ( !App.isRegisteredWithVtio ) {
+			
+			def.layout = def.layout.concat( [
+				
+				{	type: "block"
+				},
+
+				{	id: "widget.scale",
+					type: "slider",
+					min: Const.MinWidgetScale,
+					max: Const.MaxWidgetScale,
+					step: 5,
+					valueLabelFormat: "%i%%",
+					label: "Icon Scale",
+					tooltip: "The scale of the AegisHUD icon.  You can also change this in GUI Edit Mode by scrolling the mouse wheel while hovering over the icon.",
+					data: { pref: "widget.scale" },
+					loader: componentLoadHandler,
+					saver: componentSaveHandler
+				},
+
+				{	type: "button",
+					text: "Reset icon position",
+					tooltip: "Reset icon to its default position.",
+					onClick: function() {
+						App.prefs.setVal( "widget.position", undefined );
+					}
+				}
+			] );
+			
+		}
+		
+		def.layout = def.layout.concat( [
+			{	type: "heading",
+				text: "Global Reset"
+			},
+
+			{	type: "button",
+				text: "Reset all to defaults",
+				onClick: Delegate.create( this, resetAllDefaults )
+			}
+		] );
+		
+		// build the panel based on definition
+		PanelBuilder.build( def, createEmptyMovieClip( "m_Panel", getNextHighestDepth() ) );
+		
+		// set up listener for pref changes
+		App.prefs.SignalValueChanged.Connect( prefListener, this );
+		
+		def = {
+			layout: [
 				{	type: "button",
 					text: "Visit forum thread",
 					tooltip: "Click to open the in-game browser and visit the forum thread for the addon.",
@@ -639,27 +702,14 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 						DistributedValue.SetDValue("WebBrowserStartURL", "https://forums.thesecretworld.com/showthread.php?80429-MOD-ElTorqiro_AegisHUD");
 						DistributedValue.SetDValue("web_browser", true);
 					}
-				},
-
-				{	type: "block"
-				},
-				
-				{	type: "button",
-					text: "Reset all to defaults",
-					onClick: Delegate.create( this, resetAllDefaults )
 				}
-
 			]
-
 		};
 		
-		// build the panel based on definition
-		var panel:PanelBuilder = new PanelBuilder( def, m_Panel );
-		
-		//loadValues();
-		
-		// set up listener for pref changes
-		App.prefs.SignalValueChanged.Connect( prefListener, this );
+		PanelBuilder.build( def, createEmptyMovieClip( "m_TitleBarPanel", getNextHighestDepth() ) );
+		//m_TitleBarPanel._x = 170;
+		m_TitleBarPanel._x = _parent.m_Title.textWidth + 20;
+		m_TitleBarPanel._y -= m_TitleBarPanel._height + 11;
 		
 		//SetSize( Math.round(Math.max(m_Content._width, 200)), Math.round(Math.max(m_Content._height, 200)) );
 		SignalSizeChanged.Emit();
@@ -812,6 +862,7 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 	 */
 	
 	public var m_Panel:MovieClip;
+	public var m_TitleBarPanel:MovieClip;
 	
 	/*
 	 * properties

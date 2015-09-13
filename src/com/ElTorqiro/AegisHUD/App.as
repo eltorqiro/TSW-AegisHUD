@@ -326,6 +326,7 @@ class com.ElTorqiro.AegisHUD.App {
 
 		debug( "App: registered with VTIO" );
 		
+		_isRegisteredWithVtio = true;
 		vtio = null;
 	}
 	
@@ -549,4 +550,7 @@ class com.ElTorqiro.AegisHUD.App {
 	
 	private static var _guiEditMode:Boolean;
 	public static function get guiEditMode() : Boolean { return _guiEditMode; }
+	
+	private static var _isRegisteredWithVtio:Boolean;
+	public static function get isRegisteredWithVtio() : Boolean { return _isRegisteredWithVtio; }
 }

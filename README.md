@@ -5,7 +5,8 @@ AegisHUD UI mod for the MMORPG "The Secret World"
    
 What is this?
 -------------
-ElTorqiro_AegisHUD is a drop-in heads-up-display module for selecting active Aegis controllers, and is intended to replace the default in-game Aegis selector buttons.
+ElTorqiro_AegisHUD is an Aegis system management module. It includes a customisable HUD for visualising and interacting with your Aegis layout, an advanced multi-swap hotkey override feature, and an AutoSwap option that can be tailored to your preferences.
+
 Feedback, updates and community forum can be found at http://forums.thesecretworld.com/showthread.php?t=80429
    
    
@@ -13,17 +14,19 @@ User Configuration
 ------------------
 The mod provides an interactive on-screen icon which can be used to bring up a comprehensive configuration panel.  Hover the mouse over the icon for instructions.  If you have Viper's Topbar Information Overload (VTIO) installed, or an equivalent handler, the icon will be available in a VTIO slot.
    
-You can also toggle the configuration window with the option ElTorqiro_AegisHUD_ShowConfig, which can be set via a chat command as follows:
-/setoption ElTorqiro_AegisHUD_ShowConfig 1
+You can also toggle the configuration window with the option ElTorqiro_AegisHUD_ShowConfigWindow, which can be set via a chat command as follows:
+/setoption ElTorqiro_AegisHUD_ShowConfigWindow 1
 (1 = open, 0 = closed)
    
    
 Known Issues and Gotchas
 ------------------------
-* On some rare occasions, when using bulk Aegis XP cannisters the "XP gain" trigger event is not fired by the game API.  This leaves the XP display on the AegisHUD on the old value.  Re-equipping the affected controller, doing a /reloadui, or waiting for a regular XP gain event will fetch the new value.
+* On some rare occasions, the "XP gain" trigger event is not fired by the game API when consuming bulk Aegis XP cannisters.  This leaves the XP display on the AegisHUD on the old value.  Re-equipping the affected controller, doing a /reloadui, or waiting for a regular XP gain event will fetch the new value.
 
-* If you change shields in a PvP zone, the game treats it like all other gear changes and resets your Equal Footing buff.  This will drop your health down to unbuffed levels (e.g. 13k down to 3k).  If you have AutoSwap enabled, it will try to swap shields every time you're out of combat, which will reset the buff and you will die very quickly as a result :)  Since there is no need for Aegis mechanics in PvP zones, the simplest thing to do is to toggle the AegisHUD off (or at least disable AutoSwap) when you are in a PvP zone to avoid unexpected swaps leaving you "healthless".
-   
+* If you change shields in a PvP zone, the game treats it like all other gear changes and resets your Equal Footing buff.  This will drop your health down to unbuffed levels (e.g. 13k down to 3k).  If you have AutoSwap enabled, by default it will try to swap shields every time you're out of combat, which will reset the buff and you will die very quickly as a result :)  To avoid this, there is an AutoSwap option to prevent PvP opponents from being treated as "enemies" for the purposes of AutoSwap behaviour.  However, since there is no need for Aegis mechanics in PvP zones, the simplest thing to do is to toggle the AegisHUD off when you are in a PvP zone, as the fewer things you have running in PvP the better.
+
+* The AutoSwap feature in AegisHUD is not compatible with any other mod that also performs AutoSwap. Due to the way swapping of Aegis is done through the game API, no two or more mods that do AutoSwap can ever work together. You can disable AegisHUD's AutoSwap feature if you prefer a different AutoSwap mod for some reason. Note: As far as I know, the autoswapping mod "Auto_Aegis" needs to be completely deleted to stop it trying to swap Aegis.
+  
    
 Installation
 ------------
