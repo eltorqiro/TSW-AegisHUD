@@ -20,13 +20,7 @@ import com.GameInterface.UtilsBase;
  */
 class com.ElTorqiro.AegisHUD.ConfigUI.PanelBuilder {
 
-	/*
-	public function PanelBuilder( def:Object, container:MovieClip ) {
-		
-		build( def, container );
-	
-	}
-	*/
+	private function PanelBuilder() { }
 	
 	/**
 	 * build a configuration panel as defined in a definition object, built within a container movieclip

@@ -203,8 +203,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		centre.y -= bars[ "primary" ].height + 3;
 		
 		// adjust top for animus charge bar
-		//if ( animusBarVisibilityMonitor.GetValue() ) {
-		if ( _root.passivebar.m_UltimateProgress._visible ) {
+		if ( animusBarVisibilityMonitor.GetValue() ) {
+		//if ( _root.passivebar.m_UltimateProgress._visible ) {
 			centre.y -= 10;
 		}
 		
