@@ -1,6 +1,8 @@
 4.0.0 beta -- 2015-09-??
 
   * clicking an already selected slot with a multi-select button will now perform multi-select on the other bars
+  * fixed the updating of weapon slots when weapons are changed
+  * fixed (I think) some slots showing empty after zoning
   
 
 4.0.0 alpha 5 -- 2015-09-14

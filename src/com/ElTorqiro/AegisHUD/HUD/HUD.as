@@ -34,6 +34,12 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		
 		timers = { };
 		
+		// set up listeners for aegis server slot changes
+		// important that this happens before bars are created, so that initial state can be captured properly
+		AegisServer.SignalItemChanged.Connect( itemChanged, this );
+		AegisServer.SignalSelectionChanged.Connect( selectionChanged, this );
+		AegisServer.SignalXPChanged.Connect( xpChanged, this );
+		
 		// add bars
 		bars = {
 			primary: attachMovie( "bar", "primary", getNextHighestDepth(), { group: AegisServer.groups["primary"] } ),
@@ -91,11 +97,6 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		// perform initial layout
 		initLayout();
 		
-		// set up listeners for aegis server slot changes
-		AegisServer.SignalItemChanged.Connect( itemChanged, this );
-		AegisServer.SignalSelectionChanged.Connect( selectionChanged, this );
-		AegisServer.SignalXPChanged.Connect( xpChanged, this );
-
 		// set up listener for ultimate ability progress bar visibility
 		animusBarVisibilityMonitor = DistributedValue.Create( "ShowAnimaEnergyBar" );
 		animusBarVisibilityMonitor.SignalChanged.Connect( layout, this );
