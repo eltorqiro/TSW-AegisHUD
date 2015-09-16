@@ -488,7 +488,7 @@ class com.ElTorqiro.AegisHUD.Server.AegisServer {
 		aegisItems[ item.m_AegisItemType ].slot = slot;
 		
 		// only trigger signals if the item has actually changed, not just the location info
-		if ( Boolean(oldItem) != Boolean(item) ) {
+		if ( oldItem.m_Icon.toString() != item.m_Icon.toString() ) {
 
 			slot.aegisTypeName = aegisItems[ item.m_AegisItemType ].aegisTypeName;
 			

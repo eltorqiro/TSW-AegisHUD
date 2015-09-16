@@ -380,8 +380,6 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 		// move bar to position (layout will handle test for prefs etc)
 		layout();
 	}
-
-	
 	
 	/**
 	 * handles item changes in aegis server slots
