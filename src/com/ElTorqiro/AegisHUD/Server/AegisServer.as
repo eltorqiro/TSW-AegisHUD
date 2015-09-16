@@ -360,56 +360,57 @@ class com.ElTorqiro.AegisHUD.Server.AegisServer {
 			toSlot = group.slots[ slotID ];
 		}
 		
-		if ( toSlot == fromSlot ) return;
+		if ( toSlot != fromSlot ) {
 
-		var success:Boolean;
-		
-		// swapping to shields involves "using" the item
-		if ( groupID == "shield" ) {
-
-			// swapping shields can only be done out of combat			
-			if ( character.IsInCombat() || character.IsGhosting() || character.IsDead() ) return;
-
-			var inventory:Inventory = toSlot.inventoryID.GetType() == equipped.GetInventoryID().GetType() ? equipped : backpack;
+			var success:Boolean;
 			
-			// don't unequip the slotted shield if it is clicked, or if there is no item in the slot
-			if ( inventory == equipped || toSlot.item == undefined ) return;
+			// swapping to shields involves "using" the item
+			if ( groupID == "shield" ) {
 
-			// otherwise use the item to initiate a swap
-			inventory.UseItem( toSlot.position );
+				// swapping shields can only be done out of combat			
+				if ( character.IsInCombat() || character.IsGhosting() || character.IsDead() ) return;
 
-			success = true;
-		}
+				var inventory:Inventory = toSlot.inventoryID.GetType() == equipped.GetInventoryID().GetType() ? equipped : backpack;
+				
+				// don't unequip the slotted shield if it is clicked, or if there is no item in the slot
+				if ( inventory == equipped || toSlot.item == undefined ) return;
 
-		// disruptors rotate through available slots
-		else {
-		
-			// switch forward?
-			if ( nextPrevMap[ fromSlot.id ].next == toSlot.id ) {
-				// first param is first/second aegis, second param is forward/back
-				Character.SwapAegisController( groupID == "primary", true);
-			}
-			
-			// or switch back? (doing the extra check instead of an arbitrary 'else' prevents double-jumps caused by switch latency)
-			else if ( nextPrevMap[ fromSlot.id ].prev == toSlot.id ) {
-				Character.SwapAegisController( groupID == "primary", false);
+				// otherwise use the item to initiate a swap
+				inventory.UseItem( toSlot.position );
+
+				success = true;
 			}
 
-			success = true;
-		}
-		
-		if ( success ) {
-			// restart post-swap callback
-			postSwapCatchup(true);
+			// disruptors rotate through available slots
+			else {
 			
-			// important to update the internal pointer for the aegis location
-			// even before we find out if the swap was successful
-			// otherwise rapid clicks can cause the selection to jump 2 spots (for disruptors) or do a swapback (for shields)
+				// switch forward?
+				if ( nextPrevMap[ fromSlot.id ].next == toSlot.id ) {
+					// first param is first/second aegis, second param is forward/back
+					Character.SwapAegisController( groupID == "primary", true);
+				}
+				
+				// or switch back? (doing the extra check instead of an arbitrary 'else' prevents double-jumps caused by switch latency)
+				else if ( nextPrevMap[ fromSlot.id ].prev == toSlot.id ) {
+					Character.SwapAegisController( groupID == "primary", false);
+				}
 
-			group.selectedSlot = toSlot;
-			SignalSelectionChanged.Emit( groupID, toSlot.id, fromSlot.id );
+				success = true;
+			}
+			
+			if ( success ) {
+				// restart post-swap callback
+				postSwapCatchup(true);
+				
+				// important to update the internal pointer for the aegis location
+				// even before we find out if the swap was successful
+				// otherwise rapid clicks can cause the selection to jump 2 spots (for disruptors) or do a swapback (for shields)
+
+				group.selectedSlot = toSlot;
+				SignalSelectionChanged.Emit( groupID, toSlot.id, fromSlot.id );
+			}
 		}
-
+			
 		// handle multiselect
 		if ( multi == Const.e_SelectMulti && multiSelectGroups[groupID] != undefined ) {
 			for ( var s:String in multiSelectGroups ) {

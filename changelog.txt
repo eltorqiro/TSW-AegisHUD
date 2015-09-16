@@ -1,3 +1,8 @@
+4.0.0 beta -- 2015-09-??
+
+  * clicking an already selected slot with a multi-select button will now perform multi-select on the other bars
+  
+
 4.0.0 alpha 5 -- 2015-09-14
 
   + restored the ability to move and resize the hud bars and app icon; use the game's GUI Edit Mode to toggle the movement ui
