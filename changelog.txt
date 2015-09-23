@@ -1,4 +1,4 @@
-4.0.0 beta -- 2015-09-??
+4.0.0 beta -- 2015-09-24
 
   + added a default screen position that is used if the passive bar is offscreen or missing
   + you can now move the bars as a group, using the right mouse button when in GUI Edit Mode
@@ -6,6 +6,8 @@
   * clicking an already selected slot with a multi-select button will now perform multi-select on the other bars
   * fixed the updating of weapon slots when weapons are changed
   * fixed (I think) some slots showing empty after zoning
+  
+  * [tech] refactored to ensure unique classnames are always used with movieclips, which avoids collisions with other mods
   
 
 4.0.0 alpha 5 -- 2015-09-14
