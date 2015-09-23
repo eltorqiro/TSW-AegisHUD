@@ -1,13 +1,12 @@
 import com.Utils.Signal;
 import com.GameInterface.DistributedValue;
-import mx.utils.Delegate;
 
 
 /**
  * 
  * 
  */
-class com.ElTorqiro.AegisHUD.VTIOConnector {
+class com.ElTorqiro.AegisHUD.AddonUtils.VTIOConnector {
 	
 	public function VTIOConnector( id:String, author:String, version:String, dv:String, icon:MovieClip, callback:Function ) {
 		
@@ -96,4 +95,7 @@ class com.ElTorqiro.AegisHUD.VTIOConnector {
 		
 		return _isRegistered;
 	}
+	
+	public static var e_VtioDepthLayer:Number = _global.Enums.ViewLayer.e_ViewLayerTop;
+	public static var e_VtioSubDepth:Number = 2;
 }

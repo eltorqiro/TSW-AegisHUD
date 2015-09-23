@@ -3,7 +3,7 @@ import mx.utils.Delegate;
 import com.GameInterface.UtilsBase;
 import com.GameInterface.DistributedValue;
 
-import com.ElTorqiro.AegisHUD.ConfigUI.PanelBuilder;
+import com.ElTorqiro.AegisHUD.AddonUtils.UI.PanelBuilder;
 import com.ElTorqiro.AegisHUD.Const;
 import com.ElTorqiro.AegisHUD.App;
 
@@ -636,7 +636,7 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					text: "Reset bar position",
 					tooltip: "Reset bar positions to default, which will also integrate them with the ability bar.",
 					onClick: function() {
-						App.prefs.setVal( "hud.abilityBarIntegration.enable", true );
+						App.prefs.setVal( "hud.position.default", true );
 					}
 				}
 				
@@ -651,15 +651,15 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 				{	type: "block"
 				},
 
-				{	id: "widget.scale",
+				{	id: "icon.scale",
 					type: "slider",
-					min: Const.MinWidgetScale,
-					max: Const.MaxWidgetScale,
+					min: Const.MinIconScale,
+					max: Const.MaxIconScale,
 					step: 5,
 					valueLabelFormat: "%i%%",
 					label: "Icon Scale",
-					tooltip: "The scale of the AegisHUD icon.  You can also change this in GUI Edit Mode by scrolling the mouse wheel while hovering over the icon.",
-					data: { pref: "widget.scale" },
+					tooltip: "The scale of the app icon.  You can also change this in GUI Edit Mode by scrolling the mouse wheel while hovering over the icon.",
+					data: { pref: "icon.scale" },
 					loader: componentLoadHandler,
 					saver: componentSaveHandler
 				},
@@ -668,7 +668,7 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					text: "Reset icon position",
 					tooltip: "Reset icon to its default position.",
 					onClick: function() {
-						App.prefs.setVal( "widget.position", undefined );
+						App.prefs.setVal( "icon.position", undefined );
 					}
 				}
 			] );
@@ -748,8 +748,8 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 
 		var prefs:Array = [
 		
-			"widget.position",
-			"widget.scale",
+			"icon.position",
+			"icon.scale",
 			
 			"hud.enabled",
 
@@ -768,6 +768,7 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 			"hud.hide.whenAutoswapEnabled",
 			"hud.hide.whenNotInCombat",
 			
+			"hud.position.default",
 			"hud.scale",
 			
 			"hud.icons.type",

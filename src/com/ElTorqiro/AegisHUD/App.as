@@ -1,6 +1,3 @@
-import com.Utils.Archive;
-import mx.utils.Delegate;
-
 import com.Utils.GlobalSignal;
 
 import com.Utils.Signal;
@@ -14,11 +11,16 @@ import com.GameInterface.UtilsBase;
 import com.GameInterface.LogBase;
 
 import com.ElTorqiro.AegisHUD.Const;
-import com.ElTorqiro.AegisHUD.Preferences;
-import com.ElTorqiro.AegisHUD.VTIOConnector;
 import com.ElTorqiro.AegisHUD.Server.AegisServer;
 import com.ElTorqiro.AegisHUD.AutoSwapper;
 import com.ElTorqiro.AegisHUD.HotkeyManager;
+import com.ElTorqiro.AegisHUD.AddonUtils.CommonUtils;
+import com.ElTorqiro.AegisHUD.AddonUtils.Preferences;
+import com.ElTorqiro.AegisHUD.AddonUtils.VTIOConnector;
+
+import com.ElTorqiro.AegisHUD.AddonUtils.MovieClipHelper;
+import com.ElTorqiro.AegisHUD.HUD.HUD;
+
 
 /**
  * 
@@ -30,14 +32,15 @@ class com.ElTorqiro.AegisHUD.App {
 	private function App() { }
 	
 	// starts the app running
-	public static function start() {
+	public static function start( host:MovieClip ) {
 
 		if ( running ) return;
 		_running = true;
 		
 		debug( "App: start" );
 		
-		timers = { };
+		hostMovie = host;
+		hostMovie._visible = false;
 		
 		// load preferences
 		prefs = new Preferences( Const.PrefsName );
@@ -50,12 +53,25 @@ class com.ElTorqiro.AegisHUD.App {
 		// start aegis server running
 		AegisServer.start();
 
-		// attach widget
-		widgetClip = SFClipLoader.LoadClip( Const.WidgetClipPath, Const.AppID + "_Widget", false, _global.Enums.ViewLayer.e_ViewLayerTop, 2, [] );
-		widgetClip.SignalLoaded.Connect( widgetLoaded );
+		// attach app icon
+		iconClip = SFClipLoader.LoadClip( Const.IconClipPath, Const.AppID + "_Icon", false, Const.IconClipDepthLayer, Const.IconClipSubDepth, [] );
+		iconClip.SignalLoaded.Connect( iconLoaded );
 	
-		// listen for GUI edit mode signal, to retain state so the HUD can use it even if the HUD is not enabled when the signal is emitted
+		// attach hud
+		hudMovie = HUD( MovieClipHelper.createMovieWithClass( HUD, "m_HUD", hostMovie, hostMovie.getNextHighestDepth() ) );
+		LoreBase.SignalTagAdded.Connect( loreTagAddedHandler );
+		
+		// prepare for config window signal
+		showConfigWindowMonitor = DistributedValue.Create( Const.ShowConfigWindowDV );
+		
+		// listen for GUI edit mode signal
 		GlobalSignal.SignalSetGUIEditMode.Connect( guiEditModeChangeHandler );
+		
+		// set up listener for combat state changes
+		Character.GetClientCharacter().SignalToggleCombat.Connect( manageVisibility );
+
+		// listen for pref changes and route to appropriate behaviour
+		prefs.SignalValueChanged.Connect( prefChangeHandler );
 		
 	}
 
@@ -65,24 +81,38 @@ class com.ElTorqiro.AegisHUD.App {
 	public static function stop() : Void {
 		
 		debug( "App: stop" );
+
+		// stop listening for pref value changes
+		prefs.SignalValueChanged.Disconnect( prefChangeHandler );
 		
+		// stop listening for gui edit mode signal
 		GlobalSignal.SignalSetGUIEditMode.Disconnect( guiEditModeChangeHandler );
 		
-		// unload widget
-		SFClipLoader.UnloadClip( Const.AppID + "_Widget" );
-		widgetClip = null;
+		// set up listener for combat state changes
+		Character.GetClientCharacter().SignalToggleCombat.Disconnect( manageVisibility );
+		
+		// release resources for config window signal
+		showConfigWindowMonitor = null;
+		
+		// unload icon
+		SFClipLoader.UnloadClip( Const.AppID + "_Icon" );
+		iconClip = null;
+		
+		// unload hud
+		LoreBase.SignalTagAdded.Disconnect( loreTagAddedHandler );
+		hudMovie.dispose();
+		hudMovie.removeMovieClip();
+		hudMovie = null;
 
 		// stop aegis server
 		AegisServer.stop();
-
+		
 		// remove prefs
 		prefs.dispose();
 		prefs = null;
 		
-		// remove timers
-		timers = null;
-		
 		_running = false;
+
 	}
 	
 	/**
@@ -95,13 +125,12 @@ class com.ElTorqiro.AegisHUD.App {
 		
 		_active = true;
 		
-		// show widget clip
-		manageWidgetVisibility();
+		// component clip visibility
+		iconClip.m_Movie._visible = true;
+		manageVisibility();
 
 		// determine hud enabled state based on playfield memory
-		// hud clip will be loaded if the hud becomes enabled at this point, courtesy of the pref event listener
 		prefs.setVal( "hud.enabled", !(prefs.getVal( "hud.disabledPlayfields" )[ Character.GetClientCharacter().GetPlayfieldID() ]) );
-		manageHud();
 		
 		// manipulate default ui elements
 		manageDefaultUiShieldButton();
@@ -113,13 +142,11 @@ class com.ElTorqiro.AegisHUD.App {
 		manageHotkeys();
 
 		// manage config window
-		manageConfigWindow();
-		showConfigWindowMonitor = DistributedValue.Create( Const.ShowConfigWindowDV );
 		showConfigWindowMonitor.SignalChanged.Connect( manageConfigWindow );
+		manageConfigWindow();
 
-		// listen for pref changes and route to appropriate behaviour
-		prefs.SignalValueChanged.Connect( prefChangeHandler );
-		
+		// inform the HUD that the GUI has been activated
+		hudMovie.activate();
 	}
 	
 	/**
@@ -132,39 +159,38 @@ class com.ElTorqiro.AegisHUD.App {
 		
 		_active = false;
 
+		// inform the HUD that the GUI has been activated
+		hudMovie.deactivate();
+		
 		// destroy config window
 		showConfigWindowMonitor.SetValue ( false );
 		showConfigWindowMonitor.SignalChanged.Disconnect( manageConfigWindow );
-		showConfigWindowMonitor = null;
-		
-		// stop listening for pref value changes
-		prefs.SignalValueChanged.Disconnect( prefChangeHandler );
-		
-		// update playfield hud enabled memory
-		var playfield:Number = Character.GetClientCharacter().GetPlayfieldID();
-		var blacklist:Object = prefs.getVal( "hud.disabledPlayfields" );
-		if ( !hudEnabled ) {
-			blacklist[ playfield ] = true;
-		}
-		
-		else {
-			delete blacklist[ playfield ];
-		}
 
-		// hide widget clip
-		manageWidgetVisibility();
-		
-		// destroy hud clip
-		manageHud();
-		
-		// restore default ui elements
-		manageDefaultUiShieldButton();
-		
-		// stop autoswapper
-		manageAutoSwapper();
-		
 		// release hotkeys
 		manageHotkeys();
+
+		// stop autoswapper
+		manageAutoSwapper();
+
+		// restore default ui elements
+		manageDefaultUiShieldButton();
+
+		// update playfield hud enabled memory
+		var playfield:Number = Character.GetClientCharacter().GetPlayfieldID();
+		if ( playfield != undefined ) {
+			var blacklist:Object = prefs.getVal( "hud.disabledPlayfields" );
+			if ( prefs.getVal( "hud.enabled" ) ) {
+				delete blacklist[ playfield ];
+			}
+			
+			else {
+				blacklist[ playfield ] = true;
+			}
+		}
+
+		// component clip visibility
+		iconClip.m_Movie._visible = true;
+		manageVisibility();
 		
 		// save settings
 		prefs.save();
@@ -180,11 +206,18 @@ class com.ElTorqiro.AegisHUD.App {
 		prefs.add( "app.installed", false );
 		
 		prefs.add( "configWindow.position", undefined );
+		
+		/**
+		 * use of name "widget" changed to "icon" in 4.0.0 beta, retained here solely for upgrading purposes
+		 */
 		prefs.add( "widget.position", undefined );
-		prefs.add( "widget.scale", 100,
+		prefs.add( "widget.scale", 100 );
+		
+		prefs.add( "icon.position", undefined );
+		prefs.add( "icon.scale", 100,
 			function( newValue, oldValue ) {
-				var value:Number = Math.min( newValue, Const.MaxWidgetScale );
-				value = Math.max( value, Const.MinWidgetScale );
+				var value:Number = Math.min( newValue, Const.MaxIconScale );
+				value = Math.max( value, Const.MinIconScale );
 				
 				return value;
 			}
@@ -209,6 +242,7 @@ class com.ElTorqiro.AegisHUD.App {
 		prefs.add( "hud.hide.whenAutoswapEnabled", false );
 		prefs.add( "hud.hide.whenNotInCombat", false );
 		
+		prefs.add( "hud.position.default", true );
 		prefs.add( "hud.scale", 100,
 			function( newValue, oldValue ) {
 				var value:Number = Math.min( newValue, Const.MaxBarScale );
@@ -220,6 +254,7 @@ class com.ElTorqiro.AegisHUD.App {
 		
 		prefs.add( "hud.icons.type", Const.e_IconTypeAegisHUD );
 		
+		// retired with the 4.0.0 beta update, kept here for upgrade purposes only
 		prefs.add( "hud.abilityBarIntegration.enable", true );
 
 		prefs.add( "hud.bars.primary.position", undefined );
@@ -284,16 +319,17 @@ class com.ElTorqiro.AegisHUD.App {
 			
 			case "hud.enabled":
 				manageAutoSwapper();
-				manageHud();
+				manageVisibility();
 			break;
 			
 			case "autoSwap.enabled":
 				manageAutoSwapper();
-				manageHud();
+				manageVisibility();
 			break;
 			
-		case "hud.hide.whenAutoswapEnabled":
-				manageHud();
+			case "hud.hide.whenAutoswapEnabled":
+			case "hud.hide.whenNotInCombat":
+				manageVisibility();
 			break;
 			
 			case "defaultUI.shieldSelector.hide":
@@ -305,38 +341,32 @@ class com.ElTorqiro.AegisHUD.App {
 	}
 	
 	/**
-	 * triggers updates that need to occur after the widget clip has been loaded
+	 * triggers updates that need to occur after the icon clip has been loaded
 	 * 
 	 * @param	clipNode
 	 * @param	success
 	 */
-	private static function widgetLoaded( clipNode:ClipNode, success:Boolean ) : Void {
-		debug("App: widget loaded: " + success);
+	private static function iconLoaded( clipNode:ClipNode, success:Boolean ) : Void {
+		debug("App: icon loaded: " + success);
 		
-		manageWidgetVisibility();
-
-		vtio = new VTIOConnector( Const.AppID, Const.AppAuthor, Const.AppVersion, Const.ShowConfigWindowDV, widgetClip.m_Movie.m_Icon, registeredWithVTIO );
+		vtio = new VTIOConnector( Const.AppID, Const.AppAuthor, Const.AppVersion, Const.ShowConfigWindowDV, iconClip.m_Movie.m_Icon, registeredWithVTIO );
 	}
 
 	/**
 	 * triggers updates that need to occur after the app has been registered with VTIO
-	 * e.g. updating the state of the widget icon copy that VTIO creates
+	 * e.g. updating the state of the icon copy that VTIO creates
 	 */
 	private static function registeredWithVTIO() : Void {
 
 		debug( "App: registered with VTIO" );
 		
+		// move clip to the depth required by VTIO icons
+		SFClipLoader.SetClipLayer( SFClipLoader.GetClipIndex( iconClip.m_Movie ), VTIOConnector.e_VtioDepthLayer, VTIOConnector.e_VtioSubDepth );
+		
 		_isRegisteredWithVtio = true;
 		vtio = null;
 	}
 	
-	/**
-	 * controls the visibility of the widget clip
-	 */
-	private static function manageWidgetVisibility() : Void {
-		widgetClip.m_Movie._visible = active;
-	}	
-
 	/**
 	 * shows or hides the config window
 	 * 
@@ -392,64 +422,53 @@ class com.ElTorqiro.AegisHUD.App {
 	}
 
 	/**
-	 * control the presence of the HUD
+	 * control the visibility of the HUD
 	 */
-	private static function manageHud() : Void {
+	private static function manageVisibility() : Void {
+		hostMovie._visible = active && ( guiEditMode || 
+			( Boolean(isAegisSystemUnlocked) && prefs.getVal( "hud.enabled" )
+				&& ( prefs.getVal( "hud.hide.whenNotInCombat" ) ? Character.GetClientCharacter().IsThreatened() : true )
+				&& ( prefs.getVal( "hud.hide.whenAutoswapEnabled" ) ? !prefs.getVal( "autoSwap.enabled" ) : true )
+			)
+		);
+	}
+	
+	/**
+	 * manage the default shield selector ui visibility
+	 */
+	private static function manageDefaultUiShieldButton( findThingId:String, thing, found:Boolean ) : Void {
+
+		var shieldButton:MovieClip = _root.playerinfo.m_PlayerShield;
 		
-		if ( active && prefs.getVal( "hud.enabled" ) && AegisServer.aegisSystemUnlocked 
-			&& ( prefs.getVal( "hud.hide.whenAutoswapEnabled" ) ? !prefs.getVal( "autoSwap.enabled" ) : true )
-		) {
-			
-			if ( !hudClip ) {
-				debug("App: loading hud");
-				
-				hudClip = SFClipLoader.LoadClip( Const.HudClipPath, Const.AppID + "_HUD", false, Const.HudClipDepthLayer, guiEditMode ? Const.HudClipSubDepthGuiEditMode : Const.HudClipSubDepth, [] );
-			}
+		var hide:Boolean = active && prefs.getVal( "defaultUI.shieldSelector.hide" );
+		
+		// unhide attempts immediately, no need to wait as it should only be invisible if we made it so earlier
+		if ( !hide ) {
+			CommonUtils.cancelFindThing( "shieldButton" );
+			shieldButton._visible = true;
 		}
 		
-		else if ( hudClip ) {
-			SFClipLoader.UnloadClip( Const.AppID + "_HUD" );
-			hudClip = null;
-			
-			debug("App: hud clip unloaded");
+		// trying to hide and finder isn't performing a callback, start finder
+		else if ( !findThingId ) {
+			CommonUtils.findThing( "shieldButton", "_root.playerinfo.m_PlayerShield", 20, 2000, manageDefaultUiShieldButton, manageDefaultUiShieldButton );
+		}
+		
+		// trying to hide, and finder has found it
+		else if ( found ) {
+			shieldButton._visible = false;
 		}
 		
 	}
 
 	/**
-	 * manage the default shield selector ui visibility
+	 * handler for ultimate ability becoming unlocked
+	 * 
+	 * @param	tag
 	 */
-	private static function manageDefaultUiShieldButton() : Void {
-
-		var el:MovieClip = _root.playerinfo.m_PlayerShield;
-
-		var hide:Boolean = prefs.getVal( "defaultUI.shieldSelector.hide" );
-		
-		if ( hide && active && (el == undefined) ) {
-			
-			// set up initial run of timer
-			if ( timers.mdusb == undefined ) {
-				timers.mdusb = { id: setTimeout( manageDefaultUiShieldButton, 20 ), start: new Date() };
-				debug( "mdusb timer: starting up, " + timers.mdusb.start );
-			}
-			
-			// else if timer is running, just restart it
-			else if ( (new Date()) - timers.mdusb.start < 2000 ) {
-				debug( "mdusb timer: restarting timer (tick)" );
-				timers.mdusb.id = setTimeout( manageDefaultUiShieldButton, 20 );
-			}
-
-			// if timer has expired and still haven't found the element, revert to default behaviour
-			else {
-				debug( "mdusb timer: giving up, " + ((new Date()) - timers.mdusb.start) );
-				delete timers.mdusb;
-			}
-			
-			return;
+	private static function loreTagAddedHandler( tag:Number ) {
+		if ( tag == Const.e_AegisUnlockAchievement ) {
+			manageVisibility();
 		}
-		
-		delete timers.mdusb;
-		el._visible = !( hide && active ) || !active;
 	}
 	
 	/**
@@ -470,27 +489,38 @@ class com.ElTorqiro.AegisHUD.App {
 		// handle upgrades from one version to the next
 		var prefsVersion:Number = prefs.getVal( "prefs.version" );
 		
+		if ( prefsVersion < 40006 ) {
+			prefs.setVal( "icon.scale", prefs.getVal( "widget.scale" ) );
+			prefs.setVal( "icon.position", prefs.getVal( "widget.position" ) );
+			
+			prefs.remove( "widget.scale" );
+			prefs.remove( "widget.position" );
+			
+			prefs.setVal( "hud.position.default", prefs.getVal( "hud.abilityBarIntegration.enable" ) );
+			prefs.remove( "hud.abilityBarIntegration.enable" );
+		}
+		
 		// set prefs version to current version
 		prefs.reset( "prefs.version" );
 	}
 
 	/**
-	 * handles gui edit mode signal, to keep a constant track of edit mode state
+	 * handles gui edit mode signal, to keep a constant track of edit mode state and set the right clip depth level for edit mode
 	 * 
 	 * @param	value
 	 */
 	private static function guiEditModeChangeHandler( edit:Boolean ) : Void {
-		_guiEditMode = edit;
 		
-		// trigger edit mode on hud
-		if ( !hudClip ) return;
+		if ( guiEditMode == edit ) return;
 		
-		var hudClipIndex:Number = SFClipLoader.GetClipIndex( hudClip.m_Movie );
+		var hudClipIndex:Number = SFClipLoader.GetClipIndex( hostMovie );
 		var subDepth:Number = edit ? Const.HudClipSubDepthGuiEditMode : Const.HudClipSubDepth;
 		
-		if ( hudClip.m_SubDepth != subDepth ) {
-			SFClipLoader.SetClipLayer( hudClipIndex, hudClip.m_DepthLayer, subDepth );
-		}
+		SFClipLoader.SetClipLayer( hudClipIndex, Const.HudClipDepthLayer, subDepth );
+
+		_guiEditMode = edit;
+	
+		manageVisibility();
 		
 	}
 	
@@ -512,8 +542,9 @@ class com.ElTorqiro.AegisHUD.App {
 	 * internal variables
 	 */
 	 
-	private static var hudClip:ClipNode;
-	private static var widgetClip:ClipNode;
+	private static var hostMovie:MovieClip;
+	private static var hudMovie:HUD;
+	private static var iconClip:ClipNode;
 	private static var configWindowClip:ClipNode;
 	
 	private static var showConfigWindowMonitor:DistributedValue;
@@ -521,8 +552,6 @@ class com.ElTorqiro.AegisHUD.App {
 	private static var vtio:VTIOConnector;
 	
 	private static var swapper:AutoSwapper;
-	
-	private static var timers:Object;
 	
 	/*
 	 * properties
@@ -553,4 +582,8 @@ class com.ElTorqiro.AegisHUD.App {
 	
 	private static var _isRegisteredWithVtio:Boolean;
 	public static function get isRegisteredWithVtio() : Boolean { return _isRegisteredWithVtio; }
+	
+	public static function get isAegisSystemUnlocked() : Boolean {
+		return !LoreBase.IsLocked( Const.e_AegisUnlockAchievement );
+	}
 }

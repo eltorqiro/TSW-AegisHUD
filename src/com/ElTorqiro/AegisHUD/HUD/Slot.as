@@ -17,8 +17,7 @@ import com.GameInterface.Tooltip.TooltipManager;
 import com.GameInterface.Tooltip.TooltipDataProvider;
 import com.GameInterface.Tooltip.TooltipData;
 import com.GameInterface.Game.Character;
-
-import com.ElTorqiro.AegisHUD.HUD.HUD;
+import com.ElTorqiro.AegisHUD.AddonUtils.CommonUtils;
 
 
 /**
@@ -96,15 +95,15 @@ class com.ElTorqiro.AegisHUD.HUD.Slot extends UIComponent {
 				
 				// tint effect
 				if ( App.prefs.getVal( "hud.slots.selectedAegis.background.tint" ) ) {
-					HUD.colorize( m_Background, tint );
+					CommonUtils.colorize( m_Background, tint );
 				}
 				
 				else if ( App.prefs.getVal( "hud.slots.selectedAegis.background.neon" ) ) {
-					HUD.colorize( m_Background, Const.e_TintNone );
+					CommonUtils.colorize( m_Background, Const.e_TintNone );
 				}
 				
 				else {
-					HUD.colorize( m_Background, App.prefs.getVal( "hud.tints.selectedAegis.background" ) );
+					CommonUtils.colorize( m_Background, App.prefs.getVal( "hud.tints.selectedAegis.background" ) );
 				}
 				
 				// alpha setting
@@ -125,7 +124,7 @@ class com.ElTorqiro.AegisHUD.HUD.Slot extends UIComponent {
 		}
 		
 		// common visual features
-		HUD.colorize( m_Icon.m_Item, App.prefs.getVal( "hud.slots.aegis.tint" ) ? tint : Const.e_TintNone );
+		CommonUtils.colorize( m_Icon.m_Item, App.prefs.getVal( "hud.slots.aegis.tint" ) ? tint : Const.e_TintNone );
 		
 	}
 
@@ -137,13 +136,13 @@ class com.ElTorqiro.AegisHUD.HUD.Slot extends UIComponent {
 			var tint:Number = App.prefs.getVal( "hud.tints.aegis." + group.selectedSlot.aegisTypeName );
 			m_Icon.filters = App.prefs.getVal( "hud.slots.item.neon" ) ? [ new GlowFilter( tint, 0.8, 6, 6, 2, 3, false, false ) ] : [];
 			
-			HUD.colorize( m_Icon.m_Item, App.prefs.getVal( "hud.slots.item.tint" ) ? tint : Const.e_TintNone );
+			CommonUtils.colorize( m_Icon.m_Item, App.prefs.getVal( "hud.slots.item.tint" ) ? tint : Const.e_TintNone );
 		}
 		
 		// otherwise clear highlight markers
 		else {
 			m_Icon.filters = [];
-			HUD.colorize( m_Icon.m_Item, Const.e_TintNone );
+			CommonUtils.colorize( m_Icon.m_Item, Const.e_TintNone );
 		}
 		
 	}

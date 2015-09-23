@@ -18,7 +18,7 @@ import com.GameInterface.UtilsBase;
  * 
  * 
  */
-class com.ElTorqiro.AegisHUD.ConfigUI.PanelBuilder {
+class com.ElTorqiro.AegisHUD.AddonUtils.UI.PanelBuilder {
 
 	private function PanelBuilder() { }
 	
@@ -325,7 +325,7 @@ class com.ElTorqiro.AegisHUD.ConfigUI.PanelBuilder {
 		slider.liveDragging = true;
 		slider.value = min;
 
-		slider.width = component.panel.columnWidth - 50;
+		slider.width = component.panel.columnWidth - 50 - component.panel.indent;
 		slider._x = 6;
 		slider._y = sliderLabel.textField._height;
 
@@ -337,7 +337,7 @@ class com.ElTorqiro.AegisHUD.ConfigUI.PanelBuilder {
 		valueLabel.format = valueLabelFormat;
 		valueLabel.textField.autoSize = "left";
 		valueLabel._y = slider._y - 5;
-		valueLabel._x = component.panel.columnWidth - 37;
+		valueLabel._x = component.panel.columnWidth - 37 - component.panel.indent;
 		
 		component[ "updateValueLabel" ]();
 		

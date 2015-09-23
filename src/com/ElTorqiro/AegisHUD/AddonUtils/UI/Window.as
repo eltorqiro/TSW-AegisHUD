@@ -9,7 +9,7 @@ import mx.transitions.easing.Strong;
  * 
  * 
  */
-class com.ElTorqiro.AegisHUD.ConfigUI.Window extends WinComp {
+class com.ElTorqiro.AegisHUD.AddonUtils.UI.Window extends WinComp {
 
 	public function Window() {
 	
@@ -43,8 +43,6 @@ class com.ElTorqiro.AegisHUD.ConfigUI.Window extends WinComp {
 	public function Layout() : Void {
 		super.Layout();
 		
-		//m_Shadow._width = m_Background._width + 58 - 1;
-		//m_Shadow._height = m_Background._height + 58;
 		m_Shadow._width = m_Background._width + 22 - 1;
 		m_Shadow._height = m_Background._height + 22 - 0.5;
 		

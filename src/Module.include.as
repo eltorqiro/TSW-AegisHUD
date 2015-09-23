@@ -7,7 +7,7 @@ function onLoad() : Void {
 	App.debug("Module: onLoad");
 
 	// start app running
-	App.start();
+	App.start( this );
 }
 
 /**

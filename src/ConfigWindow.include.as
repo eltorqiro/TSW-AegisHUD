@@ -3,7 +3,7 @@ import com.GameInterface.DistributedValue;
 
 import com.ElTorqiro.AegisHUD.Const;
 import com.ElTorqiro.AegisHUD.App;
-import com.ElTorqiro.AegisHUD.ConfigUI.Window;
+import com.ElTorqiro.AegisHUD.AddonUtils.UI.Window;
 
 
 /**

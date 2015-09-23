@@ -7,9 +7,9 @@ import com.Utils.GlobalSignal;
 
 import com.GameInterface.UtilsBase;
 
-import mx.transitions.easing.Strong;
-import mx.transitions.easing.Regular;
-import mx.transitions.easing.Bounce;
+import mx.transitions.easing.*;
+
+import com.GameInterface.DistributedValue;
 
 import com.ElTorqiro.AegisHUD.Server.AegisServerSlot;
 import com.ElTorqiro.AegisHUD.Server.AegisServerGroup;
@@ -17,8 +17,8 @@ import com.ElTorqiro.AegisHUD.Server.AegisServer;
 import com.ElTorqiro.AegisHUD.HUD.Slot;
 import com.ElTorqiro.AegisHUD.App;
 import com.ElTorqiro.AegisHUD.Const;
-
-import com.ElTorqiro.AegisHUD.HUD.HUD;
+import com.ElTorqiro.AegisHUD.AddonUtils.CommonUtils;
+import com.ElTorqiro.AegisHUD.AddonUtils.MovieClipHelper;
 
 
 /**
@@ -32,19 +32,13 @@ class com.ElTorqiro.AegisHUD.HUD.Bar extends UIComponent {
 		App.debug( "HUD: HUD: Bar constructor " + group.id );
 
 		slots = {
-			item: attachMovie( "slot", "m_Item", getNextHighestDepth(), { group: group, slot: group.slots["item"] } ),
-			aegis1: attachMovie( "slot", "m_Aegis1", getNextHighestDepth(), { group: group, slot: group.slots["aegis1"] } ),
-			aegis2: attachMovie( "slot", "m_Aegis2", getNextHighestDepth(), { group: group, slot: group.slots["aegis2"] } ),
-			aegis3: attachMovie( "slot", "m_Aegis3", getNextHighestDepth(), { group: group, slot: group.slots["aegis3"] } )
+			item: MovieClipHelper.attachMovieWithClass( "slot", Slot, "m_Item", this, getNextHighestDepth(), { group: group, slot: group.slots["item"] } ),
+			aegis1: MovieClipHelper.attachMovieWithClass( "slot", Slot, "m_Aegis1", this, getNextHighestDepth(), { group: group, slot: group.slots["aegis1"] } ),
+			aegis2: MovieClipHelper.attachMovieWithClass( "slot", Slot, "m_Aegis2", this, getNextHighestDepth(), { group: group, slot: group.slots["aegis2"] } ),
+			aegis3: MovieClipHelper.attachMovieWithClass( "slot", Slot, "m_Aegis3", this, getNextHighestDepth(), { group: group, slot: group.slots["aegis3"] } )
 		};
 		
-		//attachMovie( "bar-overlay", "m_Overlay", getNextHighestDepth() );
-		m_Overlay._x = m_Overlay._y = -5;
-		
-		scale = App.prefs.getVal( "hud.scale" );
-		
-		//layout();
-		
+		SignalGeometryChanged = new Signal();
 		SignalSizeChanged = new Signal();
 		
 	}
@@ -53,12 +47,20 @@ class com.ElTorqiro.AegisHUD.HUD.Bar extends UIComponent {
 
 		layoutIsInvalid = true;
 		
+		// listen for resolution changes
+		guiResolutionScale = DistributedValue.Create("GUIResolutionScale");
+		guiResolutionScale.SignalChanged.Connect( loadScale, this );
+		
 		// listen for pref changes
 		App.prefs.SignalValueChanged.Connect( prefChangeHandler, this );
 		
-		GlobalSignal.SignalSetGUIEditMode.Connect( manageOverlay, this );
-		manageOverlay();
+	}
 
+	/**
+	 * loads scale
+	 */
+	private function loadScale() : Void {
+		scale = App.prefs.getVal( "hud.scale" );
 	}
 	
 	/**
@@ -157,14 +159,12 @@ class com.ElTorqiro.AegisHUD.HUD.Bar extends UIComponent {
 			slots[s]._x += slotLeft;
 		}
 		
-		m_Overlay._width = __width + 10;
-		m_Overlay._height = __height + 10;
-		
 		m_Background._visible = showBackground != Const.e_BarTypeNone;
 
+		SignalGeometryChanged.Emit();
 		SignalSizeChanged.Emit();
 		
-		dispatchEvent( { type: "layout" } );
+		App.debug( "HUD: " + _name + " bar layout finished" );
 	}
 	
 	private function draw() : Void {
@@ -198,15 +198,15 @@ class com.ElTorqiro.AegisHUD.HUD.Bar extends UIComponent {
 
 			// tint effect
 			if ( App.prefs.getVal( "hud.bar.background.tint" ) ) {
-				HUD.colorize( m_Background, tint );
+				CommonUtils.colorize( m_Background, tint );
 			}
 			
 			else if ( App.prefs.getVal( "hud.bar.background.neon" ) ) {
-				HUD.colorize( m_Background, Const.e_TintNone );
+				CommonUtils.colorize( m_Background, Const.e_TintNone );
 			}
 			
 			else {
-				HUD.colorize( m_Background, App.prefs.getVal( "hud.tints.bar.background" ) );
+				CommonUtils.colorize( m_Background, App.prefs.getVal( "hud.tints.bar.background" ) );
 			}
 
 			m_Background._visible = true;
@@ -228,93 +228,29 @@ class com.ElTorqiro.AegisHUD.HUD.Bar extends UIComponent {
 	 * moves the bar to a new position, optionally with animation
 	 * 
 	 * @param	coords
+	 * @param	tweenTime
 	 */
 	public function move( coords:Point, tweenTime:Number ) : Void {
 
-			var overlayCoords:Point = new Point( coords.x - 5, coords.y - 5 );
-		
-			if ( tweenTime > 0 ) {
-				this["tweenTo"]( tweenTime, {
-						_x: coords.x,
-						_y: coords.y
-					},
-					Regular.easeOut
-				);
-				
-				overlay.tweenTo( tweenTime, {
-						_x: overlayCoords.x,
-						_y: overlayCoords.y
-					},
-					Regular.easeOut
-				);
-				
-			}
-			
-			else {
-				_x = coords.x;
-				_y = coords.y;
-				
-				overlay._x = overlayCoords.x;
-				overlay._y = overlayCoords.y;
-			}
-		
-	}
-	
-	/**
-	 * manages the GUI Edit Mode overlay for positioning the bar and scaling the entire hud
-	 * 
-	 * @param	edit
-	 */
-	public function manageOverlay( edit:Boolean ) : Void {
-	
-		if ( ( edit || (edit == undefined && App.guiEditMode) ) && !overlay ) {
-		
-			overlay = _parent.attachMovie( "GEM-overlay", "overlay-" + _name, _parent.getNextHighestDepth() );
-
-			overlay.bar = this;
-			
-			overlay.updateSize = function() {
-				this._x = this.bar._x - 5;
-				this._y = this.bar._y - 5;
-				
-				this._width = this.bar.width + 10;
-				this._height = this.bar.height + 10;
-			}
-
-			overlay.bar.SignalSizeChanged.Connect( overlay.updateSize, overlay );
-			
-			overlay.updateSize();
-			
-			overlay.onPress = function() {
-				
-				App.prefs.setVal( "hud.abilityBarIntegration.enable", false );
-				
-				this.startDrag();
-				
-				this.onMouseMove = function() {
-					this.bar._x = this._x + 5;
-					this.bar._y = this._y + 5;
-				}
-			}
-			
-			overlay.onRelease = function() {
-				this.onMouseMove = undefined;
-				this.stopDrag();
-			}
-			
-			overlay.onMouseWheel = function( delta:Number ) {
-				App.prefs.setVal( "hud.scale", App.prefs.getVal( "hud.scale" ) + delta * 5 );
-			}
-			
+		if ( tweenTime > 0 ) {
+			this["tweenTo"]( tweenTime, {
+					_x: coords.x,
+					_y: coords.y
+				},
+				Regular.easeOut
+			);
 		}
 		
 		else {
-			overlay.removeMovieClip();
-			overlay = null;
+			position = coords;
 		}
 		
 	}
-		
+	
+	private function onTweenComplete() : Void {
+		SignalGeometryChanged.Emit();
+	}
+	
 	/**
 	 * handles updates based on pref changes
 	 * 
@@ -353,7 +289,7 @@ class com.ElTorqiro.AegisHUD.HUD.Bar extends UIComponent {
 			break;
 			
 			case "hud.scale":
-				scale = newValue;
+				loadScale();
 			break;
 			
 		}
@@ -370,12 +306,10 @@ class com.ElTorqiro.AegisHUD.HUD.Bar extends UIComponent {
 	public var m_Aegis2:Slot;
 	public var m_Aegis3:Slot;
 	
-	private var overlay:MovieClip;
-	
-	public var m_Overlay:MovieClip;
-	
 	private var layoutIsInvalid:Boolean;
 	
+    private var guiResolutionScale:DistributedValue;
+
 	/**
 	 * properties
 	 */
@@ -383,23 +317,32 @@ class com.ElTorqiro.AegisHUD.HUD.Bar extends UIComponent {
 	public var group:AegisServerGroup;
 	public var slots:Object;
 	
+	public var SignalGeometryChanged:Signal;
 	public var SignalSizeChanged:Signal;
-	
-	private var _scale:Number = 100;
-	public function get scale() : Number { return _scale; }
-	public function set scale( value:Number ) {
+	 
+	// the position of the hud
+	public function get position() : Point { return new Point( this._x, this._y ); }
+	public function set position( value:Point ) : Void {
+		this._x = value.x;
+		this._y = value.y;
 		
-		if ( _scale == value || Number(value) == Number.NaN ) return;
+		SignalGeometryChanged.Emit();
+	}
+
+	// the scale of the hud
+	public function get scale() : Number { return App.prefs.getVal( "hud.scale" ); }
+	public function set scale( value:Number ) : Void {
+				
+		// the default game GUI scale, based on screen resolution
+		var resolutionScale:Number = guiResolutionScale.GetValue();
+		if ( resolutionScale == undefined ) resolutionScale = 1;
 		
-		value = Math.max( value, Const.MinBarScale );
-		value = Math.min( value, Const.MaxBarScale );
-		
-		_xscale = _yscale = _scale = value;
-		
+		this._xscale = this._yscale = value; // resolutionScale * value;
+
+		SignalGeometryChanged.Emit();
 		SignalSizeChanged.Emit();
 	}
 	
 	public function get width() : Number { return __width * _xscale / 100; }
 	public function get height() : Number { return __height * _yscale / 100; }
-	
 }

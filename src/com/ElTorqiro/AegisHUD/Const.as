@@ -12,29 +12,32 @@ class com.ElTorqiro.AegisHUD.Const {
 	public static var AppID:String = "ElTorqiro_AegisHUD";
 	public static var AppName:String = "AegisHUD";
 	public static var AppAuthor:String = "ElTorqiro";
-	public static var AppVersion:String = "4.0.0 alpha 5";
+	public static var AppVersion:String = "4.0.0 beta";
 	
-	public static var PrefsVersion:Number = 40005;
+	public static var PrefsVersion:Number = 40006;
 	
-	public static var HudClipPath:String = "ElTorqiro_AegisHUD\\HUD.swf";
-	public static var WidgetClipPath:String = "ElTorqiro_AegisHUD\\Widget.swf";
+	public static var HudClipDepthLayer:Number = _global.Enums.ViewLayer.e_ViewLayerMiddle;
+	public static var HudClipSubDepth:Number = 0;
+	public static var HudClipSubDepthGuiEditMode:Number = 50;
+	
+	public static var IconClipPath:String = "ElTorqiro_AegisHUD\\Icon.swf";
+	public static var IconClipDepthLayer:Number = _global.Enums.ViewLayer.e_ViewLayerMiddle;
+	public static var IconClipSubDepth:Number = 0;
+	
 	public static var ConfigWindowClipPath:String = "ElTorqiro_AegisHUD\\ConfigWindow.swf";
+	public static var ConfigWindowClipDepthLayer:Number = _global.Enums.ViewLayer.e_ViewLayerTop;
+	public static var ConfigWindowClipSubDepth:Number = 0;
 	
 	public static var PrefsName:String = "ElTorqiro_AegisHUD_Preferences";
 	
 	public static var ShowConfigWindowDV:String = "ElTorqiro_AegisHUD_ShowConfigWindow";
 	public static var DebugModeDV:String = "ElTorqiro_AegisHUD_Debug";
 	
-	public static var HudClipSubDepthGuiEditMode:Number = 50;
-	public static var HudClipSubDepth:Number = 0;
-	
-	public static var HudClipDepthLayer:Number = _global.Enums.ViewLayer.e_ViewLayerMiddle;
-	
 	public static var MinBarScale:Number = 50;
 	public static var MaxBarScale:Number = 200;
 	
-	public static var MinWidgetScale:Number = 30;
-	public static var MaxWidgetScale:Number = 200;
+	public static var MinIconScale:Number = 30;
+	public static var MaxIconScale:Number = 200;
 	
 	// item type enum shortcuts
 	public static var e_ItemTypeWeapon:Number = _global.Enums.ItemType.e_ItemType_Weapon;

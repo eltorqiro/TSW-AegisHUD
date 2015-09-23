@@ -13,7 +13,7 @@ import com.GameInterface.LogBase;
  * Preferences storage, usage and change event class for TSW
  * 
  */
-class com.ElTorqiro.AegisHUD.Preferences {
+class com.ElTorqiro.AegisHUD.AddonUtils.Preferences {
 	
 	/**
 	 * creates a new Preferences instance

@@ -13,7 +13,7 @@ import com.Utils.GlobalSignal;
 import com.ElTorqiro.AegisHUD.Const;
 import com.ElTorqiro.AegisHUD.App;
 import com.ElTorqiro.AegisHUD.Server.AegisServer;
-import com.ElTorqiro.AegisHUD.Preferences;
+import com.ElTorqiro.AegisHUD.AddonUtils.GuiEditMode.GemController;
 
 import com.GameInterface.UtilsBase;
 
@@ -21,13 +21,17 @@ import com.GameInterface.UtilsBase;
  * 
  * 
  */
-class com.ElTorqiro.AegisHUD.IconWidget extends MovieClip {
+class com.ElTorqiro.AegisHUD.AppIcon extends MovieClip {
 	
-	public function IconWidget() {
+	public static var __className:String = "com.ElTorqiro.AegisHUD.AppIcon";
+	
+	public function AppIcon() {
 		
-		App.debug( "IconWidget: " + _name + ": constructor" );
+		App.debug( "AppIcon: " + _name + ": constructor" );
 
 		isVtioIcon = _name == "Icon";
+		
+		attachMovie( "icon", "m_Icon", getNextHighestDepth() );
 		
 		// no point keeping the old icon around if vtio has created a fresh one
 		if ( isVtioIcon ) {
@@ -40,15 +44,19 @@ class com.ElTorqiro.AegisHUD.IconWidget extends MovieClip {
 		// if this is not the duplicate created by VTIO, handle regular setup of icon
 		if ( !isVtioIcon ) {
 			
-			SignalSizeChanged = new Signal();
+			SignalGeometryChanged = new Signal();
 			
 			this.filters = [ new DropShadowFilter( 50, 1, 0, 0.8, 8, 8, 1, 3, false, false, false ) ];
 			
-			scale = App.prefs.getVal( "widget.scale" );
+			loadScale();
 			loadPosition();
 
-			GlobalSignal.SignalSetGUIEditMode.Connect( manageOverlay, this );
-			manageOverlay();
+			// listen for GUI Edit Mode signal
+			GlobalSignal.SignalSetGUIEditMode.Connect( manageGuiEditMode, this );
+
+			// listen for resolution changes
+			guiResolutionScale = DistributedValue.Create("GUIResolutionScale");
+			guiResolutionScale.SignalChanged.Connect( loadScale, this );
 			
 		}
 		
@@ -62,12 +70,19 @@ class com.ElTorqiro.AegisHUD.IconWidget extends MovieClip {
 	 */
 	private function loadPosition() : Void {
 		
-		var pos:Point = App.prefs.getVal( "widget.position" );
+		var pos:Point = App.prefs.getVal( "icon.position" );
 		if ( pos == undefined ) {
 			pos = new Point( Math.floor((Stage.visibleRect.width - this._width) / 2), Math.floor((Stage.visibleRect.height + this._height) / 4) );
 		}
 		
 		position = pos;
+	}
+
+	/**
+	 * loads scale
+	 */
+	private function loadScale() : Void {
+		scale = App.prefs.getVal( "icon.scale" );
 	}
 	
 	/**
@@ -75,7 +90,7 @@ class com.ElTorqiro.AegisHUD.IconWidget extends MovieClip {
 	 */
 	public function refreshState() : Void {
 		
-		App.debug("IconWidget: " + _name + ": refreshState");
+		App.debug("AppIcon: " + _name + ": refreshState");
 		
 		var hudEnabled:Boolean = App.prefs.getVal("hud.enabled");
 		var autoSwapEnabled:Boolean = App.prefs.getVal("autoSwap.enabled");
@@ -96,7 +111,7 @@ class com.ElTorqiro.AegisHUD.IconWidget extends MovieClip {
 			state = "disabled";
 		}
 		
-		gotoAndStop( state );
+		m_Icon.gotoAndStop( state );
 	}
 	
 	public function onMousePress( button:Number ) : Void {
@@ -206,62 +221,35 @@ class com.ElTorqiro.AegisHUD.IconWidget extends MovieClip {
 	}
 
 	/**
-	 * manages the GUI Edit Mode overlay for positioning the bar and scaling the entire hud
+	 * manages the GUI Edit Mode state
 	 * 
 	 * @param	edit
 	 */
-	public function manageOverlay( edit:Boolean ) : Void {
+	public function manageGuiEditMode( edit:Boolean ) : Void {
 	
-		if ( _visible && ( edit || (edit == undefined && App.guiEditMode) ) && !overlay ) {
-		
-			overlay = _parent.attachMovie( "GEM-overlay", "overlay-" + _name, _parent.getNextHighestDepth() );
-
-			overlay.bar = this;
-			
-			overlay.updateSize = function() {
-				this._x = this.bar._x - 5;
-				this._y = this.bar._y - 5;
-				
-				this._width = this.bar.width + 10;
-				this._height = this.bar.height + 10;
-			}
-
-			overlay.bar.SignalSizeChanged.Connect( overlay.updateSize, overlay );
-			
-			overlay.updateSize();
-			
-			overlay.onPress = function() {
-				
-				this.startDrag();
-				
-				this.onMouseMove = function() {
-					this.bar._x = this._x + 5;
-					this.bar._y = this._y + 5;
-				}
-			}
-			
-			overlay.onRelease = function() {
-				this.onMouseMove = undefined;
-				this.stopDrag();
-				
-				// save position of non-vtio icon
-				App.prefs.setVal( "widget.position", new Point( this.bar._x, this.bar._y ) );
-
-			}
-			
-			overlay.onMouseWheel = function( delta:Number ) {
-				App.prefs.setVal( "widget.scale", App.prefs.getVal( "widget.scale" ) + delta * 5 );
-			}
-			
+		if ( edit && !gemController ) {
+			gemController = GemController.create( "m_GuiEditModeController", _parent, _parent.getNextHighestDepth(), this );
+			gemController.addEventListener( "scrollWheel", this, "gemScrollWheelHandler" );
+			gemController.addEventListener( "endDrag", this, "gemEndDragHandler" );
 		}
 		
 		else {
-			overlay.removeMovieClip();
-			overlay = null;
+			gemController.removeMovieClip();
+			gemController = null;
 		}
 		
 	}
 
+	private function gemScrollWheelHandler( event:Object ) : Void {
+		
+		App.prefs.setVal( "icon.scale", App.prefs.getVal( "icon.scale" ) + event.delta * 5 );
+	}
+	
+	private function gemEndDragHandler( event:Object ) : Void {
+		
+		App.prefs.setVal( "icon.position", new Point( _x, _y ) );
+	}
+	
 	/**
 	 * handles updates based on pref changes
 	 * 
@@ -277,13 +265,12 @@ class com.ElTorqiro.AegisHUD.IconWidget extends MovieClip {
 			case "autoSwap.enabled":
 				refreshState();
 			break;
-
 	
-			case "widget.scale":
-				scale = newValue;
+			case "icon.scale":
+				loadScale();
 			break;
 			
-			case "widget.position":
+			case "icon.position":
 				loadPosition();
 			break;
 			
@@ -295,39 +282,48 @@ class com.ElTorqiro.AegisHUD.IconWidget extends MovieClip {
 	 * internal variables
 	 */
 
-	private var overlay:MovieClip;
-	
+	public var m_Icon:MovieClip;
+	 
 	private var tooltip:TooltipInterface;
 	private var state:String;
 
 	private var isVtioIcon:Boolean;
 	
+	private var guiResolutionScale:DistributedValue;
+	
+	private var gemController:GemController;
+	
 	/*
 	 * properties
 	 */
 
-	public var SignalSizeChanged:Signal;
+	public var SignalGeometryChanged:Signal;
 	 
-	// the position of the moveable icon
+	// the position of the hud
 	public function get position() : Point { return new Point( this._x, this._y ); }
 	public function set position( value:Point ) : Void {
 		
-		if ( !isVtioIcon ) {
-			this._x = value.x;
-			this._y = value.y;
-		}
+		if ( isVtioIcon ) return;
+		
+		this._x = value.x;
+		this._y = value.y;
+		
+		SignalGeometryChanged.Emit();
 	}
 
-	// the scale of the moveable icon
-	public function get scale() : Number { return this._xscale; }
+	// the scale of the hud
+	public function get scale() : Number { return App.prefs.getVal( "hud.scale" ); }
 	public function set scale( value:Number ) : Void {
-		if ( value != undefined && !isVtioIcon ) {
-			this._xscale = this._yscale = value;
-			
-			SignalSizeChanged.Emit();
-		}
+
+		if ( isVtioIcon ) return;
+		
+		// the default game GUI scale, based on screen resolution
+		var resolutionScale:Number = guiResolutionScale.GetValue();
+		if ( resolutionScale == undefined ) resolutionScale = 1;
+		
+		this._xscale = this._yscale = resolutionScale * value;
+
+		SignalGeometryChanged.Emit();
 	}
 	
-	public function get height() : Number { return _height; }
-	public function get width() : Number { return _width; }
 }
