@@ -63,6 +63,8 @@ class com.ElTorqiro.AegisHUD.AppIcon extends MovieClip {
 		// listen for pref changes
 		App.prefs.SignalValueChanged.Connect( prefChangeHandler, this );
 		
+		
+		this.onReleaseOutside = this["onReleaseOutsideAux"] = this.onRollOut;
 	}
 	
 	/**

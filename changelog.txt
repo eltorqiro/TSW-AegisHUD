@@ -1,3 +1,7 @@
+?????? -- ????-??-??
+
+  * fixed icon tooltip not being closed if pressing mouse and releasing it outside of the icon
+
 4.0.1 beta -- 2015-09-25
 
   * fixed bar scale not being reapplied on startup
