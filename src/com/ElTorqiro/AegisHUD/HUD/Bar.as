@@ -50,6 +50,7 @@ class com.ElTorqiro.AegisHUD.HUD.Bar extends UIComponent {
 		// listen for resolution changes
 		guiResolutionScale = DistributedValue.Create("GUIResolutionScale");
 		guiResolutionScale.SignalChanged.Connect( loadScale, this );
+		loadScale();
 		
 		// listen for pref changes
 		App.prefs.SignalValueChanged.Connect( prefChangeHandler, this );

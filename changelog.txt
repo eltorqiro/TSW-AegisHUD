@@ -1,3 +1,8 @@
+4.0.1 beta -- 2015-09-25
+
+  * fixed bar scale not being reapplied on startup
+  
+  
 4.0.0 beta -- 2015-09-24
 
   + added a default screen position that is used if the passive bar is offscreen or missing
