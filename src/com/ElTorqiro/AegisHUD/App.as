@@ -189,7 +189,7 @@ class com.ElTorqiro.AegisHUD.App {
 		}
 
 		// component clip visibility
-		iconClip.m_Movie._visible = true;
+		iconClip.m_Movie._visible = false;
 		manageVisibility();
 		
 		// save settings
