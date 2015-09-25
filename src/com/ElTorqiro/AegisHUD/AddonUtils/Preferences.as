@@ -180,13 +180,16 @@ class com.ElTorqiro.AegisHUD.AddonUtils.Preferences {
 				// place elements in an envelope to cater for single element arrays, which would otherwise be loaded back out as non-arrays
 				var envelope:Archive = new Archive();
 				envelope.AddEntry( "type", "array" );
-				
-				var contents:Archive = new Archive();
-				for ( var i in pref.value ) {
-					contents.AddEntry( i, pref.value[i] );
-				}
 
-				envelope.AddEntry( "contents", contents );
+				var values:Archive = new Archive();
+				
+				for ( var i in pref.value ) {
+					envelope.AddEntry( "keys", i );
+					values.AddEntry( i, pref.value[i] );
+				}
+				
+				envelope.AddEntry( "values", values );
+				
 				data.AddEntry( s, envelope );
 			}
 			
@@ -208,12 +211,15 @@ class com.ElTorqiro.AegisHUD.AddonUtils.Preferences {
 				var envelope:Archive = new Archive();
 				envelope.AddEntry( "type", "object" );
 
-				var contents:Archive = new Archive();
+				var values:Archive = new Archive();
+				
 				for ( var i in pref.value ) {
-					contents.AddEntry( i, pref.value[i] );
+					envelope.AddEntry( "keys", i );
+					values.AddEntry( i, pref.value[i] );
 				}
 				
-				envelope.AddEntry( "contents", contents );
+				envelope.AddEntry( "values", values );
+				
 				data.AddEntry( s, envelope );
 			}
 			
@@ -237,7 +243,7 @@ class com.ElTorqiro.AegisHUD.AddonUtils.Preferences {
 		}
 
 		DistributedValue.SetDValue( storeName, data );
-
+		
 	}
 	
 	/**
@@ -261,7 +267,6 @@ class com.ElTorqiro.AegisHUD.AddonUtils.Preferences {
 			if ( el instanceof Archive ) {
 				
 				var type:String = el.FindEntry( "type" );
-				var contents:Archive = el.FindEntry( "contents" );
 				
 				switch ( type ) {
 
@@ -269,26 +274,26 @@ class com.ElTorqiro.AegisHUD.AddonUtils.Preferences {
 						
 						value = new Array();
 						
-						var dict:Object = getArchiveDictionary( contents );
-						
-						for ( var i in dict ) {
-							value[i] = dict[i];
+						var keys:Array = el.FindEntryArray( "keys" );
+						var values:Archive = el.FindEntry( "values" );
+						for ( var i in keys ) {
+							value[ keys[i] ] = values.FindEntry( keys[i] );
 						}
 						
 					break;
 					
 					case "archive":
-						value = contents;
+						value = el.FindEntry( "contents" );
 					break;
 					
 					case "object":
 					
 						value = new Object();
 						
-						var dict:Object = getArchiveDictionary( contents );
-						
-						for ( var i in dict ) {
-							value[i] = dict[i];
+						var keys:Array = el.FindEntryArray( "keys" );
+						var values:Archive = el.FindEntry( "values" );
+						for ( var i in keys ) {
+							value[ keys[i] ] = values.FindEntry( keys[i] );
 						}
 						
 					break;

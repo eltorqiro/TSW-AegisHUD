@@ -148,7 +148,7 @@ class com.ElTorqiro.AegisHUD.App {
 		// inform the HUD that the GUI has been activated
 		hudMovie.activate();
 	}
-	
+
 	/**
 	 * make the app inactive
 	 * - typically called by OnModuleDeactivated in the module
@@ -177,17 +177,9 @@ class com.ElTorqiro.AegisHUD.App {
 
 		// update playfield hud enabled memory
 		var playfield:Number = Character.GetClientCharacter().GetPlayfieldID();
-		if ( playfield != undefined ) {
-			var blacklist:Object = prefs.getVal( "hud.disabledPlayfields" );
-			if ( prefs.getVal( "hud.enabled" ) ) {
-				delete blacklist[ playfield ];
-			}
-			
-			else {
-				blacklist[ playfield ] = true;
-			}
-		}
-
+		var blacklist:Object = prefs.getVal( "hud.disabledPlayfields" );
+		prefs.getVal( "hud.enabled" ) ? delete blacklist[ playfield ] : blacklist[ playfield ] = true;
+		
 		// component clip visibility
 		iconClip.m_Movie._visible = false;
 		manageVisibility();
@@ -318,10 +310,6 @@ class com.ElTorqiro.AegisHUD.App {
 		switch ( name ) {
 			
 			case "hud.enabled":
-				manageAutoSwapper();
-				manageVisibility();
-			break;
-			
 			case "autoSwap.enabled":
 				manageAutoSwapper();
 				manageVisibility();
@@ -498,6 +486,10 @@ class com.ElTorqiro.AegisHUD.App {
 			
 			prefs.setVal( "hud.position.default", prefs.getVal( "hud.abilityBarIntegration.enable" ) );
 			prefs.remove( "hud.abilityBarIntegration.enable" );
+		}
+		
+		if ( prefsVersion < 40008 ) {
+			prefs.setVal( "hud.disabledPlayfields", new Object() );
 		}
 		
 		// set prefs version to current version

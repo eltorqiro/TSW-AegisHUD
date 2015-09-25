@@ -1,6 +1,7 @@
 ?????? -- ????-??-??
 
   * fixed icon tooltip not being closed if pressing mouse and releasing it outside of the icon
+  * fixed hud enabled setting often not being properly saved per playfield
 
 4.0.1 beta -- 2015-09-25
 
