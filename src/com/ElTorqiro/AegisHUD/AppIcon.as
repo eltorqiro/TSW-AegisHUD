@@ -314,7 +314,7 @@ class com.ElTorqiro.AegisHUD.AppIcon extends MovieClip {
 	}
 
 	// the scale of the hud
-	public function get scale() : Number { return App.prefs.getVal( "hud.scale" ); }
+	public function get scale() : Number { return App.prefs.getVal( "icon.scale" ); }
 	public function set scale( value:Number ) : Void {
 
 		if ( isVtioIcon ) return;
