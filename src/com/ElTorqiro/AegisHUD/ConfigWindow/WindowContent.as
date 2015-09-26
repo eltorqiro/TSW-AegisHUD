@@ -122,18 +122,18 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 				
 				{	type: "heading",
 					subType: "sub",
-					text: "Controller Focus"
+					text: "Focus"
 				},
 				
 				{	id: "autoSwap.type.primary",
 					type: "dropdown",
-					label: "Primary",
+					label: "Primary Disruptor",
 					tooltip: "AutoSwap behaviour for the Primary Disruptor.",
 					data: { pref: "autoSwap.type.primary" },
 					list: [
-						{ label: "No AutoSwap", value: Const.e_AutoSwapNone },
-						{ label: "Enemy Shield", value: Const.e_AutoSwapOffensiveShield },
-						{ label: "Friendly Shield", value: Const.e_AutoSwapDefensiveShield }
+						{ label: "no AutoSwap", value: Const.e_AutoSwapNone },
+						{ label: "match Enemy Shield", value: Const.e_AutoSwapOffensiveShield },
+						{ label: "match Friendly Shield", value: Const.e_AutoSwapDefensiveShield }
 					],
 					loader: componentLoadHandler,
 					saver: componentSaveHandler
@@ -141,13 +141,13 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 				
 				{	id: "autoSwap.type.secondary",
 					type: "dropdown",
-					label: "Secondary",
+					label: "Secondary Disruptor",
 					tooltip: "AutoSwap behaviour for the Secondary Disruptor.",
 					data: { pref: "autoSwap.type.secondary" },
 					list: [
-						{ label: "No AutoSwap", value: Const.e_AutoSwapNone },
-						{ label: "Enemy Shield", value: Const.e_AutoSwapOffensiveShield },
-						{ label: "Friendly Shield", value: Const.e_AutoSwapDefensiveShield }
+						{ label: "no AutoSwap", value: Const.e_AutoSwapNone },
+						{ label: "match Enemy Shield", value: Const.e_AutoSwapOffensiveShield },
+						{ label: "match Friendly Shield", value: Const.e_AutoSwapDefensiveShield }
 					],
 					loader: componentLoadHandler,
 					saver: componentSaveHandler
@@ -159,8 +159,8 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					tooltip: "AutoSwap behaviour for the Shield.",
 					data: { pref: "autoSwap.type.shield" },
 					list: [
-						{ label: "No AutoSwap", value: Const.e_AutoSwapNone },
-						{ label: "Enemy Disruptor", value: Const.e_AutoSwapOffensiveDisruptor }
+						{ label: "no AutoSwap", value: Const.e_AutoSwapNone },
+						{ label: "match Enemy Disruptor", value: Const.e_AutoSwapOffensiveDisruptor }
 					],
 					loader: componentLoadHandler,
 					saver: componentSaveHandler
@@ -239,7 +239,7 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 				
 				{	id: "hotkeys.multiSelectType.primary",
 					type: "dropdown",
-					label: "Primary",
+					label: "Primary Disruptor",
 					tooltip: "Selection behaviour when using the Primary Disruptor hotkeys [<variable name='hotkey:Combat_NextPrimaryAEGIS'/ > / <variable name='hotkey:Combat_PreviousPrimaryAEGIS'/ >].",
 					data: { pref: "hotkeys.multiSelectType.primary" },
 					list: [
@@ -252,7 +252,7 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 
 				{	id: "hotkeys.multiSelectType.secondary",
 					type: "dropdown",
-					label: "Secondary",
+					label: "Secondary Disruptor",
 					tooltip: "Selection behaviour when using the Secondary Disruptor hotkeys [<variable name='hotkey:Combat_NextSecondaryAEGIS'/ > / <variable name='hotkey:Combat_PreviousSecondaryAEGIS'/ >].",
 					data: { pref: "hotkeys.multiSelectType.secondary" },
 					list: [
