@@ -1,8 +1,15 @@
-?????? -- ????-??-??
+4.1.0 -- 2015-09-27
 
-  * fixed icon tooltip not being closed if pressing mouse and releasing it outside of the icon
-  * fixed hud enabled setting often not being properly saved per playfield
-
+  * fixed app icon tooltip not being closed if pressing mouse and releasing it outside of the icon
+  * the app icon tooltip will no longer obscure the icon regardless of where your mouse hovers over it
+  * fixed app icon not being positioned properly in VTIO for a few people on initial startup (depended on which mods you had)
+  
+  * fixed the hud enabled per playfield list being partially or completely wiped after a gui reload
+  
+  * changed app icon graphics to better represent the three Aegis types
+  * changed some wording inside config window to (hopefully) make it easier to understand the AutoSwap Focus rules
+  
+  
 4.0.1 beta -- 2015-09-25
 
   * fixed bar scale not being reapplied on startup
