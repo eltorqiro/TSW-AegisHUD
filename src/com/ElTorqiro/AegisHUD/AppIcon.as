@@ -60,9 +60,14 @@ class com.ElTorqiro.AegisHUD.AppIcon extends MovieClip {
 			
 		}
 		
+		else {
+			// vtio needs to be positioned at 0,0 which for some reason doesn't happen for some people only on the initial load, not after /reloadui
+			_x = _y = 0;
+			m_Icon._x = m_Icon._y = 0;
+		}
+		
 		// listen for pref changes
 		App.prefs.SignalValueChanged.Connect( prefChangeHandler, this );
-		
 		
 		this.onReleaseOutside = this["onReleaseOutsideAux"] = this.onRollOut;
 	}
@@ -218,7 +223,7 @@ class com.ElTorqiro.AegisHUD.AppIcon extends MovieClip {
 		
 		
 		// create tooltip instance
-		tooltip = TooltipManager.GetInstance().ShowTooltip( undefined, TooltipInterface.e_OrientationVertical, 0, td );
+		tooltip = TooltipManager.GetInstance().ShowTooltip( this, TooltipInterface.e_OrientationVertical, 0, td );
 		
 	}
 

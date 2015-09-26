@@ -54,6 +54,7 @@ class com.ElTorqiro.AegisHUD.App {
 		AegisServer.start();
 
 		// attach app icon
+		_isRegisteredWithVtio = false;
 		iconClip = SFClipLoader.LoadClip( Const.IconClipPath, Const.AppID + "_Icon", false, Const.IconClipDepthLayer, Const.IconClipSubDepth, [] );
 		iconClip.SignalLoaded.Connect( iconLoaded );
 	
