@@ -466,7 +466,7 @@ class com.ElTorqiro.AegisHUD.App {
 	private static function install() : Void {
 		
 		// only "install" once ever
-		if ( !prefs.setVal( "app.installed" ) ) {;
+		if ( !prefs.getVal( "app.installed" ) ) {;
 		
 			// hide default disruptor swap ui
 			DistributedValue.SetDValue( "ShowAegisSwapUI", false );
