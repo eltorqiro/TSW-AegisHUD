@@ -11,7 +11,6 @@ import com.Utils.LDBFormat;
 import com.GameInterface.LoreBase;
 
 import com.ElTorqiro.AegisHUD.Const;
-import com.ElTorqiro.AegisHUD.AddonUtils.AddonUtils;
 import com.ElTorqiro.AegisHUD.Server.AegisServerGroup;
 import com.ElTorqiro.AegisHUD.Server.AegisServerSlot;
 
@@ -157,11 +156,13 @@ class com.ElTorqiro.AegisHUD.Server.AegisServer {
 		// equipped inventory only needs to track add/remove events
 		equipped.SignalItemAdded.Connect( inventoryEventHandler );
 		equipped.SignalItemRemoved.Connect( inventoryEventHandler );
+		equipped.SignalItemLoaded.Connect( inventoryEventHandler );
 		
 		// backpack needs to track add/remove/changed events
 		backpack.SignalItemAdded.Connect( inventoryEventHandler );
 		backpack.SignalItemRemoved.Connect( inventoryEventHandler );
 		backpack.SignalItemChanged.Connect( inventoryEventHandler );
+		backpack.SignalItemLoaded.Connect( inventoryEventHandler );
 		
 		// setup listener for active pointer changes
 		character.SignalStatChanged.Connect( statChangedHandler );
@@ -180,7 +181,7 @@ class com.ElTorqiro.AegisHUD.Server.AegisServer {
 		// aegis system unlock listener
 		LoreBase.SignalTagAdded.Connect( loreTagAddedHandler );
 	}
-	
+
 	/**
 	 * shuts down the server, shutting down all activity
 	 */
@@ -274,7 +275,7 @@ class com.ElTorqiro.AegisHUD.Server.AegisServer {
 		
 		// else if the item is one we track by aegis id
 		else if ( slot = aegisIdBinds[item.m_AegisItemType] ) {
-			
+
 			// clear any lost item confirmation runner
 			confirmLostItem( item.m_AegisItemType, true );
 			
@@ -489,7 +490,7 @@ class com.ElTorqiro.AegisHUD.Server.AegisServer {
 		
 		// only trigger signals if the item has actually changed, not just the location info
 		if ( oldItem.m_Icon.toString() != item.m_Icon.toString() ) {
-
+			
 			slot.aegisTypeName = aegisItems[ item.m_AegisItemType ].aegisTypeName;
 			
 			SignalItemChanged.Emit( slot.group.id, slot.id );
