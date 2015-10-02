@@ -1,3 +1,9 @@
+???? -- ????-??-??
+
+  * fixed very rare case of some icons not loading after changing zones
+  * fixed AegisHUD hiding default disruptor swap UI after every load, instead of only on install
+
+
 4.1.0 -- 2015-09-27
 
   * fixed app icon tooltip not being closed if pressing mouse and releasing it outside of the icon
