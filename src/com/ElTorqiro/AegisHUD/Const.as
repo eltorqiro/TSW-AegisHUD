@@ -111,6 +111,7 @@ class com.ElTorqiro.AegisHUD.Const {
 	public static var e_AutoSwapOffensiveShield:Number = 1;
 	public static var e_AutoSwapDefensiveShield:Number = 2;
 	public static var e_AutoSwapOffensiveDisruptor:Number = 3;
+	public static var e_AutoSwapOffensiveShieldXorDisruptor:Number = 4;
 
 	// autoswap allowable match character types
 	public static var e_AutoSwapTargetTypePlayer:Number = 1;

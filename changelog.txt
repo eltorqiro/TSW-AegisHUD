@@ -1,6 +1,8 @@
 ???? -- ????-??-??
 
-  * fixed very rare case of some icons not loading after changing zones
+  + (experimental) new autoswap rule, "Enemy Shield / Disruptor", matches enemy shield if it has a shield module (not just if depleted), otherwise matches its disruptor type (e.g. Manufactory 5)
+
+  * fixed rare case of some icons not loading after changing zones
   * fixed AegisHUD hiding default disruptor swap UI after every load, instead of only on install
 
 

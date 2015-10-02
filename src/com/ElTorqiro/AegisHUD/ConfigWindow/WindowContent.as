@@ -122,7 +122,7 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 				
 				{	type: "heading",
 					subType: "sub",
-					text: "Focus"
+					text: "Match Rules"
 				},
 				
 				{	id: "autoSwap.type.primary",
@@ -132,8 +132,9 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					data: { pref: "autoSwap.type.primary" },
 					list: [
 						{ label: "no AutoSwap", value: Const.e_AutoSwapNone },
-						{ label: "match Enemy Shield", value: Const.e_AutoSwapOffensiveShield },
-						{ label: "match Friendly Shield", value: Const.e_AutoSwapDefensiveShield }
+						{ label: "Enemy Shield", value: Const.e_AutoSwapOffensiveShield },
+						{ label: "Enemy Shield / Disruptor", value: Const.e_AutoSwapOffensiveShieldXorDisruptor },
+						{ label: "Friend Shield", value: Const.e_AutoSwapDefensiveShield }
 					],
 					loader: componentLoadHandler,
 					saver: componentSaveHandler
@@ -146,8 +147,9 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					data: { pref: "autoSwap.type.secondary" },
 					list: [
 						{ label: "no AutoSwap", value: Const.e_AutoSwapNone },
-						{ label: "match Enemy Shield", value: Const.e_AutoSwapOffensiveShield },
-						{ label: "match Friendly Shield", value: Const.e_AutoSwapDefensiveShield }
+						{ label: "Enemy Shield", value: Const.e_AutoSwapOffensiveShield },
+						{ label: "Enemy Shield / Disruptor", value: Const.e_AutoSwapOffensiveShieldXorDisruptor },
+						{ label: "Friend Shield", value: Const.e_AutoSwapDefensiveShield }
 					],
 					loader: componentLoadHandler,
 					saver: componentSaveHandler
@@ -160,7 +162,7 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					data: { pref: "autoSwap.type.shield" },
 					list: [
 						{ label: "no AutoSwap", value: Const.e_AutoSwapNone },
-						{ label: "match Enemy Disruptor", value: Const.e_AutoSwapOffensiveDisruptor }
+						{ label: "Enemy Disruptor", value: Const.e_AutoSwapOffensiveDisruptor }
 					],
 					loader: componentLoadHandler,
 					saver: componentSaveHandler
@@ -171,8 +173,8 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 				
 				{	id: "autoSwap.match.friendly.self",
 					type: "checkbox",
-					label: "\"Friendly\" targets include self",
-					tooltip: "Includes your character in the category of \"Friendly\" targets for AutoSwap focusing.",
+					label: "\"Friend\" targets include self",
+					tooltip: "Includes your character in the category of \"Friend\" targets for AutoSwap focusing.",
 					data: { pref: "autoSwap.match.friendly.self" },
 					loader: componentLoadHandler,
 					saver: componentSaveHandler
@@ -341,7 +343,7 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					list: [
 						{ label: "Do not show", value: Const.e_BarItemPlaceNone },
 						{ label: "First on bar", value: Const.e_BarItemPlaceFirst },
-						{ label: "Last on  bar", value: Const.e_BarItemPlaceLast }
+						{ label: "Last on bar", value: Const.e_BarItemPlaceLast }
 					],
 					loader: componentLoadHandler,
 					saver: componentSaveHandler
@@ -355,7 +357,7 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					list: [
 						{ label: "Do not show", value: Const.e_BarItemPlaceNone },
 						{ label: "First on bar", value: Const.e_BarItemPlaceFirst },
-						{ label: "Last on  bar", value: Const.e_BarItemPlaceLast }
+						{ label: "Last on bar", value: Const.e_BarItemPlaceLast }
 					],
 					loader: componentLoadHandler,
 					saver: componentSaveHandler
