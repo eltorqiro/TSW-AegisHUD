@@ -222,8 +222,8 @@ class com.ElTorqiro.AegisHUD.App {
 		
 		prefs.add( "autoSwap.enabled", true );
 		
-		prefs.add( "autoSwap.type.primary", Const.e_AutoSwapOffensiveShield );
-		prefs.add( "autoSwap.type.secondary", Const.e_AutoSwapOffensiveShield );
+		prefs.add( "autoSwap.type.primary", Const.e_AutoSwapOffensiveShieldXorDisruptor );
+		prefs.add( "autoSwap.type.secondary", Const.e_AutoSwapOffensiveShieldXorDisruptor );
 		prefs.add( "autoSwap.type.shield", Const.e_AutoSwapOffensiveDisruptor );
 
 		prefs.add( "autoSwap.match.friendly.self", true );
