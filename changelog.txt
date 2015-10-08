@@ -1,6 +1,6 @@
-???? -- ????-??-??
+4.2.0 -- 2015-10-08
 
-  + (experimental) new autoswap rule, "Enemy Shield / Disruptor", matches enemy shields if it has at least one shield module (not just if depleted), otherwise matches its disruptor type (e.g. Manufactory 5)
+  + (experimental) new autoswap rule, "Enemy Shield / Disruptor"; matches enemy shields if it has at least one shield module (not just if depleted), otherwise matches its disruptor type (e.g. Manufactory 5)
   + added text to config window describing how to manipulate the hud bars and icon using GUI edit mode
   
   * fixed rare case of some icons not loading after changing zones
