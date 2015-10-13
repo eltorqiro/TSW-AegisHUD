@@ -6,6 +6,7 @@ import GUIFramework.SFClipLoader;
 import com.GameInterface.LoreBase;
 import com.GameInterface.Game.Character;
 import com.GameInterface.DistributedValue;
+import com.GameInterface.WaypointInterface;
 
 import com.GameInterface.UtilsBase;
 import com.GameInterface.LogBase;
@@ -131,7 +132,11 @@ class com.ElTorqiro.AegisHUD.App {
 		manageVisibility();
 
 		// determine hud enabled state based on playfield memory
-		prefs.setVal( "hud.enabled", !(prefs.getVal( "hud.disabledPlayfields" )[ Character.GetClientCharacter().GetPlayfieldID() ]) );
+		// can't use WaypointInterface.SignalPlayfieldChanged for this, as when that gets triggered there is no ClientCharacter available
+		var playfield:Number = Character.GetClientCharacter().GetPlayfieldID();
+		var shouldEnable:Boolean = !(prefs.getVal( "hud.disabledPlayfields" )[ playfield ]);
+		debug("App: playfield=" + playfield + ", 'enabled' recalled as " + shouldEnable );
+		prefs.setVal( "hud.enabled", shouldEnable );
 		
 		// manipulate default ui elements
 		manageDefaultUiShieldButton();
@@ -176,11 +181,6 @@ class com.ElTorqiro.AegisHUD.App {
 		// restore default ui elements
 		manageDefaultUiShieldButton();
 
-		// update playfield hud enabled memory
-		var playfield:Number = Character.GetClientCharacter().GetPlayfieldID();
-		var blacklist:Object = prefs.getVal( "hud.disabledPlayfields" );
-		prefs.getVal( "hud.enabled" ) ? delete blacklist[ playfield ] : blacklist[ playfield ] = true;
-		
 		// component clip visibility
 		iconClip.m_Movie._visible = false;
 		manageVisibility();
@@ -311,6 +311,8 @@ class com.ElTorqiro.AegisHUD.App {
 		switch ( name ) {
 			
 			case "hud.enabled":
+				updateDisabledPlayfields();
+				
 			case "autoSwap.enabled":
 				manageAutoSwapper();
 				manageVisibility();
@@ -459,6 +461,30 @@ class com.ElTorqiro.AegisHUD.App {
 			manageVisibility();
 		}
 	}
+
+	/**
+	 * updates the playfield disabled memory with the current playfield state
+	 */
+	private static function updateDisabledPlayfields() : Void {
+		
+		var playfield:Number = Character.GetClientCharacter().GetPlayfieldID();
+		
+		if ( playfield ) {
+			var blacklist:Object = prefs.getVal( "hud.disabledPlayfields" );
+
+			if ( prefs.getVal( "hud.enabled" ) && blacklist[ playfield ] ) {
+				debug("App: removing playfield " + playfield + " from disabled list" );
+				delete blacklist[ playfield ];
+			}
+			
+			else if ( !prefs.getVal( "hud.enabled" ) && blacklist[ playfield ] == undefined ) {
+				debug("App: adding playfield " + playfield + " to disabled list" );
+				blacklist[ playfield ] = true;
+			}
+			
+		}
+		
+	}
 	
 	/**
 	 * performs initial installation tasks
@@ -549,7 +575,7 @@ class com.ElTorqiro.AegisHUD.App {
 	/*
 	 * properties
 	 */
-	
+	 
 	public static function get debugEnabled() : Boolean {
 		return Boolean(DistributedValue.GetDValue( Const.DebugModeDV ));
 	};
@@ -579,4 +605,5 @@ class com.ElTorqiro.AegisHUD.App {
 	public static function get isAegisSystemUnlocked() : Boolean {
 		return !LoreBase.IsLocked( Const.e_AegisUnlockAchievement );
 	}
+	
 }

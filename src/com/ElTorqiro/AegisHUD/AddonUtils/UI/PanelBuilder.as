@@ -34,7 +34,7 @@ class com.ElTorqiro.AegisHUD.AddonUtils.UI.PanelBuilder extends UIComponent {
 		components = { };
 		
 		var columnWidth:Number = def.columnWidth != undefined ? def.columnWidth : 280;
-		var columnSpacing:Number = def.columnSpacing != undefined ? def.columnSpacing : 40;
+		var columnSpacing:Number = def.columnSpacing != undefined ? def.columnSpacing : 60;
 		var indentSpacing:Number = def.indentSpacing != undefined ? def.indentSpacing : 10;
 		var groupSpacing:Number = def.groupSpacing != undefined ? def.groupSpacing : 7;
 		var sectionSpacing:Number = def.sectionSpacing != undefined ? def.sectionSpacing : 30;
@@ -69,6 +69,7 @@ class com.ElTorqiro.AegisHUD.AddonUtils.UI.PanelBuilder extends UIComponent {
 		var id:String;
 		
 		var layout:Array = def.layout;
+		
 		for ( var i:Number = 0; i < layout.length; i++ ) {
 			
 			var element:Object = layout[ i ];
@@ -85,7 +86,6 @@ class com.ElTorqiro.AegisHUD.AddonUtils.UI.PanelBuilder extends UIComponent {
 			switch ( element.type ) {
 				
 				case "section":
-					
 					var heading:MovieClip = attachH1( name, { text: element.label } );
 					
 					cursor.y += cursor.y != 0 ? sectionSpacing : 0;
@@ -93,36 +93,28 @@ class com.ElTorqiro.AegisHUD.AddonUtils.UI.PanelBuilder extends UIComponent {
 					if ( heading ) {
 						heading._x = cursor.x;
 						heading._y = cursor.y;
-						heading.line._width = useableWidth;
 						
-						preSpacing = 4;
 						cursor.y += heading._height;
 					}
 					
-					else {
-						preSpacing = 0;
-					}
+					preSpacing = 0;
 					
 				break;
 				
 				case "h2":
-					
 					var heading:MovieClip = attachH2( name, element );
 					
+					cursor.y += cursor.y != 0 ? 4 : 0;
+					
 					if ( heading ) {
-						cursor.y += 4;
-						
 						heading._x = cursor.x;
 						heading._y = cursor.y;
 						
-						preSpacing = 2;
 						cursor.y += heading._height;
 					}
-					
-					else {
-						preSpacing = 0;
-					}
 				
+					preSpacing = 0;
+					
 				break;
 				
 				case "button":
@@ -144,7 +136,7 @@ class com.ElTorqiro.AegisHUD.AddonUtils.UI.PanelBuilder extends UIComponent {
 						component.width = Math.round( (columnWidth - offset) * getPercentage( width ) );
 					}
 					
-					cursor.y += component._height;
+					cursor.y += component.height;
 					
 					preSpacing = componentSpacing + 2;
 					
@@ -170,15 +162,15 @@ class com.ElTorqiro.AegisHUD.AddonUtils.UI.PanelBuilder extends UIComponent {
 					cursor.y += preSpacing;
 					
 					// if there is no label, offset for alignment
-					var offset:Number = component.api.label ? labelOffset : 0;
-					var width:Number = component.api.label ? 150 : useableWidth - offset;
+					var offset:Number = component.api.label ? 0 : labelOffset;
+					var width:Number = component.api.label ? 145 : useableWidth - offset;
 					
 					component._x = cursor.x + useableWidth - width;
 					component._y = cursor.y;
 					component.width = width;
 					
 					component.api.label._x = cursor.x;
-					component.api.label._y = cursor.y + 1;
+					component.api.label._y = cursor.y + 2;
 					
 					cursor.y += component._height;
 					
@@ -263,7 +255,8 @@ class com.ElTorqiro.AegisHUD.AddonUtils.UI.PanelBuilder extends UIComponent {
 					
 				break;
 				
-				case "column":
+			case "column":
+				
 					columnCount++;
 					cursor.y = 0;
 					__width = columnCount * columnWidth + ((columnCount - 1) * columnSpacing);
@@ -493,7 +486,7 @@ class com.ElTorqiro.AegisHUD.AddonUtils.UI.PanelBuilder extends UIComponent {
 		
 		// attach slider control
 		var slider:FillSlider = FillSlider(
-			MovieClipHelper.attachMovieWithRegister( sliderSymbol, FillSlider, name, this, this.getNextHighestDepth() )
+			MovieClipHelper.attachMovieWithRegister( sliderSymbol, FillSlider, name, this, this.getNextHighestDepth(), { offsetLeft: 4, offsetRight: 4 } )
 		);
 		
 		// prevent keyboard focus

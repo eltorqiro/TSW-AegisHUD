@@ -123,8 +123,8 @@ class com.ElTorqiro.AegisHUD.AppIcon extends MovieClip {
 	
 	public function onMousePress( button:Number ) : Void {
 		
-		var hudEnabled:Boolean = App.prefs.getVal("hud.enabled");
-		var autoSwapEnabled:Boolean = App.prefs.getVal("autoSwap.enabled");
+		var hudEnabled:Boolean = App.hudEnabled;
+		var autoSwapEnabled:Boolean = App.autoSwapEnabled;
 		
 		// left button toggles config window
 		if ( button == 1 ) {

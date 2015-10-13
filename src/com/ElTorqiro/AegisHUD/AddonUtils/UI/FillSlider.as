@@ -46,8 +46,7 @@ class com.ElTorqiro.AegisHUD.AddonUtils.UI.FillSlider extends Slider {
 	private function updateThumb() : Void {
 		super.updateThumb();
 		
-		fillMask._x = offsetLeft;
-		fillMask._width = thumb._x + (thumb._width / 2) - offsetLeft;
+		fillMask._width = thumb._x + (thumb._width / 2) + offsetLeft;
 	}
 	
 	private function updateValueField() : Void {

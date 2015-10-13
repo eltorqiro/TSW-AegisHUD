@@ -12,7 +12,7 @@ class com.ElTorqiro.AegisHUD.Const {
 	public static var AppID:String = "ElTorqiro_AegisHUD";
 	public static var AppName:String = "AegisHUD";
 	public static var AppAuthor:String = "ElTorqiro";
-	public static var AppVersion:String = "4.?????";
+	public static var AppVersion:String = "4.2.0+develop";
 	
 	public static var PrefsVersion:Number = 40010;
 	

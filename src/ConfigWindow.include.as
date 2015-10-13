@@ -5,10 +5,7 @@ import com.ElTorqiro.AegisHUD.Const;
 import com.ElTorqiro.AegisHUD.App;
 import com.ElTorqiro.AegisHUD.AddonUtils.UI.Window;
 
-
-/**
- * variables
- */
+import com.ElTorqiro.AegisHUD.AddonUtils.MovieClipHelper;
 
   
 /**
@@ -23,7 +20,7 @@ function onLoad() : Void {
 		position = new Point( 300, 150 );
 	}
 
-	var window:Window = Window( attachMovie( "window", "m_Window", getNextHighestDepth(), { openingPosition: position } ) );
+	var window:Window = Window( MovieClipHelper.attachMovieWithRegister( "eltorqiro.ui.window", Window, "m_Window", this, getNextHighestDepth(), { openingPosition: position } ) );
 
 	// set window properties
 	window.SetTitle(Const.AppName + " v" + Const.AppVersion);
@@ -32,7 +29,7 @@ function onLoad() : Void {
 		DistributedValue.SetDValue( Const.ShowConfigWindowDV, false );
 	});
 	
-	window.SetContent("window-content");
+	window.SetContent("com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent");
 	
 }
 

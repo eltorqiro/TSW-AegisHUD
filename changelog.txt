@@ -1,6 +1,8 @@
 ???? -- ????-??-??
 
   * fixed incorrect HUD bar placement when ElTorqiro_UltimateAbility mod is not installed
+  * changed when the disabled playfield list is saved, this may or may not help anyone who finds the occasional playfield doesn't save
+  * reskinned the config window, again
 
 
 4.2.0 -- 2015-10-08
