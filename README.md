@@ -19,7 +19,7 @@ Join the conversation with feedback, bug reports, and update information on the 
    
 Donations
 ---------
-I don't accept real-money donations for my mods.  However, if you would like to show your support, you can do so by sending in-game pax to my character Tufenuf.  I will use it to buy in-game items I would otherwise have been grinding out myself, rather than writing mods.
+I don't accept real-money donations for my mods.  If you would like to show your support, you can do so by sending in-game pax to my character Tufenuf.  I will use it to buy the in-game items I would otherwise have been able to grind out myself, if I weren't spending time writing mods.
   
   
 Configuration
