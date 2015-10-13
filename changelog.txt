@@ -1,10 +1,10 @@
-???? -- ????-??-??
-
-  * fixed incorrect HUD bar placement when ElTorqiro_UltimateAbility mod is not installed
-  * changed when the disabled playfield list is saved, this may or may not help anyone who finds the occasional playfield doesn't save
+4.3.0 -- 2015-10-13
+  
+  * fixed incorrect default HUD bar placement when ElTorqiro_UltimateAbility mod is not installed
+  * changed when the disabled playfield list is saved, which should help anyone who finds the occasional single playfield doesn't save
   * reskinned the config window, again
-
-
+  
+  
 4.2.0 -- 2015-10-08
 
   + (experimental) new autoswap rule, "Enemy Shield / Disruptor"; matches enemy shields if it has at least one shield module (not just if depleted), otherwise matches its disruptor type (e.g. Manufactory 5)

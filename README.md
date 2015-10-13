@@ -5,46 +5,57 @@ AegisHUD UI mod for the MMORPG "The Secret World"
    
 What is this?
 -------------
-ElTorqiro_AegisHUD is an Aegis system management module. It includes a customisable HUD for visualising and interacting with your Aegis layout, an advanced multi-swap hotkey override feature, and an AutoSwap option that can be tailored to your preferences.
+ElTorqiro_AegisHUD is an Aegis system management module.  Feature highlights:
 
-Feedback, updates and community forum can be found at http://forums.thesecretworld.com/showthread.php?t=80429
-   
-   
-User Configuration
-------------------
-The mod provides an interactive on-screen icon which can be used to bring up a comprehensive configuration panel.  Hover the mouse over the icon for instructions.  If you have Viper's Topbar Information Overload (VTIO) installed, or an equivalent handler, the icon will be available in a VTIO slot.
-   
-You can also toggle the configuration window with the option ElTorqiro_AegisHUD_ShowConfigWindow, which can be set via a chat command as follows:
-/setoption ElTorqiro_AegisHUD_ShowConfigWindow 1
-(1 = open, 0 = closed)
-   
-   
-Known Issues and Gotchas
-------------------------
-* On some rare occasions, the "XP gain" trigger event is not fired by the game API when consuming bulk Aegis XP cannisters.  This leaves the XP display on the AegisHUD on the old value.  Re-equipping the affected controller, doing a /reloadui, or waiting for a regular XP gain event will fetch the new value.
+* customisable visual HUD for tracking and interacting with your Aegis controllers
+* advanced AutoSwap module that can be configured with a range of different rulesets for various roles
+* show Aegis xp percentage directly on each controller's icon, no need to tooltip anymore
+* hotkey override feature, with multi-select support
+* can hide+disable on a per-zone basis, or according to rules such as when out of combat or when AutoSwap is on
+* replaces the default Aegis swap UI, without modifying or overriding any game files
 
-* If you change shields in a PvP zone, the game treats it like all other gear changes and resets your Equal Footing buff.  This will drop your health down to unbuffed levels (e.g. 13k down to 3k).  If you have AutoSwap enabled, by default it will try to swap shields every time you're out of combat, which will reset the buff and you will die very quickly as a result :)  To avoid this, there is an AutoSwap option to prevent PvP opponents from being treated as "enemies" for the purposes of AutoSwap behaviour.  However, since there is no need for Aegis mechanics in PvP zones, the simplest thing to do is to toggle the AegisHUD off when you are in a PvP zone, as the fewer things you have running in PvP the better.
-
-* The AutoSwap feature in AegisHUD is not compatible with any other mod that also performs AutoSwap. Due to the way swapping of Aegis is done through the game API, no two or more mods that do AutoSwap can ever work together. You can disable AegisHUD's AutoSwap feature if you prefer a different AutoSwap mod for some reason. Note: As far as I know, the autoswapping mod "Auto_Aegis" needs to be completely deleted to stop it trying to swap Aegis.
+Join the conversation with feedback, bug reports, and update information on the official TSW forums at http://forums.thesecretworld.com/showthread.php?t=80429
+   
+   
+Donations
+---------
+I don't accept real-money donations for my mods.  However, if you would like to show your support, you can do so by sending in-game pax to my character Tufenuf.  I will use it to buy in-game items I would otherwise have been grinding out myself, rather than writing mods.
   
+  
+Configuration
+-------------
+The mod includes an on-screen icon which can be clicked to bring up a comprehensive configuration panel, and to quickly toggle the HUD and AutoSwap features.  If you have Viper's Topbar Information Overload (VTIO) installed, or an equivalent handler, the icon will be available in a VTIO slot.
    
+Manipulating the HUD bars and the icon is done via TSW's Gui Edit Mode, which is toggled in the game by clicking the padlock symbol in the top right corner of the screen.  Left-button drags a single bar, right-button drags all bars together, and mouse wheel adjusts scale.  These instructions are repeated in the config window.
+  
+  
+Important Notes
+---------------
+* It is recommended to disable AutoSwap in PvP zones, or the entire HUD since Aegis doesn't apply in PvP.  This will avoid the "Equal Footing" buff from being toggled off/on, which happens whenever you change gear in a PvP zone, and will be triggered by the AutoSwap module trying to change your shield.
+
+* It is not possible to use two mods that perform Aegis AutoSwap at the same time, due to the way the game handles controller selection.  You can disable AegisHUD's AutoSwap if you prefer to use a different AutoSwap mod, while still being able to use the rest of AegisHUD's features.  Note: some other AutoSwap mods need to be deleted completely to stop them from swapping, rather than just "disabling" them.
+
+* On some _extremely rare_ occasions, the "Aegis XP changed" trigger event is not fired by the game, which leaves the XP display in AegisHUD on out of date values.  Re-equipping the affected controllers, doing a /reloadui, or waiting for another Aegis XP gain event will fetch the new value (e.g. killing a mob or opening another cannister).
+  
+  
 Installation
 ------------
-Extract the contents of the zip file into: YOUR_TSW_DIRECTORY\Data\Gui\Customized\Flash
-This will add the appropriate directory and put the files in the right place.
-
-Uninstallation
---------------
-Delete the directory: YOUR_TSW_DIRECTORY\Data\Gui\Customized\Flash\ElTorqiro_AegisHUD
-   
-   
-Order of Aegis controllers on the bars
---------------------------------------
-On the server side, each Aegis slot for your character is numbered 1-3 for each side (left/right). It's not obvious in the character panel because of the way the default UI is built, but when you rotate an active Aegis it doesn't actually move items around in slots. The whole "rotating" concept is quite misleading. All the rotation actually does is update an internal "active Aegis" pointer which points to one of the Aegis slots, no equipment is moved. Additionally, the foreground slot in the character panel is not "SLOT #1" -- it shows the current "active" slot.  This is a new way of representing gear, as no other equipment in TSW works this way.
-   
-In the AegisHUD bars, the slots are laid out in order, 1-3, for each side. This gives you the ultimate freedom to slot your Aegis in whatever order best makes sense to you. To get the order you want, open up your character panel and remove all your Aegis controllers.  Now drag a controller into one of the character panel slots and you can see in realtime where it appears in the AegisHUD.  If it's not in the right position, remove it and try a different character panel slot.  Did you know you can drag controllers onto the "rear" slots in the character panel? Now you do! Repeat the process until your controllers are all in your preferred order in the AegisHUD. Because the layout in AegisHUD is always 1-2-3, next time you login the order will still be the same.
+The mod is released with CurseMod support, so you can use the Curse client to handle adding and removing it from the game.  Manual installation can also be done, as follows:
   
-An exception to this is the Shield bar. Because Aegis shields could be anywhere in your backpack, or equipped as the active shield, there is no UI-supported ordering that would make any sense. Thus, the order of shields is set to the shield priority ordering, i.e. Psychic => Cybernetic => Demonic.
+Manual Installation
+Ensure the game is closed, then extract only the Flash folder from the zip file into TSW_GAME_FOLDER\Data\Gui\Customized
+  
+Manual Uninstallation
+Ensure the game is closed, then delete the folder TSW_GAME_FOLDER\Data\Gui\Customized\Flash\ElTorqiro_AegisHUD
+   
+   
+Order of Aegis controllers
+--------------------------
+TSW stores equipped Aegis disruptors on the server in regular equipment inventory slots, just like your talismans and weapons, which are numbered 1-3 for both primary and secondary groups (i.e. "left" and "right" side).  The game keeps a track of which disruptor is "active" in each group by creating a separate pointer to the active slot number.  This isn't obvious in the default character sheet, as the slots are laid out in a triangular pattern, and when you rotate them they all move around on the screen as if they were moving around in the equipment inventory as well.  However, all that is happening is that the active pointer is being updated, with the foreground slot showing the disruptor that is active, *not* slot #1.  There is no way to tell just by looking at the character sheet which slot matches which number, although under the hood there is some logic to it.
+
+AegisHUD lays out the disruptors in their numbered order on the bars, from 1-3.  Rather than moving the disruptors around on the bars when a new one is selected, it shows the active slot by adding some highlight effects to it (e.g. a background box, or a glow etc, it's customisable).  So, to get the disruptors to show up in a specific order in AegisHUD, just re-equip them in the character sheet until they show up in the order you want.
+
+Shields work differently to disruptors.  There is only one server-side slot for shields, and selecting a new shield means equipping a new item, just like equipping a new talisman.  The "inactive" (i.e. not equipped) shields just float around in your backpack like regular items.  Therefore, the shields are shown in AegisHUD in their priority order, Psychic => Cybernetic => Demonic, and the ordering cannot be changed.
    
    
 Source Code
