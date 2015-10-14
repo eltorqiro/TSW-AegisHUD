@@ -173,7 +173,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	/**
 	 * trigger hud to layout the bars during next draw
 	 */
-	private function layout() : Void {
+	public function layout() : Void {
 		// check for module being active to avoid the crazy positioning resets that happen during the deactivation/activation phases when teleporting etc
 		if ( App.active ) {
 			layoutIsInvalid = true;
@@ -207,7 +207,8 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			
 			// adjust top for animus charge bar
 			var animusBarPresent:Boolean = animusBarVisibilityMonitor.GetValue();
-			if ( animusBarPresent == undefined || animusBarPresent  ) {
+			animusBarPresent = App.isAegisSystemUnlocked ? false : animusBarPresent || animusBarPresent == undefined;
+			if ( animusBarPresent ) {
 				centre.y -= 10;
 			}
 			

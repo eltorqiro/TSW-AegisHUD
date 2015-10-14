@@ -1,3 +1,8 @@
+???? -- ?????????
+
+  * adjusted default hud position when aegis system is unlocked but ultimate ability is not
+  
+  
 4.3.0 -- 2015-10-13
   
   * fixed incorrect default HUD bar placement when ElTorqiro_UltimateAbility mod is not installed

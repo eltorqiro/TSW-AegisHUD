@@ -452,14 +452,25 @@ class com.ElTorqiro.AegisHUD.App {
 	}
 
 	/**
-	 * handler for ultimate ability becoming unlocked
+	 * handler for systems becoming unlocked
 	 * 
 	 * @param	tag
 	 */
 	private static function loreTagAddedHandler( tag:Number ) {
-		if ( tag == Const.e_AegisUnlockAchievement ) {
-			manageVisibility();
+		
+		switch ( tag ) {
+			
+			case Const.e_AegisUnlockAchievement:
+				manageVisibility();
+			break;
+			
+			// technically this should go in the HUD clip, but no need to add another signal listener for just this
+			case Const.e_UltimateAbilityUnlockAchievement:
+				hudMovie.layout();
+			break;
+			
 		}
+		
 	}
 
 	/**
@@ -606,4 +617,7 @@ class com.ElTorqiro.AegisHUD.App {
 		return !LoreBase.IsLocked( Const.e_AegisUnlockAchievement );
 	}
 	
+	public static function get isUltimateAbilityUnlocked() : Boolean {
+		return !LoreBase.IsLocked( Const.e_UltimateAbilityUnlockAchievement );
+	}
 }
