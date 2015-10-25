@@ -1,6 +1,6 @@
 ElTorqiro_AegisHUD
 ==================
-AegisHUD UI mod for the MMORPG "The Secret World"
+Aegis system management and HUD for the MMORPG "The Secret World"
    
    
 What is this?
@@ -15,8 +15,17 @@ ElTorqiro_AegisHUD is an Aegis system management module.  Feature highlights:
 * replaces the default Aegis swap UI, without modifying or overriding any game files
 
 Join the conversation with feedback, bug reports, and update information on the official TSW forums at http://forums.thesecretworld.com/showthread.php?t=80429
-   
-   
+  
+  
+Important Notes
+---------------
+* It is recommended to disable AutoSwap in PvP zones, or the entire HUD since Aegis doesn't apply in PvP.  This will avoid the "Equal Footing" buff from being toggled off/on, which happens whenever you change gear in a PvP zone, and will be triggered by the AutoSwap module trying to change your shield.
+
+* It is not possible to use two mods that perform Aegis AutoSwap at the same time, due to the way the game handles controller selection.  You can disable AegisHUD's AutoSwap if you prefer to use a different AutoSwap mod, while still being able to use the rest of AegisHUD's features.  Note: some other AutoSwap mods need to be deleted completely to stop them from swapping, rather than just "disabling" them.
+
+* On some _extremely rare_ occasions, the "Aegis XP changed" trigger event is not fired by the game, which leaves the XP display in AegisHUD on out of date values.  Re-equipping the affected controllers, doing a /reloadui, or waiting for another Aegis XP gain event will fetch the new value (e.g. killing a mob or opening another cannister).
+  
+  
 Donations
 ---------
 I don't accept real-money donations for my mods.  If you would like to show your support, you can do so by sending in-game pax to my character Tufenuf.  I will use it to buy the in-game items I would otherwise have been able to grind out myself, if I weren't spending time writing mods.
@@ -27,15 +36,6 @@ Configuration
 The mod includes an on-screen icon which can be clicked to bring up a comprehensive configuration panel, and to quickly toggle the HUD and AutoSwap features.  If you have Viper's Topbar Information Overload (VTIO) installed, or an equivalent handler, the icon will be available in a VTIO slot.
    
 Manipulating the HUD bars and the icon is done via TSW's Gui Edit Mode, which is toggled in the game by clicking the padlock symbol in the top right corner of the screen.  Left-button drags a single bar, right-button drags all bars together, and mouse wheel adjusts scale.  These instructions are repeated in the config window.
-  
-  
-Important Notes
----------------
-* It is recommended to disable AutoSwap in PvP zones, or the entire HUD since Aegis doesn't apply in PvP.  This will avoid the "Equal Footing" buff from being toggled off/on, which happens whenever you change gear in a PvP zone, and will be triggered by the AutoSwap module trying to change your shield.
-
-* It is not possible to use two mods that perform Aegis AutoSwap at the same time, due to the way the game handles controller selection.  You can disable AegisHUD's AutoSwap if you prefer to use a different AutoSwap mod, while still being able to use the rest of AegisHUD's features.  Note: some other AutoSwap mods need to be deleted completely to stop them from swapping, rather than just "disabling" them.
-
-* On some _extremely rare_ occasions, the "Aegis XP changed" trigger event is not fired by the game, which leaves the XP display in AegisHUD on out of date values.  Re-equipping the affected controllers, doing a /reloadui, or waiting for another Aegis XP gain event will fetch the new value (e.g. killing a mob or opening another cannister).
   
   
 Installation
