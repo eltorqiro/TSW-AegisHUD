@@ -38,17 +38,7 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					tooltip: "Enables the AegisHUD.  It may not be visible on the screen, depending on other settings, but it will still be active.<br><br>This setting is remembered on a per-playfield basis.",
 					data: { pref: "hud.enabled" }
 				},
-				/*
-				{ type: "group"
-				},
 				
-				{	id: "hud.abilityBarIntegration.enable",
-					type: "checkbox",
-					label: "Integrate with Ability Bar",
-					tooltip: "Integrates position of the HUD bars with the Ability Bar.  This option is toggled off whenever you move the bars using the GUI Edit Mode.",
-					data: { pref: "hud.abilityBarIntegration.enable" }
-				},
-				*/
 				{ type: "group"
 				},
 				
@@ -66,11 +56,10 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					type: "checkbox",
 					label: "Hide default UI disruptor buttons",
 					tooltip: "Hides the default UI disruptor selection buttons.",
-					data: { pref: "defaultUI.disruptorSelectors.hide" },
-					loader: function() {
+					load: function() {
 						this.setValue( !DistributedValue.GetDValue( "ShowAegisSwapUI" ) );
 					},
-					saver: function() {
+					save: function() {
 						DistributedValue.SetDValue( "ShowAegisSwapUI", !this.getValue() );
 					}
 				},
@@ -631,6 +620,10 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 		panel._x = Math.round( _parent.m_Title.textWidth + 10 );
 		panel._y -= Math.round( _y - _parent.m_Title._y + 1);
 		
+		// listen for default ui swap changes
+		defaultDisruptorSwapUiMonitor = DistributedValue.Create("ShowAegisSwapUI");
+		defaultDisruptorSwapUiMonitor.SignalChanged.Connect( defaultDisruptorSwapUiPrefHandler, this );
+		
 		SignalSizeChanged.Emit();
 	}
 
@@ -754,6 +747,13 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 	}
 	
 	/**
+	 * handler for the DistributedValue that toggles the default disruptor swap buttons on/off
+	 */
+	private function defaultDisruptorSwapUiPrefHandler() : Void {
+		m_Panel.components[ "defaultUI.disruptorSelectors.hide" ].api.load();
+	}
+	
+	/**
 	 * set the size of the content
 	 * 
 	 * @param	width
@@ -781,6 +781,8 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 	
 	public var m_Panel:MovieClip;
 	public var m_TitleBarPanel:MovieClip;
+	
+	private var defaultDisruptorSwapUiMonitor:DistributedValue;
 	
 	/*
 	 * properties
