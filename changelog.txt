@@ -1,6 +1,9 @@
-???? -- ?????????
+4.4.0 -- 2015-11-01
 
-  * adjusted default hud position when aegis system is unlocked but ultimate ability is not
+  * fixed "Hide default UI disruptor buttons" not working properly in config window
+  * adjusted the default position of the HUD bars when Ultimate Ability system is not unlocked (i.e. no Ultimate Ability progress bar is present)
+  
+  * (tech) updated AddonUtils library to 2.0.0
   
   
 4.3.0 -- 2015-10-13
