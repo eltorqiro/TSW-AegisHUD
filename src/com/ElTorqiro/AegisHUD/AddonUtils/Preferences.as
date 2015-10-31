@@ -10,14 +10,25 @@ import com.GameInterface.LogBase;
 
 
 /**
+ * 
  * Preferences storage, usage and change event class for TSW
+ * 
+ * - use add() to create a preference entry with default & initial values
+ * - use load() to populate all defined preferences from the assigned DistributedValue (and thus, by proxy, from disk)
+ * - use getVal() to retrieve the value of a preference entry
+ * - listen for changes to preferences with SignalValueChanged [ OnPrefChanged( name, newValue, oldValue ) ] or with addEventListener
+ * - use setVal() to set the value of a preference entry
+ * - use save() to serialise and save the preference entries to the assigned DistributedValue (which will push them to disk)
+ * 
+ * - serialise() will create an Archive object from the preference entries
+ * - apply() will deserialise an Archive object and put its values into the matching preference entries
  * 
  */
 class com.ElTorqiro.AegisHUD.AddonUtils.Preferences {
 	
 	/**
 	 * creates a new Preferences instance
-	 * @param	storeName	name of the DistributedValue to use for persistence interface
+	 * @param	storeName	optional; name of the DistributedValue to use for persistence interface
 	 */
 	public function Preferences( storeName:String ) {
 		
@@ -47,14 +58,14 @@ class com.ElTorqiro.AegisHUD.AddonUtils.Preferences {
 	 * 
 	 * @param	name
 	 * @param	defaultvalue
-	 * @param	validate	function that is called on setVal, with signature  validate( newValue, oldValue), must return the validated new value
+	 * @param	validator	either a function that is called on setVal [ validator(newValue, oldValue) must return the validated new value ] or an object containing min/max values
 	 */
-	public function add( name:String, defaultValue, validate:Function ) : Void {
+	public function add( name:String, defaultValue, validator ) : Void {
 		
 		prefs[ name ] = {
 				value: defaultValue,
 				defaultValue: defaultValue,
-				validate: validate
+				validator: validator
 		};
 		
 	}
@@ -110,8 +121,15 @@ class com.ElTorqiro.AegisHUD.AddonUtils.Preferences {
 
 		var newValue = value;
 		
-		if ( prefs[name].validate ) {
-			newValue = prefs[name].validate( newValue, oldValue );
+		var validator = prefs[name].validator;
+		if ( validator ) {
+			if ( typeof(validator) == "function" ) {
+				newValue = validator( newValue, oldValue );
+			}
+			
+			else {
+				newValue = Preferences.validateMinMax( newValue, oldValue, validator );
+			}
 		}
 		
 		prefs[name].value = newValue;
@@ -121,6 +139,13 @@ class com.ElTorqiro.AegisHUD.AddonUtils.Preferences {
 		
 		return value;
 		
+	}
+	
+	public static function validateMinMax( newValue, oldValue, limits ) {
+		var value:Number = Math.min( newValue, limits.max );
+		value = Math.max( value, limits.min );
+				
+		return value;
 	}
 	
 	/**
@@ -163,13 +188,12 @@ class com.ElTorqiro.AegisHUD.AddonUtils.Preferences {
 	public function reset( name:String ) : Void {
 		setVal( name, prefs[name].defaultValue );
 	}
-	
+
 	/**
-	 * saves the preferences to the store distributed value, ready for persistence by the game engine
-	 * - this forces an actual commit to disk, which is handled by the game, because it puts a value into one of the DistributedValue defined in Modules.xml
+	 * serialises the pref data into an Archive object, which can then be saved to a DistributedValue for persistence
 	 */
-	public function save() : Void {
-		
+	public function serialise() : Archive {
+
 		var data:Archive = new Archive();
 			
 		for ( var s:String in prefs ) {
@@ -242,8 +266,17 @@ class com.ElTorqiro.AegisHUD.AddonUtils.Preferences {
 			
 		}
 
-		DistributedValue.SetDValue( storeName, data );
-		
+		return data;
+	}
+	
+	/**
+	 * saves the preferences to the store distributed value, ready for persistence by the game engine
+	 * - this forces an actual commit to disk, which is handled by the game, because it puts a value into one of the DistributedValue defined in Modules.xml
+	 */
+	public function save() : Void {
+		if ( storeName != undefined ) {
+			DistributedValue.SetDValue( storeName, serialise() );
+		}
 	}
 	
 	/**
@@ -251,8 +284,17 @@ class com.ElTorqiro.AegisHUD.AddonUtils.Preferences {
 	 * - cannot force the store dv to be populated from disk, that is handled by the game
 	 */
 	public function load() : Void {
+		if ( storeName != undefined ) {
+			apply( DistributedValue.GetDValue( storeName ) );
+		}
+	}
+	
+	/**
+	 * applies the contents of a serialised Archive to the current values of the prefs
+	 */
+	public function apply( store:Archive ) : Void {
 
-		var store:Archive = DistributedValue.GetDValue( storeName );
+		if ( store == undefined || !(store instanceof Archive) ) return;
 		
 		for ( var s:String in prefs ) {
 			

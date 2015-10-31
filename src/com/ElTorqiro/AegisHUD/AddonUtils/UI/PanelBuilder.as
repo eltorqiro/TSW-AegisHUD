@@ -14,6 +14,7 @@ import com.ElTorqiro.AegisHUD.AddonUtils.MovieClipHelper;
 
 /**
  * 
+ * Builds a panel full of configuration related widgets, based on a supplied definition
  * 
  */
 class com.ElTorqiro.AegisHUD.AddonUtils.UI.PanelBuilder extends UIComponent {
@@ -51,6 +52,8 @@ class com.ElTorqiro.AegisHUD.AddonUtils.UI.PanelBuilder extends UIComponent {
 		labelSymbol = def.labelSymbol != undefined ? def.labelSymbol : "eltorqiro.ui.widgets.label.label";
 		textSymbol = def.textSymbol != undefined ? def.textSymbol : "eltorqiro.ui.widgets.label.multiline";
 		colorInputSymbol = def.colorInputSymbol != undefined ? def.colorInputSymbol : "eltorqiro.ui.widgets.textinput.color";
+		
+		data = def.data;
 		
 		var defaultLoad:Function = def.load;
 		var defaultSave:Function = def.save;
@@ -192,7 +195,7 @@ class com.ElTorqiro.AegisHUD.AddonUtils.UI.PanelBuilder extends UIComponent {
 					component._y = cursor.y;
 					component.width = useableWidth - labelOffset;
 
-					cursor.y += component._height;
+					cursor.y += 12;// component._height;
 					
 					preSpacing = componentSpacing + 2;
 					
@@ -272,6 +275,7 @@ class com.ElTorqiro.AegisHUD.AddonUtils.UI.PanelBuilder extends UIComponent {
 
 				components[id] = component;
 				
+				component.api.panel = this;
 				component.api.data = element.data;
 				component.api.load = element.load != undefined ? element.load : defaultLoad;
 				component.api.save = element.save != undefined ? element.save : defaultSave;
@@ -602,6 +606,8 @@ class com.ElTorqiro.AegisHUD.AddonUtils.UI.PanelBuilder extends UIComponent {
 	private var colorInputSymbol:String;
 	
 	private var columnCount:Number;
-	private var components:Object;
+
+	public var components:Object;
+	public var data:Object;
 	
 }

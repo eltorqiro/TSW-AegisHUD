@@ -18,6 +18,7 @@ import com.ElTorqiro.AegisHUD.HotkeyManager;
 import com.ElTorqiro.AegisHUD.AddonUtils.CommonUtils;
 import com.ElTorqiro.AegisHUD.AddonUtils.Preferences;
 import com.ElTorqiro.AegisHUD.AddonUtils.VTIOConnector;
+import com.ElTorqiro.AegisHUD.AddonUtils.WaitFor;
 
 import com.ElTorqiro.AegisHUD.AddonUtils.MovieClipHelper;
 import com.ElTorqiro.AegisHUD.HUD.HUD;
@@ -427,30 +428,46 @@ class com.ElTorqiro.AegisHUD.App {
 	/**
 	 * manage the default shield selector ui visibility
 	 */
-	private static function manageDefaultUiShieldButton( findThingId:String, thing, found:Boolean ) : Void {
-
-		var shieldButton:MovieClip = _root.playerinfo.m_PlayerShield;
+	private static function manageDefaultUiShieldButton() : Void {
+		stopDefaultUiWaitFor();
 		
 		var hide:Boolean = active && prefs.getVal( "defaultUI.shieldSelector.hide" );
 		
 		// unhide attempts immediately, no need to wait as it should only be invisible if we made it so earlier
 		if ( !hide ) {
-			CommonUtils.cancelFindThing( "shieldButton" );
-			shieldButton._visible = true;
+			_root.playerinfo.m_PlayerShield._visible = true;
 		}
 		
-		// trying to hide and finder isn't performing a callback, start finder
-		else if ( !findThingId ) {
-			CommonUtils.findThing( "shieldButton", "_root.playerinfo.m_PlayerShield", 20, 2000, manageDefaultUiShieldButton, manageDefaultUiShieldButton );
+		// wait for shield button to become available, then hide it
+		else {
+			defaultUiWaitForId = WaitFor.start( waitForDefaultUiShieldButtonTest, 10, 3000, hideDefaultUiShieldButton );
 		}
-		
-		// trying to hide, and finder has found it
-		else if ( found ) {
-			shieldButton._visible = false;
-		}
-		
 	}
 
+	/**
+	 * test used by WaitFor when looking for default ui shield button
+	 * 
+	 * @return	default ui shield button is found or not
+	 */
+	private static function waitForDefaultUiShieldButtonTest() : Boolean {
+		return Boolean( _root.playerinfo.m_PlayerShield );
+	}
+	
+	/**
+	 * hides the default ui shield button
+	 */
+	private static function hideDefaultUiShieldButton() : Void {
+		_root.playerinfo.m_PlayerShield._visible = false;
+	}
+	
+	/**
+	 * cancels WaitFor looking for default ui shield button
+	 */
+	private static function stopDefaultUiWaitFor() : Void {
+		WaitFor.stop( defaultUiWaitForId );
+		defaultUiWaitForId = undefined;
+	}
+	
 	/**
 	 * handler for systems becoming unlocked
 	 * 
@@ -578,10 +595,9 @@ class com.ElTorqiro.AegisHUD.App {
 	private static var configWindowClip:ClipNode;
 	
 	private static var showConfigWindowMonitor:DistributedValue;
-	
 	private static var vtio:VTIOConnector;
-	
 	private static var swapper:AutoSwapper;
+	private static var defaultUiWaitForId:Number;
 	
 	/*
 	 * properties

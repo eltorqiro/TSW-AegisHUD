@@ -18,6 +18,7 @@ import com.ElTorqiro.AegisHUD.App;
 import com.ElTorqiro.AegisHUD.Server.AegisServer;
 import com.ElTorqiro.AegisHUD.Const;
 import com.ElTorqiro.AegisHUD.AddonUtils.CommonUtils;
+import com.ElTorqiro.AegisHUD.AddonUtils.WaitFor;
 import com.ElTorqiro.AegisHUD.HUD.Bar;
 import com.ElTorqiro.AegisHUD.HUD.Slot;
 import com.ElTorqiro.AegisHUD.AddonUtils.MovieClipHelper;
@@ -344,29 +345,44 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	/**
 	 * run each time module is activated to try to find default passivebar, and integrate with it
 	 */
-	private function hookPassiveBar( findThingId:String, thing, found:Boolean ) : Void {
+	private function hookPassiveBar() : Void {
+		stopWaitForPassiveBar();
 		
-		// is a thing finder callback
-		if ( findThingId ) {
-			App.debug( "HUD: hookPassiveBar: found = " + found );
-			
-			passiveBarAvailable = found;
-			
-			// things that need to happen once we know if passivebar is available or not
-			injectPassiveBarProxy( true );
-			layout();
-		}
-		
-		// not a callback, start finding the thing
-		else {
-			passiveBarAvailable = false;
-			
-			var callback:Function = Delegate.create( this, hookPassiveBar );
-			CommonUtils.findThing( "passiveBarExists", "_root.passivebar.m_Bar.onTweenComplete", 20, 4000, callback, callback );
-		}
-		
+		var resultDelegate:Function = Delegate.create( this, waitForPassiveBarResultHandler );
+		passiveBarWaitForId = WaitFor.start( waitForPassiveBarTest, 10, 4000, resultDelegate, resultDelegate );
 	}
 
+	/**
+	 * operations that need to occur once we know whether passivebar is available to be hooked or not
+	 * 
+	 * @param	id
+	 * @param	success
+	 * @param	data
+	 */
+	private function waitForPassiveBarResultHandler( id:Number, success:Boolean, data:Object ) : Void {
+		passiveBarAvailable = success;
+		
+		injectPassiveBarProxy( success );
+		layout();
+	}
+
+	/**
+	 * test used by WaitFor to check if passivebar is available
+	 * 
+	 * @return	passivebar is available
+	 */
+	private function waitForPassiveBarTest() : Boolean {
+		return Boolean( _root.passivebar.m_Bar.onTweenComplete );
+	}
+
+	/**
+	 * cancels WaitFor looking for default ui shield button
+	 */
+	private function stopWaitForPassiveBar() : Void {
+		WaitFor.stop( passiveBarWaitForId );
+		passiveBarWaitForId = undefined;
+	}
+	
 	/**
 	 * hooks into passivebar open/close for moving the hud if it is integrated with passivebar
 	 * 
@@ -499,7 +515,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	
 	public function deactivate() : Void {
 		// stop finder looking for passivebar
-		CommonUtils.cancelFindThing( "passiveBarExists" );
+		stopWaitForPassiveBar();
 	}
 	
 	/*
@@ -508,17 +524,15 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 	
 	private var bars:Object;
 	private var tooltip:TooltipInterface;
-	
 	public var gemController:GemController;
 
 	private var passiveBarAvailable:Boolean;
-	
 	private var animusBarVisibilityMonitor:DistributedValue;
-	
 	private var abilityBarGeometryMonitors:Object;
-
-	private var layoutIsInvalid:Boolean;
+	private var passiveBarWaitForId:Number;
 	
+	private var layoutIsInvalid:Boolean;
+
 	/*
 	 * properties
 	 */
