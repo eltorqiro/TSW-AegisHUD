@@ -12,9 +12,9 @@ class com.ElTorqiro.AegisHUD.Const {
 	public static var AppID:String = "ElTorqiro_AegisHUD";
 	public static var AppName:String = "AegisHUD";
 	public static var AppAuthor:String = "ElTorqiro";
-	public static var AppVersion:String = "4.4.0";
+	public static var AppVersion:String = "??.??.??";
 	
-	public static var PrefsVersion:Number = 40040;
+	public static var PrefsVersion:Number = 40050;
 	
 	public static var HudClipDepthLayer:Number = _global.Enums.ViewLayer.e_ViewLayerMiddle;
 	public static var HudClipSubDepth:Number = 0;
@@ -120,4 +120,12 @@ class com.ElTorqiro.AegisHUD.Const {
 	
 	// hud "no tint" tint
 	public static var e_TintNone:Number = 0xffffff;
+	
+	// autoswap toggle via hotkey options
+	public static var e_AutoSwapToggleNone:Number = 0;
+	public static var e_AutoSwapTogglePrimaryNext:Number = 1;
+	public static var e_AutoSwapTogglePrimaryPrev:Number = 2;
+	public static var e_AutoSwapToggleSecondaryNext:Number = 3;
+	public static var e_AutoSwapToggleSecondaryPrev:Number = 4;
+
 }

@@ -35,12 +35,28 @@ class com.ElTorqiro.AegisHUD.HotkeyManager {
 	 * Hotkey values come from _global.Enums.InputCommand -- careful, some hotkeys may not have Enum entries :(
 	*/
 
+	/**
+	 * initialise the class
+	 */
+	public static function init() : Void {
+		
+		// set up autoswap toggle map
+		autoSwapToggleMap = { };
+		autoSwapToggleMap[ Const.e_AutoSwapTogglePrimaryNext ] = e_Hotkey_PrimaryAegisNext;
+		autoSwapToggleMap[ Const.e_AutoSwapTogglePrimaryPrev ] = e_Hotkey_PrimaryAegisPrev;
+		autoSwapToggleMap[ Const.e_AutoSwapToggleSecondaryNext ] = e_Hotkey_SecondaryAegisNext;
+		autoSwapToggleMap[ Const.e_AutoSwapToggleSecondaryPrev ] = e_Hotkey_SecondaryAegisPrev;
+		
+	}
+	
 	 /**
 	  * manage the hijacking of hotkeys
 	  * 
 	  * @param	hijack
 	  */
 	public static function Hijack( hijack:Boolean ) : Void {
+		
+		init();
 		
 		if ( hijack == hijacked ) return;
 		_hijacked = hijack;
@@ -57,7 +73,6 @@ class com.ElTorqiro.AegisHUD.HotkeyManager {
 		for ( var s:String in hotkeyList ) {
 			Input.RegisterHotkey( hotkeyList[s], hijack ? "com.ElTorqiro.AegisHUD.HotkeyManager.HotkeyHandler" : "", e_HotkeyDown, 0 );
 		}
-		
 	}
 	
 	/**
@@ -66,6 +81,12 @@ class com.ElTorqiro.AegisHUD.HotkeyManager {
 	 * @param	key
 	 */
 	public static function HotkeyHandler( key:Number ) : Void {
+		
+		// handle toggling of autoswap via hotkey, which supercedes controller swapping
+		if ( App.prefs.getVal( "hud.enabled" ) && autoSwapToggleMap[ App.prefs.getVal( "hotkeys.autoswap.toggle" ) ] == key ) {
+			App.prefs.setVal( "autoSwap.enabled", !App.prefs.getVal( "autoSwap.enabled" ) );
+			return;
+		}
 		
 		// disable hotkey action if hud is disabled and lockout pref set
 		if ( !App.prefs.getVal( "hud.enabled" ) && App.prefs.getVal( "hotkeys.lockoutWhenHudDisabled" ) ) return;
@@ -95,4 +116,9 @@ class com.ElTorqiro.AegisHUD.HotkeyManager {
 	private static var _hijacked:Boolean = false;
 	public static function get hijacked() : Boolean { return _hijacked; }
 
+	/**
+	 * internal variables
+	 */
+	
+	private static var autoSwapToggleMap:Object;
 }

@@ -289,6 +289,8 @@ class com.ElTorqiro.AegisHUD.App {
 		prefs.add( "hotkeys.multiSelectType.primary", Const.e_SelectMulti );
 		prefs.add( "hotkeys.multiSelectType.secondary", Const.e_SelectMulti );
 
+		prefs.add( "hotkeys.autoswap.toggle", Const.e_AutoSwapToggleNone );
+		
 		prefs.add( "hud.tints.aegis.psychic", 			0xe083ff );
 		prefs.add( "hud.tints.aegis.cybernetic",		0x00d0ff );
 		prefs.add( "hud.tints.aegis.demonic",			0xff3300 );

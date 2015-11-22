@@ -98,6 +98,23 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 				{	type: "group"
 				},
 				
+				{	id: "hotkeys.autoswap.toggle",
+					type: "dropdown",
+					label: "Hotkey Toggle",
+					tooltip: "Overrides a hotkey to allow toggling AutoSwap on/off.  This will prevent the hotkey from performing its default behaviour, and will only take effect if the HUD is enabled.",
+					data: { pref: "hotkeys.autoswap.toggle" },
+					list: [
+						{ label: "None", value: Const.e_AutoSwapToggleNone },
+						{ label: "Primary Fwd. [<variable name='hotkey:Combat_NextPrimaryAEGIS'/ >]", value: Const.e_AutoSwapTogglePrimaryNext },
+						{ label: "Primary Back [<variable name='hotkey:Combat_PreviousPrimaryAEGIS'/ >]", value: Const.e_AutoSwapTogglePrimaryPrev },
+						{ label: "Secondary Fwd. [<variable name='hotkey:Combat_NextSecondaryAEGIS'/ >]", value: Const.e_AutoSwapToggleSecondaryNext },
+						{ label: "Secondary Back [<variable name='hotkey:Combat_PreviousSecondaryAEGIS'/ >]", value: Const.e_AutoSwapToggleSecondaryPrev }
+					]
+				},
+				
+				{	type: "group"
+				},
+				
 				{	type: "h2",
 					text: "Match ..."
 				},
@@ -226,7 +243,7 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					]
 				},
 
-				{ type: "group"
+				{	type: "group"
 				},
 				
 				{	id: "hotkeys.lockoutWhenHudDisabled",
