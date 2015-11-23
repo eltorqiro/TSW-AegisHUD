@@ -457,11 +457,8 @@ class com.ElTorqiro.AegisHUD.App {
 	private static function hideDefaultUiDisruptorSelectors() : Void {
 		var pb:MovieClip = _root.passivebar;
 
-		// only allow hook to be applied once
-		if ( pb.ElTorqiro_AegisHUD_Saved_LoadAegisButtons ) return;
-		
-		pb.ElTorqiro_AegisHUD_Saved_LoadAegisButtons = pb.LoadAegisButtons;
-		pb.LoadAegisButtons = true;
+		pb.LoadPrimaryAegisButton = undefined;
+		pb.LoadSecondaryAegisButton = undefined;
 		
 		pb.m_PrimaryAegisSwap.removeMovieClip();
 		pb.m_SecondaryAegisSwap.removeMovieClip();
