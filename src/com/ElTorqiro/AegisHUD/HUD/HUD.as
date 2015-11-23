@@ -208,7 +208,7 @@ class com.ElTorqiro.AegisHUD.HUD.HUD extends UIComponent {
 			
 			// adjust top for animus charge bar
 			var animusBarPresent:Boolean = animusBarVisibilityMonitor.GetValue();
-			animusBarPresent = App.isAegisSystemUnlocked ? false : animusBarPresent || animusBarPresent == undefined;
+			animusBarPresent = !App.isUltimateAbilityUnlocked ? false : animusBarPresent || animusBarPresent == undefined;
 			if ( animusBarPresent ) {
 				centre.y -= 10;
 			}
