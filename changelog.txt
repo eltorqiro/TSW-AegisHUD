@@ -1,6 +1,8 @@
-????? -- ??????
+4.5.0 -- 2015-11-23
 
   + added optional hotkey for toggling AutoSwap on/off
+  
+  - made hiding of default ui disruptor swap buttons not optional (they are now always hidden)
   
   
 4.4.0 -- 2015-11-01
