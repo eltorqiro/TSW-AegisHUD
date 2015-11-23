@@ -140,7 +140,7 @@ class com.ElTorqiro.AegisHUD.App {
 		prefs.setVal( "hud.enabled", shouldEnable );
 		
 		// manipulate default ui elements
-		manageDefaultUiShieldButton();
+		manageDefaultUi();
 		
 		// start autoswapper
 		manageAutoSwapper();
@@ -179,9 +179,9 @@ class com.ElTorqiro.AegisHUD.App {
 		// stop autoswapper
 		manageAutoSwapper();
 
-		// restore default ui elements
-		manageDefaultUiShieldButton();
-
+		// stop any waiting for default ui elements
+		stopDefaultUiWaitFor();
+		
 		// component clip visibility
 		iconClip.m_Movie._visible = false;
 		manageVisibility();
@@ -230,7 +230,6 @@ class com.ElTorqiro.AegisHUD.App {
 		prefs.add( "autoSwap.match.friendly.self", true );
 		prefs.add( "autoSwap.match.enemy.players", false );
 		
-		prefs.add( "defaultUI.disruptorSelectors.hide", true );
 		prefs.add( "defaultUI.shieldSelector.hide", true );
 
 		prefs.add( "hud.hide.whenAutoswapEnabled", false );
@@ -426,40 +425,53 @@ class com.ElTorqiro.AegisHUD.App {
 			)
 		);
 	}
+
+	/**
+	 * manages the visibility of the default aegis ui elements
+	 */
+	private static function manageDefaultUi() : Void {
+		stopDefaultUiWaitFor();
+		defaultUiWaitForId = WaitFor.start( waitForDefaultUiTest, 10, 3000, manageDefaultUiElements );
+	}
 	
+	/**
+	 * test used by WaitFor when looking for default ui elements
+	 * 
+	 * @return	default ui elements are found or not
+	 */
+	private static function waitForDefaultUiTest() : Boolean {
+		return Boolean( _root.playerinfo.m_PlayerShield && _root.passivebar.LoadAegisButtons );
+	}
+
+	/**
+	 * aggregate function for managing all default ui elements
+	 */
+	private static function manageDefaultUiElements() : Void {
+		hideDefaultUiDisruptorSelectors();
+		manageDefaultUiShieldButton();
+	}
+	
+	/**
+	 * hides the default ui disruptor select buttons
+	 */
+	private static function hideDefaultUiDisruptorSelectors() : Void {
+		var pb:MovieClip = _root.passivebar;
+
+		// only allow hook to be applied once
+		if ( pb.ElTorqiro_AegisHUD_Saved_LoadAegisButtons ) return;
+		
+		pb.ElTorqiro_AegisHUD_Saved_LoadAegisButtons = pb.LoadAegisButtons;
+		pb.LoadAegisButtons = true;
+		
+		pb.m_PrimaryAegisSwap.removeMovieClip();
+		pb.m_SecondaryAegisSwap.removeMovieClip();
+	}
+
 	/**
 	 * manage the default shield selector ui visibility
 	 */
 	private static function manageDefaultUiShieldButton() : Void {
-		stopDefaultUiWaitFor();
-		
-		var hide:Boolean = active && prefs.getVal( "defaultUI.shieldSelector.hide" );
-		
-		// unhide attempts immediately, no need to wait as it should only be invisible if we made it so earlier
-		if ( !hide ) {
-			_root.playerinfo.m_PlayerShield._visible = true;
-		}
-		
-		// wait for shield button to become available, then hide it
-		else {
-			defaultUiWaitForId = WaitFor.start( waitForDefaultUiShieldButtonTest, 10, 3000, hideDefaultUiShieldButton );
-		}
-	}
-
-	/**
-	 * test used by WaitFor when looking for default ui shield button
-	 * 
-	 * @return	default ui shield button is found or not
-	 */
-	private static function waitForDefaultUiShieldButtonTest() : Boolean {
-		return Boolean( _root.playerinfo.m_PlayerShield );
-	}
-	
-	/**
-	 * hides the default ui shield button
-	 */
-	private static function hideDefaultUiShieldButton() : Void {
-		_root.playerinfo.m_PlayerShield._visible = false;
+		_root.playerinfo.m_PlayerShield._visible = !( active && prefs.getVal( "defaultUI.shieldSelector.hide" ) );
 	}
 	
 	/**
@@ -523,10 +535,6 @@ class com.ElTorqiro.AegisHUD.App {
 		
 		// only "install" once ever
 		if ( !prefs.getVal( "app.installed" ) ) {;
-		
-			// hide default disruptor swap ui
-			DistributedValue.SetDValue( "ShowAegisSwapUI", false );
-
 			prefs.setVal( "app.installed", true );
 		}
 		
@@ -547,6 +555,10 @@ class com.ElTorqiro.AegisHUD.App {
 		
 		if ( prefsVersion < 40008 ) {
 			prefs.setVal( "hud.disabledPlayfields", new Object() );
+		}
+		
+		if ( prefsVersion < 40050 ) {
+			DistributedValue.SetDValue( "ShowAegisSwapUI", true );
 		}
 		
 		// set prefs version to current version

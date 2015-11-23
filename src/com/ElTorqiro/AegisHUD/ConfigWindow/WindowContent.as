@@ -52,18 +52,6 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 				{ type: "group"
 				},
 				
-				{	id: "defaultUI.disruptorSelectors.hide",
-					type: "checkbox",
-					label: "Hide default UI disruptor buttons",
-					tooltip: "Hides the default UI disruptor selection buttons.",
-					load: function() {
-						this.setValue( !DistributedValue.GetDValue( "ShowAegisSwapUI" ) );
-					},
-					save: function() {
-						DistributedValue.SetDValue( "ShowAegisSwapUI", !this.getValue() );
-					}
-				},
-				
 				{	id: "defaultUI.shieldSelector.hide",
 					type: "checkbox",
 					label: "Hide default UI shield button",
@@ -637,10 +625,6 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 		panel._x = Math.round( _parent.m_Title.textWidth + 10 );
 		panel._y -= Math.round( _y - _parent.m_Title._y + 1);
 		
-		// listen for default ui swap changes
-		defaultDisruptorSwapUiMonitor = DistributedValue.Create("ShowAegisSwapUI");
-		defaultDisruptorSwapUiMonitor.SignalChanged.Connect( defaultDisruptorSwapUiPrefHandler, this );
-		
 		SignalSizeChanged.Emit();
 	}
 
@@ -689,7 +673,6 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 			"autoSwap.match.friendly.self",
 			"autoSwap.match.enemy.players",
 			
-			"defaultUI.disruptorSelectors.hide",
 			"defaultUI.shieldSelector.hide",
 
 			"hud.hide.whenAutoswapEnabled",
@@ -764,13 +747,6 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 	}
 	
 	/**
-	 * handler for the DistributedValue that toggles the default disruptor swap buttons on/off
-	 */
-	private function defaultDisruptorSwapUiPrefHandler() : Void {
-		m_Panel.components[ "defaultUI.disruptorSelectors.hide" ].api.load();
-	}
-	
-	/**
 	 * set the size of the content
 	 * 
 	 * @param	width
@@ -798,8 +774,6 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 	
 	public var m_Panel:MovieClip;
 	public var m_TitleBarPanel:MovieClip;
-	
-	private var defaultDisruptorSwapUiMonitor:DistributedValue;
 	
 	/*
 	 * properties
