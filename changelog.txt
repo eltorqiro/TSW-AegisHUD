@@ -1,3 +1,8 @@
+4.6.0 -- 2016-02-16
+
+  * fixed compatibility issue with Issue 13's Gui Edit Mode and the mod icon when not using VTIO, which prevented the icon being manipulated
+
+
 4.5.2 -- 2015-11-24
 
   * fixed bar positioning regression when anima energy bar is visible

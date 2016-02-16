@@ -12,9 +12,9 @@ class com.ElTorqiro.AegisHUD.Const {
 	public static var AppID:String = "ElTorqiro_AegisHUD";
 	public static var AppName:String = "AegisHUD";
 	public static var AppAuthor:String = "ElTorqiro";
-	public static var AppVersion:String = "4.5.2";
+	public static var AppVersion:String = "4.6.0";
 	
-	public static var PrefsVersion:Number = 40052;
+	public static var PrefsVersion:Number = 40060;
 	
 	public static var HudClipDepthLayer:Number = _global.Enums.ViewLayer.e_ViewLayerMiddle;
 	public static var HudClipSubDepth:Number = 0;
