@@ -1,3 +1,10 @@
+4.7.0 -- 2016-05-25
+
+  + restored the ability to toggle the default ui disruptor buttons via the AegisHUD config window settings
+  
+  * changed the app icon to be in front of the default topbar when not using VTIO; note this also places it above the rest of the ui (e.g. inventory bags etc)
+
+
 4.6.0 -- 2016-02-16
 
   * fixed compatibility issue with Issue 13's Gui Edit Mode and the mod icon when not using VTIO, which prevented the icon being manipulated
