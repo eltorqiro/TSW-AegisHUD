@@ -52,6 +52,13 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 				{ type: "group"
 				},
 				
+				{	id: "defaultUI.disruptorSelectors.hide",
+					type: "checkbox",
+					label: "Hide default UI disruptor buttons",
+					tooltip: "Hides the default UI disruptor selection buttons.",
+					data: { pref: "defaultUI.disruptorSelectors.hide" }
+				},
+				
 				{	id: "defaultUI.shieldSelector.hide",
 					type: "checkbox",
 					label: "Hide default UI shield button",

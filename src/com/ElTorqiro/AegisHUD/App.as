@@ -230,6 +230,7 @@ class com.ElTorqiro.AegisHUD.App {
 		prefs.add( "autoSwap.match.friendly.self", true );
 		prefs.add( "autoSwap.match.enemy.players", false );
 		
+		prefs.add( "defaultUI.disruptorSelectors.hide", true );
 		prefs.add( "defaultUI.shieldSelector.hide", true );
 
 		prefs.add( "hud.hide.whenAutoswapEnabled", false );
@@ -323,6 +324,10 @@ class com.ElTorqiro.AegisHUD.App {
 			case "hud.hide.whenAutoswapEnabled":
 			case "hud.hide.whenNotInCombat":
 				manageVisibility();
+			break;
+			
+			case "defaultUI.disruptorSelectors.hide":
+				manageDefaultUiElements();
 			break;
 			
 			case "defaultUI.shieldSelector.hide":
@@ -447,8 +452,41 @@ class com.ElTorqiro.AegisHUD.App {
 	 * aggregate function for managing all default ui elements
 	 */
 	private static function manageDefaultUiElements() : Void {
-		hideDefaultUiDisruptorSelectors();
+		//hideDefaultUiDisruptorSelectors();
+		manageDefaultUiDisruptorSelectors();
 		manageDefaultUiShieldButton();
+	}
+	
+	/**
+	 * manage the default disruptor selector ui visibility
+	 */
+	private static function manageDefaultUiDisruptorSelectors() : Void {
+		var pb:MovieClip = _root.passivebar;
+		
+		// disruptor buttons already hooked, unhook them
+		if ( (!active || !prefs.getVal("defaultUI.disruptorSelectors.hide")) && pb.ElTorqiro_AegisHUD_LoadPrimaryAegisButton ) {
+			pb.LoadPrimaryAegisButton = pb.ElTorqiro_AegisHUD_LoadPrimaryAegisButton;
+			pb.LoadSecondaryAegisButton = pb.ElTorqiro_AegisHUD_LoadSecondaryAegisButton;
+			
+			pb.ElTorqiro_AegisHUD_LoadPrimaryAegisButton = undefined;
+			pb.ElTorqiro_AegisHUD_LoadSecondaryAegisButton = undefined;
+			
+			pb.LoadAegisButtons();
+		}
+		
+		// disruptor buttons need hiding
+		else if ( active && prefs.getVal("defaultUI.disruptorSelectors.hide") && pb.ElTorqiro_AegisHUD_LoadPrimaryAegisButton == undefined ) {
+			pb.ElTorqiro_AegisHUD_LoadPrimaryAegisButton = pb.LoadPrimaryAegisButton;
+			pb.ElTorqiro_AegisHUD_LoadSecondaryAegisButton = pb.LoadSecondaryAegisButton;
+			
+			pb.LoadPrimaryAegisButton = undefined;
+			pb.LoadSecondaryAegisButton = undefined;
+			
+			pb.m_PrimaryAegisSwap.removeMovieClip();
+			pb.m_SecondaryAegisSwap.removeMovieClip();
+		}
+		
+		_root.playerinfo.m_PlayerShield._visible = !( active && prefs.getVal( "defaultUI.shieldSelector.hide" ) );
 	}
 	
 	/**
