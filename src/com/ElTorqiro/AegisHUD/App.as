@@ -327,7 +327,7 @@ class com.ElTorqiro.AegisHUD.App {
 			break;
 			
 			case "defaultUI.disruptorSelectors.hide":
-				manageDefaultUiElements();
+				manageDefaultUiDisruptorSelectors();
 			break;
 			
 			case "defaultUI.shieldSelector.hide":
@@ -452,7 +452,6 @@ class com.ElTorqiro.AegisHUD.App {
 	 * aggregate function for managing all default ui elements
 	 */
 	private static function manageDefaultUiElements() : Void {
-		//hideDefaultUiDisruptorSelectors();
 		manageDefaultUiDisruptorSelectors();
 		manageDefaultUiShieldButton();
 	}
@@ -489,19 +488,6 @@ class com.ElTorqiro.AegisHUD.App {
 		_root.playerinfo.m_PlayerShield._visible = !( active && prefs.getVal( "defaultUI.shieldSelector.hide" ) );
 	}
 	
-	/**
-	 * hides the default ui disruptor select buttons
-	 */
-	private static function hideDefaultUiDisruptorSelectors() : Void {
-		var pb:MovieClip = _root.passivebar;
-
-		pb.LoadPrimaryAegisButton = undefined;
-		pb.LoadSecondaryAegisButton = undefined;
-		
-		pb.m_PrimaryAegisSwap.removeMovieClip();
-		pb.m_SecondaryAegisSwap.removeMovieClip();
-	}
-
 	/**
 	 * manage the default shield selector ui visibility
 	 */
