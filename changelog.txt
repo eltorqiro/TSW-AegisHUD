@@ -1,4 +1,4 @@
-4.7.0+xplootassist -- 2016-06-18
+4.8.0 -- 2016-06-18
 
   + added experimental new feature, "Aegis XP Loot Assistant", which will automatically swap controllers to lowest/highest when leaving combat, so you can maximize looting opportunities
 
