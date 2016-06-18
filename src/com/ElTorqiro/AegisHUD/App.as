@@ -240,7 +240,7 @@ class com.ElTorqiro.AegisHUD.App {
 		prefs.add( "defaultUI.disruptorSelectors.hide", true );
 		prefs.add( "defaultUI.shieldSelector.hide", true );
 
-		prefs.add( "xpLootAssistant.enabled", true );
+		prefs.add( "xpLootAssistant.enabled", false );
 		prefs.add( "xpLootAssistant.type", Const.e_XpLootAssistantLowest );
 		
 		prefs.add( "hud.hide.whenAutoswapEnabled", false );
