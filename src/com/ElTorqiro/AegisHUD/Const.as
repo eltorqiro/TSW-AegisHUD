@@ -12,7 +12,7 @@ class com.ElTorqiro.AegisHUD.Const {
 	public static var AppID:String = "ElTorqiro_AegisHUD";
 	public static var AppName:String = "AegisHUD";
 	public static var AppAuthor:String = "ElTorqiro";
-	public static var AppVersion:String = "4.7.0";
+	public static var AppVersion:String = "4.7.0+xplootassist";
 	
 	public static var PrefsVersion:Number = 40070;
 	
@@ -128,4 +128,8 @@ class com.ElTorqiro.AegisHUD.Const {
 	public static var e_AutoSwapToggleSecondaryNext:Number = 3;
 	public static var e_AutoSwapToggleSecondaryPrev:Number = 4;
 
+	// xp loot assistant profiles
+	public static var e_XpLootAssistantNone:Number = 0;
+	public static var e_XpLootAssistantHighest:Number = 1;
+	public static var e_XpLootAssistantLowest:Number = 2;
 }

@@ -167,6 +167,29 @@ class com.ElTorqiro.AegisHUD.ConfigWindow.WindowContent extends com.Components.W
 					tooltip: "Includes PvP opponents in the category of \"Enemy\" targets for AutoSwap focusing.",
 					data: { pref: "autoSwap.match.enemy.players" }
 				},
+
+				{	type: "section",
+					label: "Aegis XP Loot Assistant"
+				},
+
+				{	id: "xpLootAssistant.enabled",
+					type: "checkbox",
+					label: "Assistant enabled",
+					tooltip: "Enables the Aegis XP Loot Assistant.  Your Aegis controllers will be swapped according to your preferred ruleset when leaving combat with no offensive target selected.",
+					data: { pref: "xpLootAssistant.enabled" }
+				},
+
+				{	id: "xpLootAssistant.type",
+					type: "dropdown",
+					label: "After combat, swap to",
+					tooltip: "Ruleset the XP Loot Assistant will use to select controllers in each bank.",
+					data: { pref: "xpLootAssistant.type" },
+					list: [
+						/*{ label: "nothing (no assist)", value: Const.e_XpLootAssistantNone },*/
+						{ label: "Highest XP controllers", value: Const.e_XpLootAssistantHighest },
+						{ label: "Lowest XP controllers", value: Const.e_XpLootAssistantLowest }
+					]
+				},
 				
 				{	type: "section",
 					label: "Selection"

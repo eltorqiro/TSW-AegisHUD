@@ -1,3 +1,8 @@
+4.7.0+xplootassist -- 2016-06-18
+
+  + added experimental new feature, "Aegis XP Loot Assistant", which will automatically swap controllers to lowest/highest when leaving combat, so you can maximize looting opportunities
+
+
 4.7.0 -- 2016-05-25
 
   + restored the ability to toggle the default ui disruptor buttons via the AegisHUD config window settings

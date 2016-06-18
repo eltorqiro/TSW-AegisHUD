@@ -15,6 +15,7 @@ import com.ElTorqiro.AegisHUD.Const;
 import com.ElTorqiro.AegisHUD.Server.AegisServer;
 import com.ElTorqiro.AegisHUD.AutoSwapper;
 import com.ElTorqiro.AegisHUD.HotkeyManager;
+import com.ElTorqiro.AegisHUD.XpLootAssistant;
 import com.ElTorqiro.AegisHUD.AddonUtils.CommonUtils;
 import com.ElTorqiro.AegisHUD.AddonUtils.Preferences;
 import com.ElTorqiro.AegisHUD.AddonUtils.VTIOConnector;
@@ -148,6 +149,9 @@ class com.ElTorqiro.AegisHUD.App {
 		// hijack hotkeys
 		manageHotkeys();
 
+		// manage xp loot assistant
+		manageXpLootAssistant();
+		
 		// manage config window
 		showConfigWindowMonitor.SignalChanged.Connect( manageConfigWindow );
 		manageConfigWindow();
@@ -179,6 +183,9 @@ class com.ElTorqiro.AegisHUD.App {
 		// stop autoswapper
 		manageAutoSwapper();
 
+		// stop xp loot assist
+		manageXpLootAssistant();
+		
 		// stop any waiting for default ui elements
 		stopDefaultUiWaitFor();
 		
@@ -233,6 +240,9 @@ class com.ElTorqiro.AegisHUD.App {
 		prefs.add( "defaultUI.disruptorSelectors.hide", true );
 		prefs.add( "defaultUI.shieldSelector.hide", true );
 
+		prefs.add( "xpLootAssistant.enabled", true );
+		prefs.add( "xpLootAssistant.type", Const.e_XpLootAssistantLowest );
+		
 		prefs.add( "hud.hide.whenAutoswapEnabled", false );
 		prefs.add( "hud.hide.whenNotInCombat", false );
 		
@@ -319,6 +329,10 @@ class com.ElTorqiro.AegisHUD.App {
 			case "autoSwap.enabled":
 				manageAutoSwapper();
 				manageVisibility();
+			break;
+			
+			case "xpLootAssistant.enabled":
+				manageXpLootAssistant();
 			break;
 			
 			case "hud.hide.whenAutoswapEnabled":
@@ -504,6 +518,26 @@ class com.ElTorqiro.AegisHUD.App {
 	}
 	
 	/**
+	 * control the presence of the xp loot assistant feature
+	 */
+	private static function manageXpLootAssistant() : Void {
+		
+		if ( active && prefs.getVal( "xpLootAssistant.enabled" ) && prefs.getVal( "hud.enabled" ) ) {
+			
+			if ( !xpLootAssistant ) {
+				debug( "App: creating XP Loot Assistant" );
+				xpLootAssistant= new XpLootAssistant();
+			}
+		}
+		
+		else if ( xpLootAssistant ) {
+			debug( "App: destroying XP Loot Assistant" );
+			xpLootAssistant= null;
+		}
+		
+	}
+	
+	/**
 	 * handler for systems becoming unlocked
 	 * 
 	 * @param	tag
@@ -632,6 +666,7 @@ class com.ElTorqiro.AegisHUD.App {
 	private static var showConfigWindowMonitor:DistributedValue;
 	private static var vtio:VTIOConnector;
 	private static var swapper:AutoSwapper;
+	private static var xpLootAssistant:XpLootAssistant;
 	private static var defaultUiWaitForId:Number;
 	
 	/*
