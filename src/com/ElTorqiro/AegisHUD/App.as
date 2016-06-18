@@ -498,8 +498,6 @@ class com.ElTorqiro.AegisHUD.App {
 			pb.m_PrimaryAegisSwap.removeMovieClip();
 			pb.m_SecondaryAegisSwap.removeMovieClip();
 		}
-		
-		_root.playerinfo.m_PlayerShield._visible = !( active && prefs.getVal( "defaultUI.shieldSelector.hide" ) );
 	}
 	
 	/**
